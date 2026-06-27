@@ -62,6 +62,7 @@ opencode
 | `container-security` | Docker/K8s escape, RBAC abuse, runtime CVEs |
 | `code-review` | White-box source code audit — SAST for 10 languages, 10-phase methodology |
 | `code-patch` | Security patch generation — minimal, tested fixes for all OWASP Top 10 classes |
+| `auto-hunt` | Autonomous full-spectrum hunter — recon to report with closed-loop verification |
 
 ### Commands (23 commands)
 

@@ -9,6 +9,7 @@ This repo is a Claude Code plugin for professional bug bounty hunting across Hac
 | Skill | Domain |
 |---|---|
 | `skills/bug-bounty/` | Master workflow — recon to report, all vuln classes, LLM testing, chains |
+| `skills/auto-hunt/` | **Autonomous full-spectrum hunter** — given any target, runs all phases from recon to report with closed-loop verification (hunt→verify→repeat until 100% confidence). Covers 30+ classes. No prompts needed. |
 | `skills/bb-methodology/` | **Hunting mindset + 5-phase non-linear workflow + tool routing + session discipline** |
 | `skills/web2-recon/` | Subdomain enum, live host discovery, URL crawling, nuclei |
 | `skills/web2-vuln-classes/` | 21 bug classes with bypass tables (SSRF, open redirect, file upload, Agentic AI) |
