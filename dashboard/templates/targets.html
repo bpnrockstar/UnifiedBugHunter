@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Targets — Unified Bug Hunter{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4><i class="bi-crosshair me-2"></i>Targets</h4>
+    <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addTargetModal"><i class="bi-plus me-1"></i>Add Target</button>
+</div>
+
+<div class="card">
+    <div class="card-body p-0">
+        <table class="table table-dark table-sm mb-0">
+            <thead><tr><th>Domain</th><th>Program</th><th>Platform</th><th>Status</th><th>Findings</th><th>Created</th></tr></thead>
+            <tbody>
+                {% for t in targets %}
+                <tr>
+                    <td><a href="/targets/{{ t.id }}">{{ t.domain }}</a></td>
+                    <td>{{ t.program or '-' }}</td>
+                    <td>{{ t.platform or '-' }}</td>
+                    <td><span class="badge bg-{{ 'success' if t.status == 'active' else 'secondary' }}">{{ t.status }}</span></td>
+                    <td><a href="/findings?target_id={{ t.id }}">view</a></td>
+                    <td>{{ t.created_at[:10] }}</td>
+                </tr>
+                {% endfor %}
+                {% if not targets %}<tr><td colspan="6" class="text-secondary text-center py-3">No targets yet. Add one above.</td></tr>{% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="modal fade" id="addTargetModal"><div class="modal-dialog">
+    <form method="POST" action="/targets/add">
+        <div class="modal-content bg-dark">
+            <div class="modal-header"><h5>Add Target</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body">
+                <div class="mb-3"><label class="form-label">Domain *</label><input name="domain" class="form-control" required placeholder="example.com"></div>
+                <div class="mb-3"><label class="form-label">Program</label><input name="program" class="form-control" placeholder="Bugcrowd / HackerOne / ..."></div>
+                <div class="mb-3"><label class="form-label">Platform</label><select name="platform" class="form-select"><option>HackerOne</option><option>Bugcrowd</option><option>Intigriti</option><option>Immunefi</option><option>Other</option></select></div>
+            </div>
+            <div class="modal-footer"><button type="submit" class="btn btn-primary">Add</button></div>
+        </div>
+    </form>
+</div></div>
+{% endblock %}

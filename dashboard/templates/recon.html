@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Recon Data — Unified Bug Hunter{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4><i class="bi-search me-2"></i>Recon Data</h4>
+    <form class="d-flex gap-2" method="GET">
+        <input name="q" class="form-control form-control-sm" placeholder="Search..." value="{{ search or '' }}" style="width:200px">
+        <select name="type" class="form-select form-select-sm" style="width:auto" onchange="this.form.submit()">
+            <option value="">All Types</option>
+            {% for t in ['subdomain','url','endpoint','js_file','parameter','port','technology','screenshot'] %}
+            <option value="{{ t }}" {{ 'selected' if rtype == t }}>{{ t|replace('_',' ')|title }}</option>
+            {% endfor %}
+        </select>
+        <button class="btn btn-outline-primary btn-sm" type="submit"><i class="bi-funnel"></i></button>
+    </form>
+</div>
+
+<div class="card">
+    <div class="card-body p-0">
+        <table class="table table-dark table-sm mb-0">
+            <thead><tr><th>Type</th><th>Value</th><th>Domain</th><th>Source</th><th>First Seen</th><th>Last Seen</th></tr></thead>
+            <tbody>
+                {% for r in recon_data %}
+                <tr>
+                    <td><span class="badge bg-info">{{ r.type }}</span></td>
+                    <td><code>{{ r.value[:120] }}{{ '...' if r.value|length > 120 }}</code></td>
+                    <td><a href="/targets/{{ r.target_id }}">{{ r.domain }}</a></td>
+                    <td>{{ r.source or '-' }}</td>
+                    <td><small>{{ r.first_seen[:10] }}</small></td>
+                    <td><small>{{ r.last_seen[:10] }}</small></td>
+                </tr>
+                {% else %}
+                <tr><td colspan="6" class="text-secondary text-center py-3">No recon data yet.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

@@ -30,6 +30,9 @@ This repo is a Claude Code plugin for professional bug bounty hunting across Hac
 | `skills/container-security/` | Docker/K8s escape vectors, RBAC abuse, runtime CVE exploitation |
 | `skills/code-review/` | White-box source code audit — SAST patterns for 10 languages, 10-phase methodology |
 | `skills/code-patch/` | Security patch generation — minimal, tested fixes for all OWASP Top 10 classes |
+| `skills/vuln-catcher/` | Continuous recon monitor — subdomains, JS changes, ports, tech changes |
+| `skills/dast-scanner/` | Automated DAST scanning (OWASP ZAP + nuclei) with DB import |
+| `skills/knowledge-base/` | Searchable vulnerability KB with disclosed reports, payloads, techniques |
 
 ### Commands (21 slash commands)
 
@@ -68,8 +71,12 @@ This repo is a Claude Code plugin for professional bug bounty hunting across Hac
 | `/graphql-audit` | `/graphql-audit <url>` — full GraphQL audit: introspection, batching DoS, IDOR, injection, alias bomb, graphw00f fingerprint |
 | `/code-audit` | `/code-audit [path] [--mode quick|full]` — white-box source code audit for 10 languages |
 | `/patch` | `/patch [file:line] [--lang py|js|java|go|rb|php|rs]` — generate tested security patch for vulnerable code |
+| `/vuln-catcher` | `/vuln-catcher <domain> [--check types] [--continuous]` — continuous recon monitor (subdomains, JS, ports, tech) |
+| `/dast-scan` | `/dast-scan nuclei|zap <url>` — automated DAST scanning with result import |
+| `/search-findings` | `/search-findings <query> [--findings|--kb|--recon]` — search all database tables |
+| `/dashboard` | `/dashboard` — launch the web GUI |
 
-### Agents (24 specialized agents)
+### Agents (25 specialized agents)
 
 #### Bug Bounty Pipeline (9)
 - `recon-agent` — subdomain enum + live host discovery
@@ -100,6 +107,7 @@ This repo is a Claude Code plugin for professional bug bounty hunting across Hac
 - `exploit-guide` — step-by-step exploitation procedures for 20+ bug classes
 - `code-reviewer` — white-box source code audit, SAST-driven, 10-phase methodology
 - `code-patcher` — automated security patch generation with before/after diff and verification
+- `vuln-catcher` — continuous recon monitor for subdomains, JS changes, ports, tech
 
 ### Rules (always active)
 

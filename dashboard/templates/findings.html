@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Findings — Unified Bug Hunter{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4><i class="bi-shield-exclamation me-2"></i>Findings <small class="text-secondary">({{ total }} total)</small></h4>
+    <form class="d-flex gap-2" method="GET">
+        <input name="q" class="form-control form-control-sm" placeholder="Search..." value="{{ search or '' }}" style="width:200px">
+        <select name="severity" class="form-select form-select-sm" style="width:auto" onchange="this.form.submit()">
+            <option value="">All Severities</option>
+            {% for s in ['critical','high','medium','low','info'] %}
+            <option value="{{ s }}" {{ 'selected' if severity == s }}>{{ s|capitalize }}</option>
+            {% endfor %}
+        </select>
+        <select name="class" class="form-select form-select-sm" style="width:auto" onchange="this.form.submit()">
+            <option value="">All Classes</option>
+            {% for c in ['xss','sqli','ssrf','idor','rce','ssti','xxe','csrf','idor','auth-bypass','ato','race-condition','business-logic','graphql','api-misconfig','cloud-misconfig','subdomain-takeover','file-upload','llm-ai','mfa-bypass','http-smuggling','cache-poison','saml','oidc','other'] %}
+            <option value="{{ c }}" {{ 'selected' if bug_class == c }}>{{ c|replace('-',' ')|title }}</option>
+            {% endfor %}
+        </select>
+        <select name="status" class="form-select form-select-sm" style="width:auto" onchange="this.form.submit()">
+            <option value="">All Status</option>
+            {% for s in ['open','verified','false_positive','fixed','accepted'] %}
+            <option value="{{ s }}" {{ 'selected' if status == s }}>{{ s|replace('_',' ')|title }}</option>
+            {% endfor %}
+        </select>
+        <button class="btn btn-outline-primary btn-sm" type="submit"><i class="bi-funnel"></i></button>
+    </form>
+</div>
+
+<div class="card">
+    <div class="card-body p-0">
+        <table class="table table-dark table-sm mb-0">
+            <thead><tr><th>Severity</th><th>Title</th><th>Class</th><th>Domain</th><th>Status</th><th>Date</th></tr></thead>
+            <tbody>
+                {% for f in findings %}
+                <tr>
+                    <td><span class="badge bg-{{ 'danger' if f.severity == 'critical' else 'warning' if f.severity == 'high' else 'primary' if f.severity == 'medium' else 'secondary' }} severity-badge">{{ f.severity }}</span></td>
+                    <td><a href="/findings/{{ f.id }}">{{ f.title }}</a></td>
+                    <td><code>{{ f.bug_class or '-' }}</code></td>
+                    <td><a href="/targets/{{ f.target_id }}">{{ f.domain }}</a></td>
+                    <td><span class="badge bg-{{ 'success' if f.status == 'verified' else 'danger' if f.status == 'false_positive' else 'primary' if f.status == 'open' else 'secondary' }}">{{ f.status }}</span></td>
+                    <td><small class="text-secondary">{{ f.created_at[:10] }}</small></td>
+                </tr>
+                {% else %}
+                <tr><td colspan="6" class="text-secondary text-center py-3">No findings match your criteria.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

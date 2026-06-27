@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}{{ finding.title }} — Unified Bug Hunter{% endblock %}
+{% block content %}
+<a href="/findings" class="text-decoration-none">&larr; Findings</a>
+<div class="d-flex justify-content-between align-items-start mt-2 mb-3">
+    <div>
+        <h4>{{ finding.title }}</h4>
+        <p class="text-secondary">
+            <span class="badge bg-{{ 'danger' if finding.severity == 'critical' else 'warning' if finding.severity == 'high' else 'primary' if finding.severity == 'medium' else 'secondary' }} me-2">{{ finding.severity|upper }}</span>
+            <code>{{ finding.bug_class }}</code> &middot;
+            <a href="/targets/{{ finding.target_id }}">{{ finding.domain }}</a> &middot;
+            Status: <span class="badge bg-{{ 'success' if finding.status == 'verified' else 'danger' if finding.status == 'false_positive' else 'primary' }}">{{ finding.status }}</span>
+        </p>
+    </div>
+    {% if finding.cvss_score %}
+    <div class="text-end">
+        <h2 class="mb-0 text-{{ 'danger' if finding.cvss_score >= 9 else 'warning' if finding.cvss_score >= 7 else 'primary' if finding.cvss_score >= 4 else 'secondary' }}">{{ finding.cvss_score }}</h2>
+        <small class="text-secondary">CVSS</small>
+    </div>
+    {% endif %}
+</div>
+
+<div class="row g-3">
+    <div class="col-md-8">
+        <div class="card mb-3">
+            <div class="card-header">Description</div>
+            <div class="card-body"><pre class="mb-0 text-light">{{ finding.description or 'No description.' }}</pre></div>
+        </div>
+        {% if finding.poc %}
+        <div class="card mb-3">
+            <div class="card-header">Proof of Concept</div>
+            <div class="card-body"><pre class="mb-0 text-light">{{ finding.poc }}</pre></div>
+        </div>
+        {% endif %}
+        <div class="card mb-3">
+            <div class="card-header">Impact</div>
+            <div class="card-body"><pre class="mb-0 text-light">{{ finding.impact or 'Not specified.' }}</pre></div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card mb-3">
+            <div class="card-header">Details</div>
+            <div class="card-body">
+                <dl class="mb-0">
+                    <dt>Endpoint</dt><dd><code>{{ finding.endpoint or 'N/A' }}</code></dd>
+                    <dt>CVSS Vector</dt><dd><code>{{ finding.cvss_vector or 'N/A' }}</code></dd>
+                    <dt>Source</dt><dd>{{ finding.source }}</dd>
+                    <dt>Confidence</dt><dd>{{ finding.confidence }}%</dd>
+                    <dt>Created</dt><dd>{{ finding.created_at }}</dd>
+                    <dt>Updated</dt><dd>{{ finding.updated_at }}</dd>
+                </dl>
+            </div>
+        </div>
+        {% if finding.remediation %}
+        <div class="card">
+            <div class="card-header">Remediation</div>
+            <div class="card-body"><pre class="mb-0 text-light">{{ finding.remediation }}</pre></div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

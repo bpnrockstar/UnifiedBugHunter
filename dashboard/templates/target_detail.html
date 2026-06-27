@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}{{ target.domain }} — Unified Bug Hunter{% endblock %}
+{% block content %}
+<div class="mb-3">
+    <a href="/targets" class="text-decoration-none">&larr; Targets</a>
+    <h4 class="mt-2">{{ target.domain }}</h4>
+    <p class="text-secondary">Program: {{ target.program or 'N/A' }} &middot; Platform: {{ target.platform or 'N/A' }} &middot; Status: <span class="badge bg-success">{{ target.status }}</span></p>
+</div>
+
+<ul class="nav nav-tabs mb-3" id="tab">
+    <li class="nav-item"><a class="nav-link active" href="#findings" data-bs-toggle="tab">Findings ({{ findings|length }})</a></li>
+    <li class="nav-item"><a class="nav-link" href="#recon" data-bs-toggle="tab">Recon ({{ recon|length }})</a></li>
+    <li class="nav-item"><a class="nav-link" href="#reports" data-bs-toggle="tab">Reports ({{ reports|length }})</a></li>
+</ul>
+
+<div class="tab-content">
+    <div class="tab-pane active" id="findings">
+        {% for f in findings %}
+        <div class="card mb-2 finding-card" onclick="window.location='/findings/{{ f.id }}'">
+            <div class="card-body py-2 d-flex justify-content-between">
+                <div><span class="badge bg-{{ 'danger' if f.severity == 'critical' else 'warning' if f.severity == 'high' else 'primary' if f.severity == 'medium' else 'secondary' }} severity-badge me-2">{{ f.severity }}</span>{{ f.title }}</div>
+                <small class="text-secondary">{{ f.bug_class }} &middot; {{ f.status }}</small>
+            </div>
+        </div>
+        {% else %}<p class="text-secondary">No findings yet.</p>{% endfor %}
+    </div>
+    <div class="tab-pane" id="recon">
+        <div class="table-responsive">
+            <table class="table table-dark table-sm">
+                <thead><tr><th>Type</th><th>Value</th><th>Source</th><th>First Seen</th></tr></thead>
+                <tbody>
+                    {% for r in recon %}
+                    <tr><td><span class="badge bg-info">{{ r.type }}</span></td><td><code>{{ r.value }}</code></td><td>{{ r.source or '-' }}</td><td>{{ r.first_seen[:10] }}</td></tr>
+                    {% else %}<tr><td colspan="4" class="text-secondary">No recon data.</td></tr>{% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="tab-pane" id="reports">
+        {% for r in reports %}
+        <div class="card mb-2"><div class="card-body py-2"><a href="#">{{ r.title }}</a> <small class="text-secondary ms-2">{{ r.created_at[:10] }} &middot; {{ r.finding_count }} findings</small></div></div>
+        {% else %}<p class="text-secondary">No reports yet.</p>{% endfor %}
+    </div>
+</div>
+{% endblock %}

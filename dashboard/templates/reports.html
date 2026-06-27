@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Reports — Unified Bug Hunter{% endblock %}
+{% block content %}
+<h4 class="mb-3"><i class="bi-file-text me-2"></i>Reports</h4>
+
+<div class="card">
+    <div class="card-body p-0">
+        <table class="table table-dark table-sm mb-0">
+            <thead><tr><th>Title</th><th>Domain</th><th>Findings</th><th>Format</th><th>Created</th></tr></thead>
+            <tbody>
+                {% for r in reports %}
+                <tr>
+                    <td>{{ r.title }}</td>
+                    <td><a href="/targets/{{ r.target_id }}">{{ r.domain }}</a></td>
+                    <td>{{ r.finding_count }}</td>
+                    <td><span class="badge bg-secondary">{{ r.format }}</span></td>
+                    <td><small>{{ r.created_at[:10] }}</small></td>
+                </tr>
+                {% else %}<tr><td colspan="5" class="text-secondary text-center py-3">No reports yet.</td></tr>{% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

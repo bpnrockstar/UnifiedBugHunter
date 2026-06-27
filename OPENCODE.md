@@ -63,8 +63,11 @@ opencode
 | `code-review` | White-box source code audit — SAST for 10 languages, 10-phase methodology |
 | `code-patch` | Security patch generation — minimal, tested fixes for all OWASP Top 10 classes |
 | `auto-hunt` | Autonomous full-spectrum hunter — recon to report with closed-loop verification |
+| `vuln-catcher` | Continuous recon monitor — subdomains, JS changes, ports, tech changes |
+| `dast-scanner` | Automated DAST scanning (OWASP ZAP + nuclei) with DB import |
+| `knowledge-base` | Searchable vulnerability KB — disclosed reports, payloads, bypass techniques |
 
-### Commands (23 commands)
+### Commands (26 commands)
 
 | Command | Usage |
 |---|---|
@@ -93,6 +96,10 @@ opencode
 | `scan-cves` | "scan-cves <host>" — focused nuclei CVE sweep |
 | `code-audit` | "code-audit [path]" — white-box source code audit |
 | `patch` | "patch [file:line]" — generate security patch for vulnerable code |
+| `vuln-catcher` | "vuln-catcher target.com [--continuous]" — continuous recon monitor |
+| `dast-scan` | "dast-scan nuclei target.com" — automated DAST scanning |
+| `search-findings` | "search-findings ssrf --severity high" — search all database tables |
+| `dashboard` | "dashboard" — launch web GUI |
 
 ## Usage
 

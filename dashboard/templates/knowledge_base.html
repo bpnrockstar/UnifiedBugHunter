@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}Knowledge Base — Unified Bug Hunter{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4><i class="bi-book me-2"></i>Knowledge Base</h4>
+    <div>
+        <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addKbModal"><i class="bi-plus me-1"></i>Add Entry</button>
+    </div>
+</div>
+
+<form class="d-flex gap-2 mb-3" method="GET">
+    <input name="q" class="form-control form-control-sm" placeholder="Search title, content, tags..." value="{{ search or '' }}" style="width:300px">
+    <select name="class" class="form-select form-select-sm" style="width:auto" onchange="this.form.submit()">
+        <option value="">All Classes</option>
+        {% for c in ['xss','sqli','ssrf','idor','rce','ssti','xxe','csrf','auth-bypass','ato','race-condition','business-logic','graphql','api-misconfig','cloud-misconfig','subdomain-takeover','file-upload','llm-ai','mfa-bypass','http-smuggling','cache-poison','saml','oidc','payload','technique','reference'] %}
+        <option value="{{ c }}" {{ 'selected' if bug_class == c }}>{{ c|replace('-',' ')|title }}</option>
+        {% endfor %}
+    </select>
+    <button class="btn btn-outline-primary btn-sm" type="submit"><i class="bi-search"></i></button>
+</form>
+
+<div class="row g-3">
+    {% for entry in entries %}
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <h6 class="card-title mb-1">{{ entry.title }}</h6>
+                    {% if entry.severity %}<span class="badge bg-{{ 'danger' if entry.severity == 'critical' else 'warning' if entry.severity == 'high' else 'primary' }} severity-badge">{{ entry.severity }}</span>{% endif %}
+                </div>
+                <p class="text-secondary small mb-2">
+                    {% if entry.bug_class %}<code>{{ entry.bug_class }}</code> &middot;{% endif %}
+                    {{ entry.source or 'Unknown' }} &middot; {{ entry.created_at[:10] }}
+                </p>
+                {% if entry.content %}<p class="mb-2">{{ entry.content[:300] }}{% if entry.content|length > 300 %}...{% endif %}</p>{% endif %}
+                {% if entry.tags %}<div>{% for tag in entry.tags.split(',') %}<span class="badge bg-dark me-1">{{ tag.strip() }}</span>{% endfor %}</div>{% endif %}
+                {% if entry.url %}<a href="{{ entry.url }}" target="_blank" class="btn btn-sm btn-outline-primary mt-2">View Source</a>{% endif %}
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="col-12"><p class="text-secondary text-center py-3">Knowledge base is empty. Add entries from disclosed reports or your own findings.</p></div>
+    {% endfor %}
+</div>
+
+<div class="modal fade" id="addKbModal"><div class="modal-dialog modal-lg">
+    <form method="POST" action="/knowledge-base/add">
+        <div class="modal-content bg-dark">
+            <div class="modal-header"><h5>Add Knowledge Base Entry</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body">
+                <div class="mb-3"><label class="form-label">Title *</label><input name="title" class="form-control" required></div>
+                <div class="mb-3"><label class="form-label">Bug Class</label><input name="bug_class" class="form-control" placeholder="xss, ssrf, sqli..."></div>
+                <div class="mb-3"><label class="form-label">Source</label><input name="source" class="form-control" placeholder="HackerOne, disclosed report, ..."></div>
+                <div class="mb-3"><label class="form-label">Content</label><textarea name="content" class="form-control" rows="6"></textarea></div>
+                <div class="mb-3"><label class="form-label">Tags (comma-separated)</label><input name="tags" class="form-control" placeholder="bypass, payload, xss, 2024"></div>
+            </div>
+            <div class="modal-footer"><button type="submit" class="btn btn-primary">Save</button></div>
+        </div>
+    </form>
+</div></div>
+{% endblock %}

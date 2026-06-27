@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — Unified Bug Hunter{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h4><i class="bi-speedometer2 me-2"></i>Dashboard</h4>
+    <small class="text-secondary">Last updated: now</small>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-3"><div class="card stat-card"><div class="card-body"><h6>Targets</h6><h3>{{ stats.targets }}</h3></div></div></div>
+    <div class="col-md-3"><div class="card stat-card"><div class="card-body"><h6>Findings</h6><h3>{{ stats.findings }}</h3><small class="text-success">{{ stats.open_findings }} open</small></div></div></div>
+    <div class="col-md-3"><div class="card stat-card"><div class="card-body"><h6>Recon Entries</h6><h3>{{ stats.recon_entries }}</h3><small>{{ stats.subdomains }} subdomains, {{ stats.urls }} URLs</small></div></div></div>
+    <div class="col-md-3"><div class="card stat-card"><div class="card-body"><h6>Knowledge Base</h6><h3>{{ stats.kb_entries }}</h3><small>{{ stats.reports }} reports</small></div></div></div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-3"><div class="card stat-card critical"><div class="card-body"><h6>Critical</h6><h3 class="text-danger">{{ stats.critical }}</h3></div></div></div>
+    <div class="col-md-3"><div class="card stat-card high"><div class="card-body"><h6>High</h6><h3 class="text-warning">{{ stats.high }}</h3></div></div></div>
+    <div class="col-md-3"><div class="card stat-card medium"><div class="card-body"><h6>Medium</h6><h3>{{ stats.medium }}</h3></div></div></div>
+    <div class="col-md-3"><div class="card stat-card low"><div class="card-body"><h6>Low / Info</h6><h3>{{ stats.low }}</h3></div></div></div>
+</div>
+
+<div class="row g-3">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header"><i class="bi-bar-chart me-2"></i>Top Bug Classes</div>
+            <div class="card-body p-0">
+                <table class="table table-sm table-dark mb-0">
+                    <thead><tr><th>Bug Class</th><th class="text-end">Count</th></tr></thead>
+                    <tbody>
+                        {% for c in stats.top_classes %}
+                        <tr><td><a href="/findings?class={{ c.bug_class }}">{{ c.bug_class or 'Unclassified' }}</a></td><td class="text-end">{{ c.cnt }}</td></tr>
+                        {% endfor %}
+                        {% if not stats.top_classes %}<tr><td colspan="2" class="text-secondary text-center">No findings yet</td></tr>{% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header"><i class="bi-clock-history me-2"></i>Recent Activity</div>
+            <div class="card-body">
+                <p class="text-secondary mb-1">Monitoring checks: {{ stats.monitoring_checks }}</p>
+                <p class="text-secondary">Findings (last 30 days): {{ stats.findings_over_time|length }} days with data</p>
+                <a href="/findings" class="btn btn-primary btn-sm"><i class="bi-list me-1"></i>View All Findings</a>
+                <a href="/targets" class="btn btn-outline-secondary btn-sm"><i class="bi-plus me-1"></i>Add Target</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
