@@ -1,0 +1,12 @@
+{
+  "name": "unified-bug-hunter",
+  "description": "71-skill bug-hunting & external red-team bundle for Claude Code — 48 hunt-* web/vuln-class + framework skills, enterprise platform attack chains (M365/Entra, Okta, SharePoint, vCenter, SSL-VPN, APK), recon/OSINT, reporting & validation gates, and Burp MCP integration. Skills auto-load by topic; 15 slash commands included.",
+  "version": "2.1.0",
+  "author": {
+    "name": "Author",
+    "url": "https://github.com/YOUR_USER"
+  },
+  "homepage": "https://YOUR_USER.github.io/Unified-Bug-Hunter",
+  "repository": "https://github.com/UnifiedBugHunter",
+  "license": "MIT"
+}

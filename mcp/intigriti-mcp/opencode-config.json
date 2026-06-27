@@ -1,0 +1,10 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "intigriti": {
+      "type": "local",
+      "command": ["python3", "mcp/intigriti-mcp/server.py"],
+      "enabled": true
+    }
+  }
+}

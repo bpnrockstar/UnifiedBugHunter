@@ -1,0 +1,8 @@
+# Default owner for everything — gets auto-requested on every PR.
+* @YOUR_USER
+
+# Safety-critical files: changes here should always be maintainer-reviewed.
+/scripts/lint_skills.py            @YOUR_USER
+/scripts/.identifier-denylist.sha256 @YOUR_USER
+/.github/                          @YOUR_USER
+/SECURITY.md                       @YOUR_USER
