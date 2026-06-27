@@ -1,4 +1,7 @@
 ---
+name: find-checksum
+description: Find CHECKSUM vulnerabilities in web applications. Use when testing for CHECKSUM issues.
+---
 description: Find CHECKSUM vulnerabilities in web applications. Use when testing for CHECKSUM issues.
 ---
 

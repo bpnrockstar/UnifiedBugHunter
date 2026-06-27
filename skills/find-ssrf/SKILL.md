@@ -1,4 +1,7 @@
 ---
+name: find-ssrf
+description: Find SSRF vulnerabilities in web applications. Use when testing for SSRF issues.
+---
 description: Find SSRF vulnerabilities in web applications. Use when testing for SSRF issues.
 ---
 

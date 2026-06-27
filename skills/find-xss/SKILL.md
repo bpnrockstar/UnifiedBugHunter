@@ -1,4 +1,7 @@
 ---
+name: find-xss
+description: Find XSS vulnerabilities in web applications. Use when testing for XSS issues.
+---
 description: Find XSS vulnerabilities in web applications. Use when testing for XSS issues.
 ---
 

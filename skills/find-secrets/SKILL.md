@@ -1,4 +1,7 @@
 ---
+name: find-secrets
+description: Find SECRETS vulnerabilities in web applications. Use when testing for SECRETS issues.
+---
 description: Find SECRETS vulnerabilities in web applications. Use when testing for SECRETS issues.
 ---
 

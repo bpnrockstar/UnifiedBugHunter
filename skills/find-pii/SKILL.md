@@ -1,4 +1,7 @@
 ---
+name: find-pii
+description: Find PII vulnerabilities in web applications. Use when testing for PII issues.
+---
 description: Find PII vulnerabilities in web applications. Use when testing for PII issues.
 ---
 

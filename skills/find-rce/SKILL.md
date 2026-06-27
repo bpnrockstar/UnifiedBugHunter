@@ -1,4 +1,7 @@
 ---
+name: find-rce
+description: Find RCE vulnerabilities in web applications. Use when testing for RCE issues.
+---
 description: Find RCE vulnerabilities in web applications. Use when testing for RCE issues.
 ---
 

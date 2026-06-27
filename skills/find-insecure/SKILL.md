@@ -1,4 +1,7 @@
 ---
+name: find-insecure
+description: Find INSECURE vulnerabilities in web applications. Use when testing for INSECURE issues.
+---
 description: Find INSECURE vulnerabilities in web applications. Use when testing for INSECURE issues.
 ---
 

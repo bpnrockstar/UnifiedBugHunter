@@ -1,4 +1,7 @@
 ---
+name: find-otp
+description: Find OTP vulnerabilities in web applications. Use when testing for OTP issues.
+---
 description: Find OTP vulnerabilities in web applications. Use when testing for OTP issues.
 ---
 

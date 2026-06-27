@@ -1,4 +1,7 @@
 ---
+name: find-sqli
+description: Find SQLI vulnerabilities in web applications. Use when testing for SQLI issues.
+---
 description: Find SQLI vulnerabilities in web applications. Use when testing for SQLI issues.
 ---
 

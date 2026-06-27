@@ -1,4 +1,7 @@
 ---
+name: find-idor
+description: Find IDOR vulnerabilities in web applications. Use when testing for IDOR issues.
+---
 description: Find IDOR vulnerabilities in web applications. Use when testing for IDOR issues.
 ---
 

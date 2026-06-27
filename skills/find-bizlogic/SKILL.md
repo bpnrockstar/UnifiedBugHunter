@@ -1,4 +1,7 @@
 ---
+name: find-bizlogic
+description: Find BIZLOGIC vulnerabilities in web applications. Use when testing for BIZLOGIC issues.
+---
 description: Find BIZLOGIC vulnerabilities in web applications. Use when testing for BIZLOGIC issues.
 ---
 

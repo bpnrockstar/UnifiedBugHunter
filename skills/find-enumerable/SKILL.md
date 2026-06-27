@@ -1,4 +1,7 @@
 ---
+name: find-enumerable
+description: Find ENUMERABLE vulnerabilities in web applications. Use when testing for ENUMERABLE issues.
+---
 description: Find ENUMERABLE vulnerabilities in web applications. Use when testing for ENUMERABLE issues.
 ---
 

@@ -1,4 +1,7 @@
 ---
+name: find-callback
+description: Find CALLBACK vulnerabilities in web applications. Use when testing for CALLBACK issues.
+---
 description: Find CALLBACK vulnerabilities in web applications. Use when testing for CALLBACK issues.
 ---
 

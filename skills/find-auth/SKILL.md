@@ -1,4 +1,7 @@
 ---
+name: find-auth
+description: Find AUTH vulnerabilities in web applications. Use when testing for AUTH issues.
+---
 description: Find AUTH vulnerabilities in web applications. Use when testing for AUTH issues.
 ---
 

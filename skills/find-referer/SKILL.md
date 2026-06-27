@@ -1,4 +1,7 @@
 ---
+name: find-referer
+description: Find REFERER vulnerabilities in web applications. Use when testing for REFERER issues.
+---
 description: Find REFERER vulnerabilities in web applications. Use when testing for REFERER issues.
 ---
 

@@ -1,4 +1,7 @@
 ---
+name: find-ssti
+description: Find Server-Side Template Injection vulnerabilities in web applications. Use when testing for SSTI issues.
+---
 description: Find Server-Side Template Injection vulnerabilities in web applications. Use when testing for SSTI issues.
 ---
 

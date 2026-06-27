@@ -1,4 +1,7 @@
 ---
+name: find-xxe
+description: Find XXE vulnerabilities in web applications. Use when testing for XXE issues.
+---
 description: Find XXE vulnerabilities in web applications. Use when testing for XXE issues.
 ---
 
