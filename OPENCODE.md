@@ -61,6 +61,7 @@ opencode
 | `active-directory` | Kerberos, NTLM relay, ADCS, ACL abuse, DCSync |
 | `container-security` | Docker/K8s escape, RBAC abuse, runtime CVEs |
 | `code-review` | White-box source code audit — SAST for 10 languages, 10-phase methodology |
+| `code-patch` | Security patch generation — minimal, tested fixes for all OWASP Top 10 classes |
 
 ### Commands (23 commands)
 
@@ -90,6 +91,7 @@ opencode
 | `arsenal` | "arsenal [tool]" — list installed external tools |
 | `scan-cves` | "scan-cves <host>" — focused nuclei CVE sweep |
 | `code-audit` | "code-audit [path]" — white-box source code audit |
+| `patch` | "patch [file:line]" — generate security patch for vulnerable code |
 
 ## Usage
 

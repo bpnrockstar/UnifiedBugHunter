@@ -28,6 +28,7 @@ This repo is a Claude Code plugin for professional bug bounty hunting across Hac
 | `skills/active-directory/` | AD security — Kerberos attacks, NTLM relay, ADCS ESC1-ESC13, ACL abuse, DCSync |
 | `skills/container-security/` | Docker/K8s escape vectors, RBAC abuse, runtime CVE exploitation |
 | `skills/code-review/` | White-box source code audit — SAST patterns for 10 languages, 10-phase methodology |
+| `skills/code-patch/` | Security patch generation — minimal, tested fixes for all OWASP Top 10 classes |
 
 ### Commands (21 slash commands)
 
@@ -65,6 +66,7 @@ This repo is a Claude Code plugin for professional bug bounty hunting across Hac
 | `/spray` | `/spray <url> --mode http-form\|oauth\|o365\|okta --users <f> --passes <f>` — password spray with hard guards (typed-host confirm, lockout warn, audit log) |
 | `/graphql-audit` | `/graphql-audit <url>` — full GraphQL audit: introspection, batching DoS, IDOR, injection, alias bomb, graphw00f fingerprint |
 | `/code-audit` | `/code-audit [path] [--mode quick|full]` — white-box source code audit for 10 languages |
+| `/patch` | `/patch [file:line] [--lang py|js|java|go|rb|php|rs]` — generate tested security patch for vulnerable code |
 
 ### Agents (24 specialized agents)
 
@@ -96,6 +98,7 @@ This repo is a Claude Code plugin for professional bug bounty hunting across Hac
 - `poc-validator` — independent PoC verification and minimization
 - `exploit-guide` — step-by-step exploitation procedures for 20+ bug classes
 - `code-reviewer` — white-box source code audit, SAST-driven, 10-phase methodology
+- `code-patcher` — automated security patch generation with before/after diff and verification
 
 ### Rules (always active)
 
