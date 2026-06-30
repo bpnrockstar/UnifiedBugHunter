@@ -5,14 +5,14 @@
     "url": "https://github.com/bpnrockstar"
   },
   "metadata": {
-    "description": "Offensive-security skill bundles for Claude Code.",
+    "description": "Scope-safe, memory-backed offensive-security plugins for Claude Code.",
     "version": "4.3.2"
   },
   "plugins": [
     {
       "name": "unified-bug-hunter",
       "source": "./",
-      "description": "89-skill bug-hunting & external red-team bundle — 48 hunt-* web/vuln-class + framework skills, enterprise platform attack chains (M365/Entra, Okta, SharePoint, vCenter, SSL-VPN, APK), recon/OSINT, reporting & validation gates, Burp MCP integration. Skills auto-load by topic; 35 slash commands.",
+      "description": "Scope-safe, memory-backed bug-bounty & red-team plugin — 89 skills, 35 commands, 28 agents, 6 MCP servers. Orchestrates real offensive tooling (subfinder/httpx/nuclei/dalfox/sqlmap/Foundry) with report-derived methodology, a 7-Question false-positive gate, a deterministic fail-closed scope checker, and cross-target pattern learning. Skills auto-load by topic; reports never auto-submit.",
       "version": "4.3.2",
       "author": {
         "name": "bpnrockstar",

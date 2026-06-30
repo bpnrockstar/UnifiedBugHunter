@@ -1,89 +1,79 @@
 # Unified Bug Hunter
 
-**89 AI-powered skills · 35 commands · 28 agents · Web Dashboard · LLM Red Team**  
-The ultimate merged bug bounty hunting toolkit — AI-powered security testing from recon to report.
+**A scope-safe, memory-backed bug-bounty and red-team operator for Claude Code.**
 
-> **Warning**: For authorized security testing only. Always respect program scope.
+89 skills · 35 commands · 28 agents · 6 MCP servers · 372 tests
 
----
+> **Warning**: For authorized security testing only. Always read and respect program scope.
 
-## What's Included
-
-### 89 Specialized Skills
-
-| Category | Skills |
-|----------|--------|
-| **Hunt** (48) | api-misconfig, aspnet, ato, auth-bypass, brute-force, business-logic, cache-poison, cicd, cloud-misconfig, cors, csrf, deserialization, dispatch, dom, file-upload, graphql, grpc, host-header, http-smuggling, idor, k8s, laravel, ldap, lfi, llm-ai, mfa-bypass, misc, nextjs, nodejs, nosqli, ntlm-info, oauth, open-redirect, race-condition, rce, saml, session, sharepoint, source-leak, springboot, sqli, ssrf, ssti, subdomain, tls-network, websocket, xss, xxe |
-| **Platform** (41) | active-directory, apk-redteam-pipeline, auto-hunt, bb-local-toolkit, bb-methodology, bug-bounty, bugcrowd-reporting, cicd-security, cloud-iam-deep, code-patch, code-review, container-security, credential-attack, dast-scanner, enterprise-vpn-attack, evidence-hygiene, forensics, graphql-audit, knowledge-base, llm-redteam, m365-entra-attack, malware-analysis, meme-coin-audit, mid-engagement-ir-detection, mobile-pentest, offensive-osint, okta-attack, osint-methodology, redteam-mindset, redteam-report-template, report-writing, reverse-engineering, security-arsenal, social-engineering, supply-chain-attack-recon, triage-validation, vmware-vcenter-attack, vuln-catcher, web2-recon, web2-vuln-classes, web3-audit |
-
-### 35 Commands
-
-**Built-in commands:** arsenal, autopilot, breach-check, bypass-403, chain, cloud-recon, code-audit, dashboard, dast-scan, graphql-audit, hunt, intel, llm-redteam, memory-gc, osint-employees, param-discover, patch, pickup, recon, remember, report, scan-cves, scope, scope-aggregate, search-findings, secrets-hunt, spray, surface, takeover, token-scan, triage, validate, vuln-catcher, web3-audit, wordlist-gen
-
-### 53 Automation Tools
-Breach checker, 403 bypass, cloud recon, CVE scanner, credential store, graphql auditor, IDOR scanner, oauth tester, race condition tester, recon engine, scope checker, secrets hunter, token scanner, WAF encoder, zero-day fuzzer, vulnerability catcher (continuous recon monitor), DAST scanner (ZAP/nuclei wrapper), **LLM red teamer (200+ payloads, 6 categories, automated)**, AI training data exporter, search findings CLI, and more.
-
-### Engine & Evaluation
-- **Python agent engine** (`agent.py`, `brain.py`, `engine.py`, `serve.py`)
-- **Eval framework** with PortSwigger lab integration
-- **Web3 audit system** with 16-module training path
-- **Skill generator** (`generate-skill.py`) — pulls live H1 reports to update agent logic
-
-### Integrations
-- **MCP**: Burp Suite, Caido, HackerOne, Bugcrowd, Intigriti, Immunefi
-- **AI Providers**: Ollama, Groq, DeepSeek, Anthropic, OpenAI, Cerebras, Gemini, Grok
-- **Orchestration**: Claude Code, OpenCode, Codex CLI, Hermes Agent
+UnifiedBugHunter turns a Claude Code session into a disciplined offensive operator. It *orchestrates* real tooling — subfinder, httpx, nuclei, dalfox, sqlmap, TREVORspray, Foundry, and ~50 others — and wraps it in distilled methodology, false-positive judgment, and deterministic scope safety. It does **not** replace those tools; it decides what to run, when, and where, then proves and reports findings the way an experienced hunter would. A deterministic scope checker, an append-only audit trail, and cross-target pattern learning keep every run safe and cumulatively smarter.
 
 ---
 
-## Quick Start
+## Why it's different
+
+- **Methodology distilled from real disclosed reports and current CVEs** — not generic checklists. Each `hunt-*` skill carries a `report_count` + `sources` and anchors to concrete advisories (Rocket.Chat CVE-2021-22911, Mongoose CVE-2024-53900, Django CVE-2024-42005, vCenter CVE-2021-21972 → 2024-37085).
+- **False-positive discipline is built in** — a global 7-Question Gate, a 4-gate validator, and a never-submit list protect the submission-validity ratio that manual hunters most often torch.
+- **Deterministic, fail-closed scope safety** — code (not the LLM) decides whether a host may be touched: anchored-suffix matching, exclusions before allowlist, IP/CIDR refused, empty/unparseable input rejected.
+- **Cross-target pattern learning** — a technique that paid off on one React/Next.js target surfaces automatically on the next one via tech-stack overlap matching, so the operator gets better over time.
+- **Autonomous autopilot with a hard human boundary** — a closed scope→recon→rank→hunt→validate→report loop with circuit breakers and rate limits that **never auto-submits** and stops before any live credential attack.
+- **372-test CI** — a stdlib-only linter plus a 372-function pytest suite gate every change.
+
+## What's inside
+
+| Layer | What you get |
+|-------|--------------|
+| **89 skills** | 48 `hunt-*` per-vuln-class + framework skills (SQLi, IDOR, XSS, SSRF, SSTI, OAuth, SAML, GraphQL, Next.js, Spring Boot, …) and 41 platform/methodology skills (recon/OSINT, cloud & enterprise identity, AD, mobile, reporting, LLM red-team, Web3). `bb-methodology` is the master router. |
+| **35 commands** | Recon, scope, hunting, validation/reporting, the credential pipeline, cloud/takeover/params, Web3, LLM red-team, monitoring, and memory/intel — thin routers that invoke an engine script or dispatch an agent. |
+| **28 agents** | A 9-agent bug-bounty pipeline (recon → rank → hunt → chain → validate → report) plus 19 offensive specialists (binary exploit, crypto, forensics, malware, AD, container escape, API, privesc, payload crafting, …). |
+| **~24 engine tools** | Deterministic Python/shell execution: `hunt.py` orchestrator, recon/scan engines, the scope checker, the credential pipeline, and an arsenal registry of ~50 external tools. |
+| **6 MCP servers** | 2 proxy bridges (Burp, Caido) + 4 read-only intel feeds (HackerOne, Bugcrowd, Intigriti, Immunefi); all degrade gracefully to curl + OOB if not connected. |
+
+Full breakdown: see **[docs/OVERVIEW.md](docs/OVERVIEW.md)** and **[CLAUDE.md](CLAUDE.md)**.
+
+## Install
 
 ```bash
-git clone https://github.com/bpnrockstar/UnifiedBugHunter.git
-cd UnifiedBugHunter
-./install.sh
+chmod +x install.sh && ./install.sh
 ```
 
-For external scanning tools:
-```bash
-./install_tools.sh
-```
-
-### Configuration
-```bash
-cp config.example.json config.json
-# Edit config.json with your API keys and targets
-```
-
----
-
-## Usage Workflow
+## Quickstart
 
 ```bash
-# Run full recon on a target
-/recon target.com
-
-# Launch autonomous hunting
-/hunt target.com
-
-# Validate a finding
-/validate
-
-# Generate a report
-/report
-
-# Full autopilot mode — recon to report
-/autopilot
+/recon target.com     # full recon pipeline
+/hunt target.com      # scripted scan + manual deep-dive per vuln class
+/validate             # 7-Question Gate + 4 gates on the current finding
+/report               # write a submission-ready report (never auto-submitted)
 ```
 
----
+Or run the whole closed loop autonomously:
 
-## Requirements
-- Python 3.10+
-- Claude Code, OpenCode, or compatible AI CLI
-- curl, jq, and standard UNIX tools
+```bash
+/autopilot target.com --paranoid   # default — stops on every finding/signal
+#                      --normal     # stops after each validation batch
+#                      --yolo       # runs until surface exhausted (still needs report + write-method approval)
+#                      --quick      # ~40% fewer tokens
+```
 
----
+## Architecture
+
+UnifiedBugHunter is an 8-layer stack — Knowledge → Interface → Actor → Engine → Integration → State → Safety → Quality — with a request flowing top-to-bottom through each single-responsibility layer. See **[docs/OVERVIEW.md](docs/OVERVIEW.md)** for the full design and Mermaid diagrams.
+
+## Safety
+
+- **Deterministic scope checker** — fail-closed, anchored-suffix matching, IP/CIDR refused; every outbound request is scope-checked in code, not by the model.
+- **Append-only audit log** — every request is logged with a non-secret 12-char session hash; raw cookies and tokens are never written.
+- **Never auto-submits** — reports always require explicit human approval before submission.
+- **Credential attacks are gated** — wordlist generation, employee OSINT, and password spraying require `--with-credential-attack`, and the credential agent hard-stops before any live spray.
+
+## Docs
+
+- [docs/OVERVIEW.md](docs/OVERVIEW.md) — architecture overview + diagrams
+- [docs/overview.html](docs/overview.html) — presentation deck
+- [CLAUDE.md](CLAUDE.md) — full skill/command/agent/tool inventory
+- [USAGE.md](USAGE.md) — usage guide
+- [CONTRIBUTING.md](CONTRIBUTING.md) — contribution guide
 
 ## License
+
 MIT — see [LICENSE](LICENSE).

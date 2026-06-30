@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UnifiedBugHunter — Overview</title>
+<style>
+  :root {
+    --bg: #07090c;
+    --bg-2: #0d1117;
+    --panel: #11161d;
+    --panel-2: #161d27;
+    --border: #1f2a36;
+    --border-glow: #1e3a3a;
+    --text: #d7e2ea;
+    --muted: #8a9bab;
+    --green: #39ff8b;
+    --cyan: #34e0ff;
+    --amber: #ffd166;
+    --red: #ff5d6c;
+    --purple: #b794ff;
+    --mono: "SF Mono", "JetBrains Mono", "Fira Code", "Cascadia Code", Menlo, Consolas, monospace;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+
+  * { box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    margin: 0;
+    background:
+      radial-gradient(1200px 600px at 80% -10%, rgba(52,224,255,0.08), transparent 60%),
+      radial-gradient(900px 500px at 0% 10%, rgba(57,255,139,0.06), transparent 55%),
+      var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    line-height: 1.6;
+    font-size: 16px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 20px 80px;
+  }
+
+  h1, h2, h3, .mono { font-family: var(--mono); }
+
+  a { color: var(--cyan); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  section { margin-top: 64px; }
+
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--green);
+    margin: 0 0 8px;
+  }
+
+  h2 {
+    font-size: clamp(1.4rem, 3vw, 2rem);
+    margin: 0 0 6px;
+    letter-spacing: -0.01em;
+  }
+  h2 .accent { color: var(--cyan); }
+
+  .lead { color: var(--muted); max-width: 760px; margin: 0 0 28px; }
+
+  /* ---------- Hero ---------- */
+  .hero {
+    text-align: center;
+    padding: 70px 0 24px;
+    border-bottom: 1px solid var(--border);
+  }
+  .hero .prompt {
+    font-family: var(--mono);
+    color: var(--green);
+    font-size: 0.85rem;
+    letter-spacing: 0.12em;
+    margin-bottom: 14px;
+  }
+  .hero h1 {
+    font-size: clamp(2.4rem, 7vw, 4.4rem);
+    margin: 0;
+    line-height: 1.02;
+    background: linear-gradient(95deg, var(--green), var(--cyan) 70%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    letter-spacing: -0.02em;
+  }
+  .hero .tagline {
+    color: var(--text);
+    max-width: 720px;
+    margin: 18px auto 8px;
+    font-size: 1.05rem;
+  }
+  .hero .subtag { color: var(--muted); max-width: 720px; margin: 0 auto 22px; font-size: 0.95rem; }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--mono);
+    font-size: 0.82rem;
+    padding: 6px 14px;
+    border-radius: 999px;
+    border: 1px solid var(--green);
+    color: var(--green);
+    background: rgba(57,255,139,0.07);
+    box-shadow: 0 0 18px rgba(57,255,139,0.18);
+  }
+  .badge .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); box-shadow: 0 0 8px var(--green); }
+
+  .pillrow { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin: 18px auto 0; max-width: 820px; }
+  .pill {
+    font-family: var(--mono);
+    font-size: 0.74rem;
+    color: var(--muted);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 4px 10px;
+    background: var(--panel);
+  }
+
+  /* ---------- Stat cards ---------- */
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 12px;
+    margin-top: 40px;
+  }
+  .stat {
+    background: linear-gradient(180deg, var(--panel-2), var(--panel));
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 18px 10px;
+    text-align: center;
+    transition: border-color .2s, transform .2s;
+  }
+  .stat:hover { border-color: var(--green); transform: translateY(-2px); }
+  .stat .num {
+    font-family: var(--mono);
+    font-size: clamp(1.5rem, 3.4vw, 2.2rem);
+    font-weight: 700;
+    color: var(--cyan);
+    line-height: 1;
+  }
+  .stat .lbl { display: block; margin-top: 8px; font-size: 0.72rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
+
+  /* ---------- Generic grid ---------- */
+  .grid { display: grid; gap: 16px; }
+  .grid.cols-3 { grid-template-columns: repeat(3, 1fr); }
+  .grid.cols-2 { grid-template-columns: repeat(2, 1fr); }
+
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+  }
+  .card h3 { margin: 0 0 8px; font-size: 1.02rem; color: var(--text); }
+  .card h3 .ic { color: var(--green); margin-right: 8px; }
+  .card p { margin: 0; color: var(--muted); font-size: 0.92rem; }
+  .card.glow { border-color: var(--border-glow); box-shadow: inset 0 0 30px rgba(52,224,255,0.04); }
+
+  code, .kbd {
+    font-family: var(--mono);
+    background: var(--bg-2);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: 1px 6px;
+    font-size: 0.85em;
+    color: var(--cyan);
+  }
+
+  /* ---------- Layer stack ---------- */
+  .layers { display: grid; gap: 10px; }
+  .layer {
+    display: grid;
+    grid-template-columns: 56px 200px 1fr;
+    align-items: center;
+    gap: 16px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--green);
+    border-radius: 10px;
+    padding: 14px 18px;
+  }
+  .layer .lno {
+    font-family: var(--mono);
+    font-weight: 700;
+    font-size: 1.3rem;
+    color: var(--green);
+    text-align: center;
+  }
+  .layer .lname { font-family: var(--mono); font-weight: 600; color: var(--text); }
+  .layer .lname small { display: block; color: var(--muted); font-weight: 400; font-size: 0.74rem; margin-top: 2px; }
+  .layer .ldesc { color: var(--muted); font-size: 0.9rem; }
+  .layer:nth-child(2) { border-left-color: var(--green); }
+  .layer:nth-child(7) { border-left-color: var(--red); }
+  .layer:nth-child(8) { border-left-color: var(--purple); }
+
+  /* ---------- Mermaid ---------- */
+  .diagram {
+    background: var(--bg-2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+    margin-top: 22px;
+    overflow-x: auto;
+  }
+  .diagram pre.mermaid { margin: 0; text-align: center; background: transparent; }
+  .diagram .cap { font-family: var(--mono); font-size: 0.76rem; color: var(--muted); margin: 0 0 10px; letter-spacing: 0.06em; }
+
+  /* ---------- Inventory list cards ---------- */
+  .inv h3 { margin: 0 0 12px; font-size: 1.05rem; color: var(--cyan); font-family: var(--mono); }
+  ul.tight { margin: 0; padding-left: 18px; }
+  ul.tight li { color: var(--muted); font-size: 0.9rem; margin-bottom: 5px; }
+  ul.tight li b { color: var(--text); }
+  .tag {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    color: var(--green);
+    border: 1px solid var(--border-glow);
+    background: rgba(57,255,139,0.06);
+    border-radius: 5px;
+    padding: 1px 7px;
+    margin: 2px 3px 2px 0;
+  }
+  .tag.c { color: var(--cyan); border-color: #1e3340; background: rgba(52,224,255,0.06); }
+
+  /* ---------- Phases ---------- */
+  .phases { counter-reset: phase; display: grid; gap: 10px; }
+  .phase {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px 14px 54px;
+    position: relative;
+  }
+  .phase::before {
+    counter-increment: phase;
+    content: counter(phase);
+    position: absolute;
+    left: 14px; top: 14px;
+    width: 26px; height: 26px;
+    border-radius: 50%;
+    background: rgba(52,224,255,0.1);
+    border: 1px solid var(--cyan);
+    color: var(--cyan);
+    font-family: var(--mono);
+    font-size: 0.85rem;
+    display: grid; place-items: center;
+  }
+  .phase b { color: var(--text); font-family: var(--mono); }
+  .phase .cmd { color: var(--green); font-family: var(--mono); font-size: 0.85rem; }
+  .phase p { margin: 4px 0 0; color: var(--muted); font-size: 0.88rem; }
+
+  .modes { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin-top: 20px; }
+  .mode {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px;
+  }
+  .mode .mn { font-family: var(--mono); font-weight: 700; color: var(--amber); }
+  .mode small { color: var(--muted); font-size: 0.8rem; display: block; margin-top: 5px; }
+  .mode.default { border-color: var(--amber); }
+
+  /* ---------- Safety ---------- */
+  .safety .card { border-left: 3px solid var(--red); }
+  .safety .card h3 .ic { color: var(--red); }
+
+  /* ---------- Footer ---------- */
+  footer {
+    margin-top: 72px;
+    border-top: 1px solid var(--border);
+    padding-top: 32px;
+    text-align: center;
+  }
+  .install {
+    display: inline-block;
+    font-family: var(--mono);
+    background: var(--bg-2);
+    border: 1px solid var(--green);
+    border-radius: 10px;
+    padding: 14px 22px;
+    color: var(--green);
+    font-size: 0.95rem;
+    box-shadow: 0 0 22px rgba(57,255,139,0.12);
+  }
+  .install .pfx { color: var(--muted); }
+  footer .meta { color: var(--muted); font-size: 0.88rem; margin-top: 18px; }
+  footer .meta a { font-family: var(--mono); }
+
+  .note {
+    font-size: 0.8rem;
+    color: var(--muted);
+    font-style: italic;
+    margin-top: 10px;
+  }
+
+  /* ---------- Responsive ---------- */
+  @media (max-width: 860px) {
+    .stats { grid-template-columns: repeat(3, 1fr); }
+    .grid.cols-3, .grid.cols-2 { grid-template-columns: 1fr; }
+    .modes { grid-template-columns: repeat(2,1fr); }
+    .layer { grid-template-columns: 44px 1fr; }
+    .layer .ldesc { grid-column: 1 / -1; }
+  }
+  @media (max-width: 480px) {
+    .stats { grid-template-columns: repeat(2, 1fr); }
+    .modes { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- ============ 1. HERO ============ -->
+  <header class="hero">
+    <div class="prompt">$ ./hunt --scope-safe --memory-backed</div>
+    <h1>UnifiedBugHunter</h1>
+    <p class="tagline">A Claude Code plugin that turns an LLM session into a disciplined, scope-safe, memory-backed bug-bounty and red-team operator.</p>
+    <p class="subtag">It does not replace subfinder, httpx, nuclei, dalfox, sqlmap, TREVORspray or Foundry — it <em>orchestrates</em> them and wraps them in judgment and safety.</p>
+    <span class="badge"><span class="dot"></span> unified-bug-hunter · v4.3.2 · MIT · bpnrockstar</span>
+
+    <div class="stats">
+      <div class="stat"><span class="num">89</span><span class="lbl">Skills</span></div>
+      <div class="stat"><span class="num">35</span><span class="lbl">Commands</span></div>
+      <div class="stat"><span class="num">28</span><span class="lbl">Agents</span></div>
+      <div class="stat"><span class="num">6</span><span class="lbl">MCP servers</span></div>
+      <div class="stat"><span class="num">372</span><span class="lbl">Tests</span></div>
+      <div class="stat"><span class="num">8</span><span class="lbl">Layers</span></div>
+    </div>
+    <div class="pillrow">
+      <span class="pill">48 hunt-* + 41 platform/methodology skills</span>
+      <span class="pill">~24 deterministic engine tools</span>
+      <span class="pill">9 pipeline + 19 offensive agents</span>
+      <span class="pill">Flask + SQLite dashboard</span>
+      <span class="pill">append-only audit trail</span>
+    </div>
+  </header>
+
+  <!-- ============ 2. WHY DIFFERENT ============ -->
+  <section id="why">
+    <p class="eyebrow">// why it's different</p>
+    <h2>Judgment &amp; safety, not just <span class="accent">another scanner</span></h2>
+    <p class="lead">What you get over running the same tools by hand.</p>
+    <div class="grid cols-3">
+      <div class="card">
+        <h3><span class="ic">▹</span>Report-derived methodology</h3>
+        <p>Each <code>hunt-*</code> skill carries a <code>report_count</code> and <code>sources:</code> list (hunt-idor: 26 reports, hunt-sqli: 12) and anchors to real current CVEs — Rocket.Chat CVE-2021-22911, Mongoose CVE-2024-53900, Django CVE-2024-42005, vCenter CVE-2021-21972 → 2024-37085. Not generic checklists.</p>
+      </div>
+      <div class="card">
+        <h3><span class="ic">▹</span>False-positive discipline built in</h3>
+        <p>Every quality skill leads with a kill gate. The global 7-Question Gate + 4-gate validator + never-submit list protect submission-validity ratio — the metric manual hunters most often torch.</p>
+      </div>
+      <div class="card">
+        <h3><span class="ic">▹</span>Crown-jewel targeting</h3>
+        <p>The 5-minute and 20-minute rotation rules steer effort to where each vuln class actually pays, and abandon dead ends fast. Depth over breadth, follow the money.</p>
+      </div>
+      <div class="card">
+        <h3><span class="ic">▹</span>Deterministic scope safety</h3>
+        <p>Code-not-LLM scope checking on every outbound request: anchored-suffix matching, fail-closed, IP/CIDR refused — a guarantee ad-hoc tooling cannot offer.</p>
+      </div>
+      <div class="card">
+        <h3><span class="ic">▹</span>Cross-target learning</h3>
+        <p>A technique that paid off on one React/Next.js target surfaces automatically on the next (partial tech-stack overlap matching), so the operator gets <em>cumulatively</em> better.</p>
+      </div>
+      <div class="card">
+        <h3><span class="ic">▹</span>Autonomous closed loop</h3>
+        <p>Autopilot runs scope → recon → rank → hunt → validate → report with circuit breakers, rate limits, safe-method gating, and a hard human-approval boundary before submission and before any live credential attack.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 3. ARCHITECTURE ============ -->
+  <section id="architecture">
+    <p class="eyebrow">// architecture</p>
+    <h2>An <span class="accent">eight-layer</span> stack</h2>
+    <p class="lead">A request flows top-to-bottom; each layer has a single responsibility.</p>
+
+    <div class="layers">
+      <div class="layer">
+        <div class="lno">1</div>
+        <div class="lname">Knowledge <small>skills/ · declarative</small></div>
+        <div class="ldesc">How to think / what to check. Pure methodology, no side effects. Auto-loaded by topic; <code>bb-methodology</code> is the master router.</div>
+      </div>
+      <div class="layer">
+        <div class="lno">2</div>
+        <div class="lname">Interface <small>commands/</small></div>
+        <div class="ldesc">35 slash-command entry points. Thin routers — invoke an engine script directly or dispatch to an agent/skill. Prefixed to avoid collisions (<code>/pickup</code> not <code>/resume</code>).</div>
+      </div>
+      <div class="layer">
+        <div class="lno">3</div>
+        <div class="lname">Actor <small>agents/</small></div>
+        <div class="ldesc">Stateful subagents that run multi-step loops, pick tools, and carry safety rails in their own prompts. Pinned models (Haiku/Sonnet/Opus).</div>
+      </div>
+      <div class="layer">
+        <div class="lno">4</div>
+        <div class="lname">Engine <small>tools/ scripts/ engine/ · deterministic</small></div>
+        <div class="ldesc">Side-effecting execution. <code>tools/hunt.py</code> orchestrator; <code>engine/skill_map.py</code> maps surface → class → skill → first curl.</div>
+      </div>
+      <div class="layer">
+        <div class="lno">5</div>
+        <div class="lname">Integration <small>mcp/ · 6 servers</small></div>
+        <div class="ldesc">Proxy bridges (Burp/Caido) + read-only platform intel (HackerOne, Bugcrowd, Intigriti, Immunefi).</div>
+      </div>
+      <div class="layer">
+        <div class="lno">6</div>
+        <div class="lname">State <small>memory/ · dashboard/</small></div>
+        <div class="ldesc">Persistence: hunt-memory JSONL + SQLite findings DB + read-mostly Flask web GUI at <code>127.0.0.1:5000</code>.</div>
+      </div>
+      <div class="layer">
+        <div class="lno">7</div>
+        <div class="lname">Safety <small>scope_checker · audit_log · rules/</small></div>
+        <div class="ldesc">Deterministic scope gate, accountability audit trail, always-active behavioral rules.</div>
+      </div>
+      <div class="layer">
+        <div class="lno">8</div>
+        <div class="lname">Quality <small>lint_skills · CI · tests/ eval/</small></div>
+        <div class="ldesc">Pre-merge lint + 372-test CI + accuracy eval harness.</div>
+      </div>
+    </div>
+
+    <div class="diagram">
+      <p class="cap">graph TD — layer relationships</p>
+      <pre class="mermaid">
+graph TD
+    subgraph L1[L1 Knowledge: skills/]
+        SK[89 SKILL.md&lt;br/&gt;48 hunt-* + 41 platform/methodology]
+        BBM[bb-methodology&lt;br/&gt;master router]
+    end
+    subgraph L2[L2 Interface: commands/]
+        CMD[35 slash commands]
+    end
+    subgraph L3[L3 Actor: agents/]
+        AG[28 agents&lt;br/&gt;9 pipeline + 19 offensive]
+        AUTO[autopilot loop]
+    end
+    subgraph L4[L4 Engine: tools/ scripts/ engine/]
+        HUNT[hunt.py orchestrator]
+        ENG[~24 engine tools]
+        SMAP[engine/skill_map.py]
+    end
+    subgraph L5[L5 Integration: mcp/]
+        PROXY[burp / caido]
+        INTEL[hackerone / bugcrowd&lt;br/&gt;intigriti / immunefi]
+    end
+    subgraph L6[L6 State]
+        JSONL[hunt-memory JSONL&lt;br/&gt;audit / patterns / journal]
+        DB[(bughunter.db SQLite)]
+        DASH[Flask dashboard]
+    end
+    subgraph L7[L7 Safety]
+        SCOPE[scope_checker.py&lt;br/&gt;deterministic gate]
+        AUDIT[audit_log.py]
+        RULES[rules/ hunting+reporting]
+    end
+    subgraph L8[L8 Quality]
+        LINT[lint_skills.py]
+        CI[skill-lint.yml CI&lt;br/&gt;372 tests]
+    end
+
+    CMD --&gt;|invoke| ENG
+    CMD --&gt;|dispatch| AG
+    CMD -.load.-&gt; SK
+    AG -.load.-&gt; SK
+    BBM --&gt;|surface→class→skill→curl| SK
+    BBM -.via.-&gt; SMAP
+    AG --&gt; HUNT
+    HUNT --&gt; ENG
+    AUTO --&gt; SCOPE
+    ENG --&gt;|MUST gate| SCOPE
+    ENG --&gt; PROXY
+    INTEL -.scope/intel.-&gt; CMD
+    SCOPE --&gt; AUDIT
+    AUDIT --&gt; JSONL
+    ENG --&gt;|patterns| JSONL
+    ENG --&gt;|findings/recon| DB
+    DB --&gt; DASH
+    RULES -.constrain.-&gt; AG
+    LINT --&gt; CI
+    CI -.gates.-&gt; SK
+    CI -.gates.-&gt; ENG
+      </pre>
+    </div>
+  </section>
+
+  <!-- ============ 4. FEATURE INVENTORY ============ -->
+  <section id="inventory">
+    <p class="eyebrow">// feature inventory</p>
+    <h2>Everything in the <span class="accent">box</span></h2>
+    <p class="lead">Skills, commands, agents, engine tools and MCP servers, by domain.</p>
+
+    <div class="grid cols-2">
+      <div class="card inv">
+        <h3>89 Skills</h3>
+        <ul class="tight">
+          <li><b>hunt-* per-vuln-class (48):</b> core web (sqli, idor, xss, ssrf, ssti, xxe, rce, lfi, cors, csrf, oauth, saml, auth-bypass, business-logic, race-condition, deserialization, graphql, grpc, nosqli, file-upload …); framework variants (nextjs, nodejs, laravel, springboot, aspnet, sharepoint); cloud/infra (cloud-misconfig, k8s, cicd, ntlm-info); catch-alls (misc, dispatch).</li>
+          <li><b>Recon / OSINT (6)</b>, <b>Cloud &amp; Identity (6)</b>, <b>Reporting &amp; Triage (6)</b>, <b>Offensive specialty (10)</b>, <b>Web3 &amp; Token (2)</b>, <b>LLM red-team (2)</b>, <b>Orchestration / mindset (10)</b>.</li>
+        </ul>
+        <div style="margin-top:10px">
+          <span class="tag">report_count + sources</span>
+          <span class="tag">real CVEs</span>
+          <span class="tag">leading kill gate</span>
+          <span class="tag">Crown-Jewel Targets</span>
+        </div>
+      </div>
+
+      <div class="card inv">
+        <h3>35 Commands</h3>
+        <ul class="tight">
+          <li><b>Recon:</b> <code>/recon</code> <code>/cloud-recon</code> <code>/osint-employees</code> <code>/arsenal</code></li>
+          <li><b>Scope:</b> <code>/scope</code> <code>/scope-aggregate</code> <code>/surface</code></li>
+          <li><b>Hunting:</b> <code>/hunt</code> <code>/autopilot</code> <code>/dast-scan</code> <code>/scan-cves</code> <code>/code-audit</code> <code>/graphql-audit</code> <code>/secrets-hunt</code> <code>/chain</code></li>
+          <li><b>Validation / Reporting:</b> <code>/triage</code> <code>/validate</code> <code>/report</code> <code>/patch</code></li>
+          <li><b>Credential:</b> <code>/wordlist-gen</code> <code>/breach-check</code> <code>/spray</code></li>
+          <li><b>Cloud / Takeover / Params · Web3 · LLM · Dashboard · Memory.</b> 8 are model-driven (no backing script).</li>
+        </ul>
+      </div>
+
+      <div class="card inv">
+        <h3>28 Agents</h3>
+        <ul class="tight">
+          <li><b>Bug-bounty pipeline (9):</b> recon-agent, recon-ranker, chain-builder, validator, report-writer, autopilot, web3-auditor, token-auditor, credential-hunter.</li>
+          <li><b>Offensive security (19):</b> binary-exploit, crypto-analyst, forensics-analyst, malware-analyst, reverse-engineer, social-engineer, container-escape, api-security, privesc-advisor, payload-crafter, attack-planner, ad-attacker, swarm-orchestrator, poc-validator, exploit-guide, code-reviewer, code-patcher, vuln-catcher, llm-redteamer.</li>
+          <li>All on Sonnet 4-6 except recon/monitor on Haiku and <b>report-writer on Opus</b>.</li>
+        </ul>
+      </div>
+
+      <div class="card inv">
+        <h3>~24 Engine Tools <span style="font-weight:400;color:var(--muted);font-size:0.8rem">/ 6 MCP servers</span></h3>
+        <ul class="tight">
+          <li><b>Tools:</b> orchestrator <code>hunt.py</code>; recon <code>recon_engine.sh</code>; scanning <code>vuln_scanner.sh</code>, <code>cve_scan.sh</code>, <code>dast_scanner.sh</code>; scope <code>scope_checker.py</code>; intel <code>intel_engine.py</code>; credential pipeline <code>wordlist_engine.sh</code>, <code>spray_orchestrator.sh</code>, <code>breach_checker.py</code> (+ <code>llm_payloads/</code>, 7 JSON files).</li>
+          <li><b>MCP — 2 proxy bridges:</b> <span class="tag c">burp-mcp</span> <span class="tag c">caido-mcp (batch ≤ 50, auto-redacts auth headers)</span></li>
+          <li><b>MCP — 4 read-only intel:</b> <span class="tag">hackerone</span> <span class="tag">bugcrowd</span> <span class="tag">intigriti</span> <span class="tag">immunefi (in-scope contracts + TVL)</span></li>
+          <li>All MCP degrade gracefully to curl + Interactsh/webhook.site.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 5. WORKFLOW ============ -->
+  <section id="workflow">
+    <p class="eyebrow">// end-to-end workflow</p>
+    <h2>The <span class="accent">hunting lifecycle</span></h2>
+    <p class="lead">A 5-phase non-linear methodology mapped to commands — from scope to human-approved submission.</p>
+
+    <div class="phases">
+      <div class="phase"><b>SCOPE</b> <span class="cmd">/scope</span><p>Define/Select/Execute discipline; pick identity (anon vs authenticated); verify each asset in scope; choose Wide vs Deep route.</p></div>
+      <div class="phase"><b>RECON</b> <span class="cmd">/recon → recon_engine.sh</span><p>subdomain enum → httpx + tech detect → nmap → gau/wayback/katana → JS secret grep → ffuf → CI/CD scan → nuclei → takeover leads. 5-min kill on all-403 / static-only / 0 nuclei.</p></div>
+      <div class="phase"><b>MAP &amp; RANK</b> <span class="cmd">/surface · recon-ranker</span><p>Understand the app like its developer; classify and rank surface (api/auth/admin/idor-candidates); prioritize where broken auth hurts most; favor less-saturated classes.</p></div>
+      <div class="phase"><b>HUNT</b> <span class="cmd">/hunt → hunt.py → vuln_scanner.sh</span><p>Scripted scan first, then manual deep-dive by class; error → time → OOB → boolean; A→B sibling hunting; 20-min rotation with hard stops.</p></div>
+      <div class="phase"><b>PROVE &amp; ESCALATE</b><p>Turn Low into Critical — XSS→ATO, IDOR→PII scrape/ATO, SSRF→metadata→RCE, SQLi→shell; minimize prerequisites; quantify $ impact.</p></div>
+      <div class="phase"><b>VALIDATE</b> <span class="cmd">/validate</span><p>7-Question Gate (one NO = kill) + cross-identity proof + 4 gates (sanity → impact → dedup → report quality). Output: PASS / KILL / DOWNGRADE.</p></div>
+      <div class="phase"><b>REPORT</b> <span class="cmd">/report</span><p>Only after PASS: fixed title formula, impact-first, no "could potentially," working PoC, CVSS 3.1, &lt; 600 words, platform-specific.</p></div>
+      <div class="phase"><b>SUBMIT (human-approved) + post-submission</b><p>Never auto-submitted; final pre-submit checklist; re-test deployed fixes for incomplete-patch bypass; log outcome with <code>/remember</code>.</p></div>
+    </div>
+
+    <div class="diagram">
+      <p class="cap">flowchart TD — hunting lifecycle</p>
+      <pre class="mermaid">
+flowchart TD
+    START([Target]) --&gt; P1[1 SCOPE&lt;br/&gt;/scope · verify in-scope · pick identity]
+    P1 --&gt;|in scope| P2[2 RECON&lt;br/&gt;recon_engine.sh]
+    P1 --&gt;|out of scope| STOP([STOP])
+    P2 --&gt;|5-min kill| STOP
+    P2 --&gt; P3[3 MAP &amp; RANK&lt;br/&gt;/surface · recon-ranker]
+    P3 --&gt; P4[4 HUNT per class&lt;br/&gt;hunt.py → vuln_scanner.sh]
+    P4 --&gt;|A→B sibling&lt;br/&gt;20-min rotation| P4
+    P4 --&gt; P5[5 PROVE &amp; ESCALATE&lt;br/&gt;Low → Critical chain]
+    P5 --&gt; P6{6 VALIDATE&lt;br/&gt;7-Q gate + 4 gates}
+    P6 --&gt;|KILL| STOP
+    P6 --&gt;|DOWNGRADE| P5
+    P6 --&gt;|PASS| P7[7 REPORT&lt;br/&gt;/report · title formula]
+    P7 --&gt; P8{8 Human approval}
+    P8 --&gt;|approved| SUB([SUBMIT])
+    P8 --&gt;|rework| P5
+    SUB --&gt; POST[Post-submission:&lt;br/&gt;re-test fix · /remember]
+    POST -.feeds.-&gt; MEM[(hunt-memory&lt;br/&gt;patterns/journal)]
+    MEM -.informs.-&gt; P3
+
+    subgraph AP[Autopilot inner loop]
+        C{Confidence 100%?}
+        C --&gt;|no| DEEP[Hunt deeper:&lt;br/&gt;more payloads / OOB] --&gt; C
+        C --&gt;|yes| POC[Capture PoC → next class]
+    end
+    P4 -.runs.-&gt; AP
+      </pre>
+    </div>
+
+    <h3 style="font-family:var(--mono);color:var(--cyan);margin:32px 0 4px;font-size:1.05rem">Autopilot modes <code>/autopilot</code></h3>
+    <p class="lead" style="margin-bottom:14px">Same scripts and outputs as the manual chain, driven by one agent loop. Scope-check every URL, log every request, never auto-submit, circuit breaker after 5 consecutive 403/429/timeout.</p>
+    <div class="modes">
+      <div class="mode default"><div class="mn">--paranoid</div><small>Default. Stops on every finding / signal.</small></div>
+      <div class="mode"><div class="mn">--normal</div><small>Stops after each validation batch.</small></div>
+      <div class="mode"><div class="mn">--yolo</div><small>Runs until surface exhausted; still needs report + PUT/DELETE/PATCH approval.</small></div>
+      <div class="mode"><div class="mn">--quick</div><small>~40% fewer tokens.</small></div>
+    </div>
+  </section>
+
+  <!-- ============ 6. SAFETY & MEMORY ============ -->
+  <section id="safety" class="safety">
+    <p class="eyebrow">// safety &amp; memory model</p>
+    <h2>Safe on <span class="accent">every request</span>, cumulative across targets</h2>
+    <p class="lead">Four <code>memory/</code> modules plus the deterministic scope checker. Runtime JSONL lives outside the repo at <code>~/.claude/projects/{project}/hunt-memory/</code>.</p>
+    <div class="grid cols-3">
+      <div class="card">
+        <h3><span class="ic">⊘</span>Scope checker</h3>
+        <p>Deterministic, code-not-LLM. Anchored-suffix matching (<code>*.target.com</code> accepts <code>sub.target.com</code>, rejects <code>evil-target.com</code>), exclusions before allowlist, fail-closed, IP/CIDR refused. Called before any outbound request.</p>
+      </div>
+      <div class="card">
+        <h3><span class="ic">⊘</span>Audit log</h3>
+        <p>Append-only JSONL of every outbound request with <code>flock</code> + partial-write detection. Records only a non-secret 12-char session hash — raw cookies/tokens are never written.</p>
+      </div>
+      <div class="card">
+        <h3><span class="ic">⊘</span>Circuit breaker + rate limit</h3>
+        <p>Per-host circuit breaker (threshold 5, cooldown 60s). Two-tier rate limiter (recon 10/s, test 1/s). SafeMethodPolicy: GET/HEAD/OPTIONS safe, all others require approval.</p>
+      </div>
+      <div class="card">
+        <h3><span class="ic">⊘</span>Pattern learning</h3>
+        <p><code>pattern_db.py</code>: one JSON object per line keyed by vuln class + tech stack. <b>match()</b> is exact on vuln_class, partial-overlap on stack — so a React IDOR technique surfaces on the next React target. Sorted by payout then recency.</p>
+      </div>
+      <div class="card">
+        <h3><span class="ic">⊘</span>Credential gate</h3>
+        <p><code>--with-credential-attack</code> required for wordlist-gen / osint-employees / spray (TREVOR o365/okta). <code>credential-hunter</code> agent hard-stops before live <code>/spray</code>; spray adds typed-hostname confirm + lockout warning.</p>
+      </div>
+      <div class="card">
+        <h3><span class="ic">⊘</span>Rotation + schema</h3>
+        <p><code>rotation.py</code>: 10 MB cap, 3 backups, multi-process safe. <code>schemas.py</code>: schema v1, rejects unknown fields, closed enums, ISO-8601 timestamps; auto-logs an end-of-session summary so memory populates without manual <code>/remember</code>.</p>
+      </div>
+    </div>
+    <p class="note">Division of responsibility: scope_checker decides whether a host may be touched at all; AutopilotGuard decides whether this specific request is allowed right now; AuditLog records verifiable evidence; rotation keeps it bounded; schema validation keeps it well-formed.</p>
+  </section>
+
+  <!-- ============ 7. QUALITY & CI ============ -->
+  <section id="quality">
+    <p class="eyebrow">// quality &amp; CI</p>
+    <h2>Pre-merge <span class="accent">lint + 372 tests</span></h2>
+    <p class="lead">A single workflow <code>.github/workflows/skill-lint.yml</code> with a <code>dorny/paths-filter</code> gate driving two jobs.</p>
+    <div class="grid cols-2">
+      <div class="card glow">
+        <h3><span class="ic" style="color:var(--purple)">▸</span>Job 1 — lint</h3>
+        <p>Stdlib-only <code>lint_skills.py</code> (Python 3.12, exits 0/1). Checks frontmatter integrity (<code>name</code> == dir, <code>description</code> ≤ 1024, body ≤ 500 lines), leaked/duplicate keys, fence balance, a SHA-256 identifier denylist, and a real-secret scan (AWS AKIA, private keys, JWTs, Slack/Google/GitHub tokens) with an example allowlist.</p>
+      </div>
+      <div class="card glow">
+        <h3><span class="ic" style="color:var(--purple)">▸</span>Job 2 — tests</h3>
+        <p><b>372 test functions across 23 pytest files</b> + 1 shell test + shared <code>conftest.py</code>. Largest: test_auth_session (45), test_token_scanner (39), test_recon_adapter (31), test_scope_checker (30), test_schemas (23), test_audit_log (22), test_rotation (22). An <code>eval/</code> harness (PortSwigger labs, false-positive cases) measures real hunting accuracy out-of-band.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ FOOTER ============ -->
+  <footer>
+    <p class="eyebrow" style="text-align:center">// install</p>
+    <div class="install"><span class="pfx">$</span> chmod +x install.sh &amp;&amp; ./install.sh</div>
+    <p class="meta">
+      MIT License · author <b>bpnrockstar</b> · <code>unified-bug-hunter</code> v4.3.2<br>
+      <a href="https://github.com/bpnrockstar/UnifiedBugHunter" target="_blank" rel="noopener">github.com/bpnrockstar/UnifiedBugHunter</a>
+    </p>
+  </footer>
+
+</div>
+
+<script type="module">
+  import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+  mermaid.initialize({startOnLoad:true, theme:'dark'});
+</script>
+</body>
+</html>
