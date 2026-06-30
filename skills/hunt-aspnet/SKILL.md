@@ -95,6 +95,17 @@ Set-Cookie: ASP.NET_SessionId=...; SameSite=None  (suggests cross-origin embeddi
 
    The differential proves there are **two distinct deserialization entry points**, one of which dispatches BEFORE the MAC check on some payload shapes. Historically this enables MAC-before-parse-bypass exploits.
 
+   **P3 legacy note — .NET 2.0 "ViewState MAC disabled by default" sweet spot (distinct from the 4.x signed-vs-encrypted differential above).** The Section-3/4 logic assumes MAC is *on* and you're classifying signed-only vs encrypted. On ASP.NET 1.1/2.0 (and 3.5, which is CLR 2.0) the runtime did NOT enforce ViewState MAC globally — `enableViewStateMac` could be (and frequently was) `false` per-page or app-wide, and even `MAC=true` apps were exploitable via the CVE-2020-1147 / pre-MS10-070 class of padding-oracle + MAC-strip tricks. When the fingerprint banner (Section 1) reads `ASP.NET Version:2.0.50727.x` — or `X-AspNet-Version: 2.0.50727`, or a `<%@ Page ... %>` with no MAC attribute on a 2.0 app — treat ViewState as **directly forgeable without any key recovery**: a raw `LosFormatter`/`ObjectStateFormatter` gadget (ysoserial.net `--islegacy`) deserializes with no MAC gate at all. This is a different bug than the 4.x case: 4.x always signs (so you need `validationKey`), whereas 2.0 MAC-disabled needs nothing. Probe specifically for it:
+   ```bash
+   # Confirm legacy runtime + look for MAC-off behavior
+   curl -sk -D - "https://target.example/page.aspx" -o /dev/null | grep -i '^X-AspNet-Version: 2.0'
+   # Then POST a syntactically-valid-but-unsigned ViewState; on a MAC-on app you get
+   #   "Validation of viewstate MAC failed"; on a 2.0 MAC-OFF app it deserializes
+   #   (no MAC error) and you proceed straight to gadget delivery — no machineKey needed.
+   curl -sk -X POST "https://target.example/page.aspx" \
+     --data "__VIEWSTATE=/wEPDwUKLTEx...&__VIEWSTATEGENERATOR=00000000"
+   ```
+
 5. **Look for load-balanced cross-node ViewState MAC failures.** If POST gets a 500 with `"Validation of viewstate MAC failed. If this application is hosted by a Web Farm or cluster, ensure that <machineKey> configuration specifies the same validationKey..."`, the farm has multiple WFEs WITHOUT machineKey sync, or without sticky-session affinity. Operationally this breaks legit users; security-wise it confirms farm topology.
 
 6. **Probe `trace.axd` and `elmah.axd`.** If either returns 200 anonymously, it's a Critical finding (trace leaks every request + headers + form data; ELMAH leaks every server error including stack traces).
@@ -107,6 +118,8 @@ Set-Cookie: ASP.NET_SessionId=...; SameSite=None  (suggests cross-origin embeddi
    - In path segments (not query) — validator scope depends on framework version
    - In Cookie / Referer headers (varies)
    - Inside `<%@ ... %>` ASP directives if reached via WebDAV PUT (rare)
+
+   **Hand-off to `hunt-xss`.** Request-validator bypass is only an ASP.NET *precondition*, not the bug — the actual finding is the XSS that lands once the validator is defeated. The moment any of the above gets a `<`-bearing payload past the `"Potentially dangerous Request.QueryString value detected"` gate (or past a `ValidateRequest="false"` page, or a `[AllowHtml]`/`[ValidateInput(false)]` MVC action, or a request that bypasses validation via a non-querystring context), STOP testing the validator and switch to `hunt-xss` to prove sink + context + execution. Carry these two facts across the hand-off: (1) **which context** carried the payload (querystring vs JSON/XML body vs cookie vs path vs header) — `hunt-xss` needs it to pick the right reflected/DOM/stored probe; (2) **whether the value persists** (reflected single-response vs stored in a `.aspx`/server-control render) — stored ASP.NET XSS is Medium-High, reflected behind a defeated validator is Low-Medium. Do not report "request validator bypassed" as a standalone finding; it is N/A until `hunt-xss` confirms script execution in a victim's browser.
 
 9. **Check `customErrors` mode.** If 500s expose full stack traces, framework versions, file paths, internal method names → `customErrors mode="Off"` is set. Should be `RemoteOnly` for production.
 
@@ -274,4 +287,5 @@ Before writing the report, confirm:
 - **`hunt-sharepoint`** — SharePoint farms inherit every ASP.NET anti-pattern plus their own surface. Chain primitive: ASP.NET fingerprint reveals SharePoint (X-SharePoint headers + `/_layouts/` reachable) → pivot to `hunt-sharepoint` for SP-specific RCE paths (ToolShell, SafeControl reflection) before generic ViewState attack.
 - **`hunt-ntlm-info`** — IIS sites that advertise NTLM/Negotiate anonymously leak AD topology. Chain primitive: ASP.NET app behind IIS with `WWW-Authenticate: NTLM` → `hunt-ntlm-info` Type-2 challenge capture → internal forest name → cross-reference Entra tenant via `m365-entra-attack` discovery.
 - **`hunt-file-upload`** — Telerik RadAsyncUpload, Kentico, Umbraco, and DotNetNuke all have historical upload-handler RCE. Chain primitive: ASP.NET CMS fingerprinted → `hunt-file-upload` bypass matrix against the CMS upload handler → `.aspx` written into web-accessible path → request → RCE under app-pool identity.
+- **`hunt-xss`** — the ASP.NET request validator is only a *guard*; the bug is the XSS behind it. Chain primitive: request-validator bypass confirmed (Methodology step 8 — `<` reaches a sink via JSON/XML body, cookie, path segment, `ValidateRequest="false"` page, or `[ValidateInput(false)]`/`[AllowHtml]` MVC action) → hand off to `hunt-xss` carrying the **delivery context** and **persistence** (reflected vs stored) → `hunt-xss` proves sink/context/execution and assigns severity. The ASP.NET side stops at "validator defeated"; `hunt-xss` owns the reflected-vs-stored verdict. Conversely, if `hunt-xss` finds an apparent block on a `<`-payload, check back here first: it may be the request validator (a server-side ASP.NET gate), not output encoding — bypass categories above reopen the sink.
 - **`triage-validation`** — `trace.axd`/`elmah.axd` disclosure is only Critical when it actually leaks live credentials/tokens; pure stack traces are usually Low. Chain primitive: pull every reported finding through `triage-validation` 7-Question Gate before submission — distinguish "verbose error" (informational) from "live bearer token in error log" (Critical) before writing the report (`redteam-report-template`).

