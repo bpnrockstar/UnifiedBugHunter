@@ -266,9 +266,14 @@ def test_review_pr_surfaces_a_new_finding_scoped_to_the_diff(pr_repo):
     ]
     assert secrets, "the added-line secret pass should have flagged the planted credential"
 
-    secret = secrets[0]
-    assert secret["line"] == pr_repo["secret_line"]
-    assert secret["tool"] == "diff-secret-regex"
+    # The secret must be flagged on exactly the planted added line. Its tool tag is
+    # engine-dependent — the always-on diff-secret-regex pass, or sast_runner's
+    # regex-fallback when semgrep is absent (e.g. in CI), or semgrep itself — all
+    # are valid secret-scan sources, so we don't hard-assert one.
+    on_line = [f for f in secrets if f["line"] == pr_repo["secret_line"]]
+    assert on_line, "the planted credential must be flagged on its added line"
+    secret = on_line[0]
+    assert secret["tool"] in {"diff-secret-regex", "regex-fallback", "semgrep"}
     # Every NEW finding must be located inside the diff's changed ranges.
     ranges = pr.changed_line_ranges(pr_repo["base"], str(pr_repo["repo"]))
     for f in result["new_findings"]:
