@@ -68,7 +68,7 @@ opencode
 | `knowledge-base` | Searchable vulnerability KB — disclosed reports, payloads, bypass techniques |
 | `llm-redteam` | **Advanced LLM red teaming** — 15+ techniques, 180+ payloads, automated CLI |
 
-### Commands (42 commands)
+### Commands (45 commands)
 
 | Command | Usage |
 |---|---|
@@ -109,6 +109,9 @@ opencode
 | `llm-config` | "llm-config --provider <name>" — multi-provider LLM completion router |
 | `evolve-skills` | "evolve-skills <report-source>" — ground/evolve skills from disclosed reports |
 | `kev-matrix` | "kev-matrix" — map CISA-KEV catalog to skill coverage |
+| `pr-review` | "pr-review --base main" — diff-scoped PR security review (NEW vs pre-existing findings, secret scan on added lines, inline comments) |
+| `js-analyze` | "js-analyze <url\|file>" — recover pre-minified source from a JS bundle via source map, then run SAST + secret-regex |
+| `dom-verify` | "dom-verify <url> <payload>" — auto-confirm a [POSSIBLE] DOM-XSS in headless Chromium (Playwright) → CONFIRMED / UNVERIFIED |
 
 ## Usage
 

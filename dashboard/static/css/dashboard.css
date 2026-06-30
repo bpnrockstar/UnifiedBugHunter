@@ -1,0 +1,343 @@
+/*
+ * dashboard.css — shared dark "security console" theme for the UBH dashboard.
+ *
+ * WHY THIS FILE EXISTS:
+ *   The original templates carried their styling as an inline <style> block in
+ *   base.html plus ad-hoc Bootstrap utility classes scattered per page. The
+ *   findings table in particular shipped with NO real styling, so severity and
+ *   status read as flat text. This file is the single source of truth for the
+ *   theme: every template now extends base.html, which links Bootstrap 5 (CDN)
+ *   FIRST and this stylesheet SECOND, so our rules win on specificity ties.
+ *
+ * GRACEFUL DEGRADATION:
+ *   This is progressive enhancement only. If the CDN Bootstrap fails to load,
+ *   the page is still readable (our color vars + base element rules stand on
+ *   their own). If THIS file 404s, Bootstrap's own dark theme still renders the
+ *   page — nothing here is load-bearing for correctness, only for polish.
+ *
+ * THEMING:
+ *   Colors are defined as CSS custom properties on :root so a single edit
+ *   reskins the whole app. Severity / status palettes are deliberately mapped
+ *   to the same semantics the templates use (critical=red ... info=grey).
+ */
+
+:root {
+  --ubh-bg: #0b0f17;
+  --ubh-bg-elevated: #131925;
+  --ubh-bg-card: #161d2b;
+  --ubh-border: #25304a;
+  --ubh-text: #d7dde8;
+  --ubh-text-muted: #8a96ab;
+  --ubh-accent: #4c8dff;
+  --ubh-accent-glow: rgba(76, 141, 255, 0.35);
+
+  /* Severity palette — mirrors the badge colors chosen in the templates. */
+  --sev-critical: #e5484d;
+  --sev-high: #fd7e14;
+  --sev-medium: #ffc107;
+  --sev-low: #6c8cff;
+  --sev-info: #6c757d;
+
+  /* Status palette — fixed=good (green), open/verified=still-vulnerable (red),
+     accepted=known/orange, false_positive=neutral grey. */
+  --status-open: #e5484d;
+  --status-verified: #e5484d;
+  --status-fixed: #2fb344;
+  --status-accepted: #fd7e14;
+  --status-false_positive: #6c757d;
+}
+
+/* ─── Base layout ──────────────────────────────────────────────────────── */
+
+body {
+  font-size: 0.875rem;
+  background-color: var(--ubh-bg);
+  color: var(--ubh-text);
+  min-height: 100vh;
+}
+
+/* Subtle scanline / grid texture to read as a "security console" without
+   hurting legibility. Pure decoration; safe to drop. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    radial-gradient(circle at 12% -10%, rgba(76, 141, 255, 0.08), transparent 45%),
+    radial-gradient(circle at 90% 0%, rgba(229, 72, 77, 0.06), transparent 40%);
+}
+
+main.main,
+.main {
+  position: relative;
+  z-index: 1;
+  padding: 1.5rem;
+}
+
+/* The repo's container wrapper for top-nav pages. */
+.ubh-container {
+  max-width: 1320px;
+  margin: 0 auto;
+}
+
+/* ─── Top navigation bar ───────────────────────────────────────────────── */
+
+.navbar.ubh-nav {
+  background: linear-gradient(90deg, var(--ubh-bg-elevated), #0e1422);
+  border-bottom: 1px solid var(--ubh-border);
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.4);
+}
+
+.navbar.ubh-nav .navbar-brand {
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--ubh-text);
+}
+
+.navbar.ubh-nav .navbar-brand .bi {
+  color: var(--sev-critical);
+}
+
+.navbar.ubh-nav .nav-link {
+  color: var(--ubh-text-muted);
+  padding: 0.4rem 0.85rem;
+  border-radius: 0.4rem;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+
+.navbar.ubh-nav .nav-link:hover {
+  color: var(--ubh-text);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.navbar.ubh-nav .nav-link.active {
+  color: #fff;
+  background: var(--ubh-accent-glow);
+  box-shadow: inset 0 -2px 0 var(--ubh-accent);
+}
+
+/* ─── Cards & surfaces ─────────────────────────────────────────────────── */
+
+.card {
+  background-color: var(--ubh-bg-card);
+  border: 1px solid var(--ubh-border);
+}
+
+.card-header {
+  background-color: var(--ubh-bg-elevated);
+  border-bottom: 1px solid var(--ubh-border);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.modal-content.bg-dark,
+.modal-content {
+  background-color: var(--ubh-bg-card) !important;
+  border: 1px solid var(--ubh-border);
+}
+
+pre {
+  max-height: 420px;
+  overflow: auto;
+  background: var(--ubh-bg);
+  border: 1px solid var(--ubh-border);
+  border-radius: 0.4rem;
+  padding: 0.75rem;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+code {
+  color: #7fd1ff;
+}
+
+/* ─── Stat cards (dashboard) ───────────────────────────────────────────── */
+
+.stat-card {
+  border-left: 4px solid var(--ubh-accent);
+}
+.stat-card.critical { border-left-color: var(--sev-critical); }
+.stat-card.high { border-left-color: var(--sev-high); }
+.stat-card.medium { border-left-color: var(--sev-medium); }
+.stat-card.low { border-left-color: var(--sev-info); }
+
+.stat-card h3 {
+  font-variant-numeric: tabular-nums;
+  margin-bottom: 0;
+}
+
+/* ─── Tables ───────────────────────────────────────────────────────────── */
+
+.table {
+  --bs-table-bg: transparent;
+  color: var(--ubh-text);
+  margin-bottom: 0;
+}
+
+.table > thead th {
+  color: var(--ubh-text-muted);
+  text-transform: uppercase;
+  font-size: 0.72rem;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid var(--ubh-border);
+  white-space: nowrap;
+}
+
+.table > tbody td {
+  border-bottom: 1px solid rgba(37, 48, 74, 0.55);
+  vertical-align: middle;
+}
+
+.table-hover > tbody > tr:hover > * {
+  background-color: rgba(76, 141, 255, 0.07);
+}
+
+/* Sortable header affordance for the findings table. JS toggles aria-sort. */
+th.sortable {
+  cursor: pointer;
+  user-select: none;
+}
+th.sortable::after {
+  content: "\2195"; /* up-down arrow */
+  opacity: 0.35;
+  margin-left: 0.35rem;
+  font-size: 0.8em;
+}
+th.sortable[aria-sort="ascending"]::after { content: "\2191"; opacity: 0.9; }
+th.sortable[aria-sort="descending"]::after { content: "\2193"; opacity: 0.9; }
+
+/* ─── Severity badges ──────────────────────────────────────────────────── */
+
+.severity-badge {
+  text-transform: uppercase;
+  font-size: 0.68rem;
+  letter-spacing: 0.06em;
+  font-weight: 700;
+  padding: 0.3em 0.55em;
+  border-radius: 0.35rem;
+}
+
+.sev-critical { background-color: var(--sev-critical) !important; color: #fff !important; }
+.sev-high     { background-color: var(--sev-high) !important; color: #1a1a1a !important; }
+.sev-medium   { background-color: var(--sev-medium) !important; color: #1a1a1a !important; }
+.sev-low      { background-color: var(--sev-low) !important; color: #fff !important; }
+.sev-info     { background-color: var(--sev-info) !important; color: #fff !important; }
+
+/* ─── Status badges ────────────────────────────────────────────────────── */
+
+.status-badge {
+  text-transform: capitalize;
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 0.3em 0.55em;
+  border-radius: 0.35rem;
+  border: 1px solid transparent;
+}
+
+.status-open,
+.status-verified {
+  background-color: rgba(229, 72, 77, 0.15);
+  color: #ff8a8d;
+  border-color: rgba(229, 72, 77, 0.4);
+}
+.status-fixed {
+  background-color: rgba(47, 179, 68, 0.15);
+  color: #5fd97a;
+  border-color: rgba(47, 179, 68, 0.4);
+}
+.status-accepted {
+  background-color: rgba(253, 126, 20, 0.15);
+  color: #ffb066;
+  border-color: rgba(253, 126, 20, 0.4);
+}
+.status-false_positive {
+  background-color: rgba(108, 117, 125, 0.18);
+  color: #b6bdc7;
+  border-color: rgba(108, 117, 125, 0.4);
+}
+
+/* ─── Finding cards (target detail) ────────────────────────────────────── */
+
+.finding-card {
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+.finding-card:hover {
+  background: rgba(76, 141, 255, 0.07);
+  border-color: var(--ubh-accent);
+}
+
+/* ─── Rendered report / markdown body ──────────────────────────────────── */
+
+.report-body {
+  line-height: 1.6;
+}
+.report-body h1,
+.report-body h2,
+.report-body h3 {
+  border-bottom: 1px solid var(--ubh-border);
+  padding-bottom: 0.3rem;
+  margin-top: 1.4rem;
+}
+.report-body pre {
+  background: var(--ubh-bg);
+}
+.report-body table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1rem 0;
+}
+.report-body table th,
+.report-body table td {
+  border: 1px solid var(--ubh-border);
+  padding: 0.4rem 0.6rem;
+}
+.report-body blockquote {
+  border-left: 3px solid var(--ubh-accent);
+  padding-left: 0.85rem;
+  color: var(--ubh-text-muted);
+  margin-left: 0;
+}
+
+/* ─── Charts ───────────────────────────────────────────────────────────── */
+
+.chart-card canvas {
+  max-height: 340px;
+}
+
+/* Clear, non-alarming placeholder shown when /api/trends has no data or is
+   unavailable. Matches the "detect -> fallback -> clear label" convention used
+   by the engine wrappers elsewhere in the repo. */
+.chart-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+  color: var(--ubh-text-muted);
+  text-align: center;
+  font-size: 0.85rem;
+}
+
+/* ─── Misc ─────────────────────────────────────────────────────────────── */
+
+a {
+  color: var(--ubh-accent);
+  text-decoration: none;
+}
+a:hover {
+  color: #7fb0ff;
+  text-decoration: underline;
+}
+
+.text-secondary {
+  color: var(--ubh-text-muted) !important;
+}
+
+.btn-outline-primary {
+  --bs-btn-color: var(--ubh-accent);
+  --bs-btn-border-color: var(--ubh-border);
+  --bs-btn-hover-bg: var(--ubh-accent);
+  --bs-btn-hover-border-color: var(--ubh-accent);
+}

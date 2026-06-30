@@ -256,6 +256,37 @@ grep -rnE "angular|vue|handlebars|mustache|nunjucks|alpinejs|\bv-|ng-app" recon/
 # Verify any tool URL before citing it in a report; do not paste unverified repo links.
 ```
 
+### Auto-confirm a [POSSIBLE] DOM-XSS — `tools/dom_xss_verifier.py`
+
+A grep/source pass can only ever mark a DOM sink **[POSSIBLE]** — DOM-XSS executes
+in the browser, so the only proof that counts is the payload *firing*. Hand that
+single `(url, payload)` to the verifier to flip [POSSIBLE] → **CONFIRMED**:
+
+```bash
+# Drive one candidate in headless Chromium (Playwright). Have the payload set the
+# marker (window[marker]=1 / console.log(marker)); a visible alert/confirm/prompt
+# is detected automatically.
+python3 tools/dom_xss_verifier.py \
+  --url 'https://TARGET/page' \
+  --payload '<img src=x onerror=window.__xss_fired__=1>' [--marker __xss_fired__] [--json]
+```
+
+- Importable: `is_available() -> bool` (playwright + chromium present) and
+  `verify_dom_xss(url, payload, *, marker='__xss_fired__', timeout=15) -> dict` with
+  `verdict` ∈ `CONFIRMED` / `NOT-TRIGGERED` / `UNVERIFIED` / `ERROR`, plus `detail`,
+  `signals` (`dialog` / `window-marker` / `console-marker`).
+- Detection = a JS **dialog** opening **OR** `window[marker]` set **OR** a console
+  message carrying the marker. Any one ⇒ **CONFIRMED**.
+- **CONFIRMED is the proof for the Validation gate above** — it replaces "the payload
+  looked reflected". `NOT-TRIGGERED` means the browser ran and saw nothing (kill the
+  candidate under this payload). `UNVERIFIED` means Playwright/Chromium are not
+  installed (`pip install playwright && playwright install chromium`) — that is *not* a
+  verdict on the bug, so verify before claiming or retracting. The engine stays
+  optional; absence never crashes and exits 0.
+- The verifier confirms *one* payload; it does not crawl or invent payloads — you bring
+  the candidate (e.g. a `location.hash`→`innerHTML` sink from Phase 5), it returns the
+  deterministic verdict. (`/dom-verify` wraps this.)
+
 ---
 
 ## Validation (false-positive discipline)

@@ -38,7 +38,7 @@
     </div>
     <div class="tab-pane" id="reports">
         {% for r in reports %}
-        <div class="card mb-2"><div class="card-body py-2"><a href="#">{{ r.title }}</a> <small class="text-secondary ms-2">{{ r.created_at[:10] }} &middot; {{ r.finding_count }} findings</small></div></div>
+        <div class="card mb-2"><div class="card-body py-2"><a href="/reports/{{ r.id }}">{{ r.title }}</a> <small class="text-secondary ms-2">{{ r.created_at[:10] }} &middot; {{ r.finding_count }} findings</small></div></div>
         {% else %}<p class="text-secondary">No reports yet.</p>{% endfor %}
     </div>
 </div>

@@ -35,7 +35,7 @@ This repo is a Claude Code plugin for professional bug bounty hunting across Hac
 | `skills/knowledge-base/` | Searchable vulnerability KB with disclosed reports, payloads, techniques |
 | `skills/llm-redteam/` | **Advanced LLM red teaming** — 15+ techniques (token smuggling, adversarial poetry, ArtPrompt, CipherChat, emoji smuggling, Best-of-N, Crescendo/GOAT/JBFuzz), 180+ payloads, MCP security testing, automated CLI tool |
 
-### Commands (42 slash commands)
+### Commands (45 slash commands)
 
 > **Note:** All commands are prefixed to avoid conflicts with Claude Code's built-in commands.
 > `/resume` is a reserved Claude Code command — use `/pickup` to continue a previous hunt.
@@ -84,10 +84,13 @@ This repo is a Claude Code plugin for professional bug bounty hunting across Hac
 | `/llm-config` | `/llm-config [--provider] [--model]` — multi-provider LLM completion router (`tools/llm_router.py`) |
 | `/evolve-skills` | `/evolve-skills <report-source>` — ground/evolve skills from disclosed reports (`tools/disclosure_miner.py`) |
 | `/kev-matrix` | `/kev-matrix` — map CISA-KEV catalog to skill coverage (`tools/kev_matrix.py`) |
+| `/pr-review` | `/pr-review --base <target-branch> [--path .] [--json]` — diff-scoped PR security review: partition findings into NEW (on added lines) vs pre-existing, scan added lines for secrets, triage the NEW set, post inline comments (`tools/pr_diff_review.py`) |
+| `/js-analyze` | `/js-analyze <url\|file> [--out <dir>] [--json]` — recover pre-minified source from a live JS bundle via `//# sourceMappingURL`, then run SAST + secret-regex over it (`tools/sourcemap_analyzer.py`) |
+| `/dom-verify` | `/dom-verify <url> <payload> [--marker m] [--json]` — auto-confirm a [POSSIBLE] DOM-XSS in headless Chromium (Playwright) → CONFIRMED / UNVERIFIED (`tools/dom_xss_verifier.py`) |
 
-### Agents (30 specialized agents)
+### Agents (31 specialized agents)
 
-#### Bug Bounty Pipeline (11)
+#### Bug Bounty Pipeline (12)
 - `recon-agent` — subdomain enum + live host discovery
 - `report-writer` — generates H1/Bugcrowd/Immunefi reports
 - `validator` — 4-gate checklist on a finding
@@ -99,6 +102,7 @@ This repo is a Claude Code plugin for professional bug bounty hunting across Hac
 - `credential-hunter` — wordlist-gen + osint-employees + breach-check; HARD STOPS at spray
 - `regression-retest-agent` — drives `/retest` across a finding batch against live targets (FIXED/STILL-VULN/REGRESSED)
 - `triage-dedup-agent` — clusters/dedups a large finding set and flags duplicates vs already-submitted
+- `diff-aware-pr-reviewer` — diff-scoped PR/MR security reviewer; reviews ONLY the lines a PR changed (drives `tools/pr_diff_review.py`, partitions NEW vs pre-existing, posts inline comments via `code-review --comment`); read-only, never modifies code
 
 #### Offensive Security (19)
 - `binary-exploit` — memory corruption, ROP, shellcode, format string exploitation
@@ -164,6 +168,11 @@ This repo is a Claude Code plugin for professional bug bounty hunting across Hac
 - `tools/dual_session.py` — dual-account IDOR/privesc test harness
 - `tools/save_finding.py` — persist a verified finding to the DB **with a replayable `poc_spec`** (so `/retest --from-db` can re-run it later)
 - `tools/secrets_ingest.py` — ingest trufflehog/gitleaks/noseyparker output into the findings DB (`bug_class='secret'`, auto-redacted)
+- `tools/sourcemap_analyzer.py` — recover pre-minified source from a live JS bundle via `//# sourceMappingURL` (fetch/load `.map`, extract `sourcesContent`; beautify fallback), then run SAST + secret-regex; backs `/js-analyze`
+- `tools/secret_validate.py` — cross-engine secret reconciliation (merge duplicate hits across trufflehog/gitleaks/noseyparker) + liveness validation + org-specific regex scan via `scan_custom()`
+- `tools/dom_xss_verifier.py` — auto-confirm a [POSSIBLE] DOM-XSS by firing one `(url, payload)` in headless Chromium (Playwright); CONFIRMED on dialog/marker/console, else UNVERIFIED; backs `/dom-verify`
+- `tools/pr_diff_review.py` — review ONLY a PR's diff: intersect analyzer findings with diff-touched lines, partition NEW vs pre-existing, scan added lines for secrets; backs `/pr-review` and the `diff-aware-pr-reviewer` agent
+- `tools/custom_secret_patterns.py` — org-specific secret regexes (internal token prefixes, JWT issuers) consumed by `secret_validate.scan_custom()`
 
 ### External tool references
 

@@ -48,6 +48,20 @@ done
 
 ## Phase 2 — Source Map Discovery
 
+> **Automated path (use this first):** `tools/sourcemap_analyzer.py` does the whole
+> recover-and-analyze loop — parses the `//# sourceMappingURL` comment, loads the
+> `.map`, extracts `sourcesContent` into a temp tree (or beautifies when there is
+> no map), then runs SAST + a secret pass over the recovered sources. It degrades
+> gracefully and always exits 0. The manual steps below are for one-off
+> inspection.
+>
+> ```bash
+> python3 tools/sourcemap_analyzer.py --bundle "https://$TARGET/static/js/main.abc123.js"
+> ```
+>
+> See `/js-analyze`. **LinkFinder/SecretFinder do NOT run automatically** — they are
+> optional manual external tools; the recovery above is what runs without setup.
+
 ```bash
 # Step 1: Get asset manifest to find all JS bundle paths
 curl -s "https://$TARGET/asset-manifest.json" | python3 -m json.tool 2>/dev/null

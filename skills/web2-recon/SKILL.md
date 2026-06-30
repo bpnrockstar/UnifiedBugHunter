@@ -1,6 +1,6 @@
 ---
 name: web2-recon
-description: "Web2 recon pipeline — subdomain enumeration (subfinder, Chaos API, assetfinder), live host discovery (dnsx, httpx), URL crawling (katana, waybackurls, gau), directory fuzzing (ffuf), JS analysis (LinkFinder, SecretFinder), continuous monitoring (new subdomain alerts, JS change detection, GitHub commit watch). Use when starting recon on any web2 target or when asked about asset discovery, subdomain enum, or attack surface mapping."
+description: "Web2 recon pipeline — subdomain enumeration (subfinder, Chaos API, assetfinder), live host discovery (dnsx, httpx), URL crawling (katana, waybackurls, gau), directory fuzzing (ffuf), JS bundle / source-map analysis (tools/sourcemap_analyzer.py — recovers original pre-minified sources, then runs SAST + a secret pass), continuous monitoring (new subdomain alerts, JS change detection, GitHub commit watch). Use when starting recon on any web2 target or when asked about asset discovery, subdomain enum, or attack surface mapping."
 ---
 
 # WEB2 RECON PIPELINE
@@ -155,7 +155,32 @@ cat /tmp/urls.txt | grep -iE "theme|profile|signature|customize|email|invoice|pd
 
 ## JS ANALYSIS
 
-### SecretFinder (API keys, tokens in JS bundles)
+### sourcemap_analyzer.py — recover original sources, then analyze (start here)
+
+This is the real, automated JS analysis path. It parses the `//# sourceMappingURL`
+comment, fetches/loads the `.map`, extracts the original pre-minified
+`sourcesContent` into a temp tree (or beautifies the bundle when there is no map),
+then runs the SAST engine + a secret-regex pass over the recovered sources. Use it
+instead of curl + grep.
+
+```bash
+# Single bundle (URL or local file) → recovered sources + SAST + secret hits
+python3 tools/sourcemap_analyzer.py --bundle "https://target.com/static/js/main.abc123.js"
+
+# All .js URLs from recon
+cat /tmp/urls.txt | grep "\.js$" | head -50 | while read url; do
+  python3 tools/sourcemap_analyzer.py --bundle "$url" --json
+done
+```
+
+It degrades gracefully (`requests`→urllib, no map→beautify, no semgrep→regex
+fallback) and always exits 0 on a completed analysis. See `/js-analyze`.
+
+> Note: **LinkFinder and SecretFinder do NOT run automatically.** They are
+> optional, manually invoked external tools (installed under `~/tools/`). The
+> automated recovery + analysis above is what runs without setup.
+
+### SecretFinder (API keys, tokens in JS bundles) — optional, manual external tool
 
 ```bash
 # Activate venv
@@ -173,7 +198,7 @@ done
 deactivate
 ```
 
-### LinkFinder (Endpoints hidden in JS)
+### LinkFinder (Endpoints hidden in JS) — optional, manual external tool
 
 ```bash
 source ~/tools/LinkFinder/.venv/bin/activate
@@ -354,6 +379,10 @@ cat /tmp/live.txt | awk '{print $1}' | naabu -port 80,443,8080,8443,3000,4000,50
 ## SECRET SCANNING IN JS BUNDLES
 
 ```bash
+# Preferred: recover original sources from the bundle's source map first, then the
+# secret pass sees the real (pre-minified) code instead of one mangled line.
+python3 tools/sourcemap_analyzer.py --bundle "https://$TARGET/static/js/main.js" --json
+
 # trufflehog — high-signal secret detection with entropy analysis
 # Scans JS files and git repos
 pip install trufflehog3 2>/dev/null || true

@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}{{ report.title }} — Report — Unified Bug Hunter{% endblock %}
+{#
+  report_detail.html — render a single stored report.
+
+  Reports are stored with a free-text `content` body and a `format` hint
+  ('markdown' by default, sometimes 'html'). Rendering markdown to HTML is the
+  view's job, NOT the template's — so this template degrades gracefully across
+  whatever the route hands it, in priority order:
+
+    1. report.content_html  — the route already converted markdown -> safe HTML
+                              (e.g. via a markdown lib). We render it verbatim.
+    2. format == 'html'     — content is already HTML; render as-is.
+    3. otherwise            — treat content as plain text / raw markdown and show
+                              it in a <pre> block (always safe, always readable).
+
+  This mirrors the repo's "detect -> fallback -> clear label" convention: if the
+  optional markdown renderer is absent, the report is still fully legible.
+#}
+{% block content %}
+<a href="/reports" class="text-decoration-none">&larr; Reports</a>
+
+<div class="d-flex justify-content-between align-items-start mt-2 mb-3 flex-wrap gap-2">
+    <div>
+        <h4 class="mb-1">{{ report.title }}</h4>
+        <p class="text-secondary mb-0">
+            {% if report.domain %}<a href="/targets/{{ report.target_id }}">{{ report.domain }}</a> &middot;{% endif %}
+            <span class="badge bg-secondary">{{ report.format or 'markdown' }}</span> &middot;
+            {{ report.finding_count or 0 }} findings &middot;
+            {{ (report.created_at or '')[:19] }}
+        </p>
+    </div>
+    {% if report.target_id %}
+    <a class="btn btn-outline-secondary btn-sm" href="/findings?target_id={{ report.target_id }}">
+        <i class="bi-shield-exclamation me-1"></i>View findings
+    </a>
+    {% endif %}
+</div>
+
+{% if report.summary %}
+<div class="card mb-3">
+    <div class="card-header">Summary</div>
+    <div class="card-body">{{ report.summary }}</div>
+</div>
+{% endif %}
+
+<div class="card">
+    <div class="card-header">Report</div>
+    <div class="card-body">
+        {% if report.content_html %}
+            {# Route pre-rendered markdown -> sanitized HTML. Trusted output. #}
+            <div class="report-body">{{ report.content_html|safe }}</div>
+        {% elif (report.format or 'markdown')|lower == 'html' and report.content %}
+            <div class="report-body">{{ report.content|safe }}</div>
+        {% elif report.content %}
+            {# Fallback: no markdown renderer available — show the raw source
+               verbatim. Escaped by default (no |safe), so it is XSS-safe. #}
+            <pre class="report-body mb-0">{{ report.content }}</pre>
+        {% else %}
+            <p class="text-secondary mb-0">This report has no content.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

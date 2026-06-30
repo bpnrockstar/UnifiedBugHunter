@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="UnifiedBugHunter — a judgment-first offensive security plugin for Claude Code: 89 skills, 45 commands, 31 agents, 69 tools, 917 tests, real SAST/SCA, findings persistence + replay, diff-aware PR review.">
 <title>UnifiedBugHunter — Overview</title>
 <style>
   :root {
@@ -51,7 +52,7 @@
   a { color: var(--cyan); text-decoration: none; }
   a:hover { text-decoration: underline; }
 
-  section { margin-top: 64px; }
+  section { margin-top: 64px; scroll-margin-top: 24px; }
 
   .eyebrow {
     font-family: var(--mono);
@@ -69,7 +70,28 @@
   }
   h2 .accent { color: var(--cyan); }
 
-  .lead { color: var(--muted); max-width: 760px; margin: 0 0 28px; }
+  h3 { font-size: 1rem; margin: 0 0 8px; }
+
+  .lead { color: var(--muted); max-width: 800px; margin: 0 0 28px; }
+  .note { color: var(--muted); font-size: 0.86rem; margin-top: 18px; }
+
+  code {
+    font-family: var(--mono);
+    font-size: 0.85em;
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: 1px 6px;
+    color: var(--cyan);
+  }
+
+  /* ---------- Skip link (a11y) ---------- */
+  .skip {
+    position: absolute; left: -999px; top: 0;
+    background: var(--green); color: #06120a; padding: 10px 16px;
+    border-radius: 0 0 8px 0; font-family: var(--mono); z-index: 100;
+  }
+  .skip:focus { left: 0; }
 
   /* ---------- Hero ---------- */
   .hero {
@@ -88,45 +110,33 @@
     font-size: clamp(2.4rem, 7vw, 4.4rem);
     margin: 0;
     line-height: 1.02;
-    background: linear-gradient(95deg, var(--green), var(--cyan) 70%);
+    background: linear-gradient(120deg, #fff 10%, var(--cyan) 55%, var(--green) 100%);
     -webkit-background-clip: text;
     background-clip: text;
     -webkit-text-fill-color: transparent;
-    letter-spacing: -0.02em;
   }
-  .hero .tagline {
-    color: var(--text);
-    max-width: 720px;
-    margin: 18px auto 8px;
-    font-size: 1.05rem;
-  }
-  .hero .subtag { color: var(--muted); max-width: 720px; margin: 0 auto 22px; font-size: 0.95rem; }
-
-  .badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    font-family: var(--mono);
-    font-size: 0.82rem;
-    padding: 6px 14px;
-    border-radius: 999px;
-    border: 1px solid var(--green);
-    color: var(--green);
-    background: rgba(57,255,139,0.07);
-    box-shadow: 0 0 18px rgba(57,255,139,0.18);
-  }
-  .badge .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); box-shadow: 0 0 8px var(--green); }
-
-  .pillrow { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin: 18px auto 0; max-width: 820px; }
-  .pill {
-    font-family: var(--mono);
-    font-size: 0.74rem;
+  .hero .tag {
     color: var(--muted);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    padding: 4px 10px;
-    background: var(--panel);
+    max-width: 720px;
+    margin: 18px auto 0;
+    font-size: 1.08rem;
   }
+  .badges {
+    display: flex; flex-wrap: wrap; gap: 8px; justify-content: center;
+    margin: 26px 0 6px;
+  }
+  .badge {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.06em;
+    border: 1px solid var(--border);
+    background: var(--panel);
+    color: var(--muted);
+    border-radius: 999px;
+    padding: 5px 12px;
+  }
+  .badge b { color: var(--cyan); }
+  .badge.new { border-color: var(--border-glow); color: var(--green); }
 
   /* ---------- Stat cards ---------- */
   .stats {
@@ -136,480 +146,429 @@
     margin-top: 40px;
   }
   .stat {
-    background: linear-gradient(180deg, var(--panel-2), var(--panel));
+    background: linear-gradient(180deg, var(--panel), var(--bg-2));
     border: 1px solid var(--border);
     border-radius: 12px;
-    padding: 18px 10px;
+    padding: 18px 14px;
     text-align: center;
-    transition: border-color .2s, transform .2s;
   }
-  .stat:hover { border-color: var(--green); transform: translateY(-2px); }
-  .stat .num {
+  .stat .n {
     font-family: var(--mono);
-    font-size: clamp(1.5rem, 3.4vw, 2.2rem);
+    font-size: 1.9rem;
     font-weight: 700;
-    color: var(--cyan);
+    color: var(--green);
     line-height: 1;
   }
-  .stat .lbl { display: block; margin-top: 8px; font-size: 0.72rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
+  .stat .l {
+    font-size: 0.72rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-top: 6px;
+  }
 
-  /* ---------- Generic grid ---------- */
+  /* ---------- Generic cards / grids ---------- */
   .grid { display: grid; gap: 16px; }
-  .grid.cols-3 { grid-template-columns: repeat(3, 1fr); }
-  .grid.cols-2 { grid-template-columns: repeat(2, 1fr); }
+  .cols-2 { grid-template-columns: repeat(2, 1fr); }
+  .cols-3 { grid-template-columns: repeat(3, 1fr); }
 
   .card {
     background: var(--panel);
     border: 1px solid var(--border);
     border-radius: 12px;
-    padding: 20px;
+    padding: 18px;
   }
-  .card h3 { margin: 0 0 8px; font-size: 1.02rem; color: var(--text); }
-  .card h3 .ic { color: var(--green); margin-right: 8px; }
-  .card p { margin: 0; color: var(--muted); font-size: 0.92rem; }
-  .card.glow { border-color: var(--border-glow); box-shadow: inset 0 0 30px rgba(52,224,255,0.04); }
+  .card.glow { border-color: var(--border-glow); box-shadow: 0 0 0 1px rgba(57,255,139,0.04), 0 10px 30px -18px rgba(52,224,255,0.4); }
+  .card p { margin: 0; font-size: 0.9rem; color: var(--muted); }
+  .card .ic { display: inline-block; width: 1.4em; color: var(--cyan); }
+  .card h3 { display: flex; align-items: baseline; gap: 4px; }
 
-  code, .kbd {
-    font-family: var(--mono);
-    background: var(--bg-2);
-    border: 1px solid var(--border);
-    border-radius: 5px;
-    padding: 1px 6px;
-    font-size: 0.85em;
-    color: var(--cyan);
-  }
-
-  /* ---------- Layer stack ---------- */
-  .layers { display: grid; gap: 10px; }
-  .layer {
-    display: grid;
-    grid-template-columns: 56px 200px 1fr;
-    align-items: center;
-    gap: 16px;
-    background: var(--panel);
-    border: 1px solid var(--border);
-    border-left: 3px solid var(--green);
-    border-radius: 10px;
-    padding: 14px 18px;
-  }
-  .layer .lno {
-    font-family: var(--mono);
-    font-weight: 700;
-    font-size: 1.3rem;
-    color: var(--green);
-    text-align: center;
-  }
-  .layer .lname { font-family: var(--mono); font-weight: 600; color: var(--text); }
-  .layer .lname small { display: block; color: var(--muted); font-weight: 400; font-size: 0.74rem; margin-top: 2px; }
-  .layer .ldesc { color: var(--muted); font-size: 0.9rem; }
-  .layer:nth-child(2) { border-left-color: var(--green); }
-  .layer:nth-child(7) { border-left-color: var(--red); }
-  .layer:nth-child(8) { border-left-color: var(--purple); }
-
-  /* ---------- Mermaid ---------- */
-  .diagram {
-    background: var(--bg-2);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 16px;
-    margin-top: 22px;
-    overflow-x: auto;
-  }
-  .diagram pre.mermaid { margin: 0; text-align: center; background: transparent; }
-  .diagram .cap { font-family: var(--mono); font-size: 0.76rem; color: var(--muted); margin: 0 0 10px; letter-spacing: 0.06em; }
-
-  /* ---------- Inventory list cards ---------- */
-  .inv h3 { margin: 0 0 12px; font-size: 1.05rem; color: var(--cyan); font-family: var(--mono); }
-  ul.tight { margin: 0; padding-left: 18px; }
-  ul.tight li { color: var(--muted); font-size: 0.9rem; margin-bottom: 5px; }
-  ul.tight li b { color: var(--text); }
-  .tag {
+  .pill {
     display: inline-block;
     font-family: var(--mono);
-    font-size: 0.7rem;
-    color: var(--green);
-    border: 1px solid var(--border-glow);
-    background: rgba(57,255,139,0.06);
+    font-size: 0.66rem;
+    letter-spacing: 0.05em;
     border-radius: 5px;
     padding: 1px 7px;
-    margin: 2px 3px 2px 0;
+    background: rgba(57,255,139,0.12);
+    color: var(--green);
+    border: 1px solid rgba(57,255,139,0.3);
+    vertical-align: middle;
+    margin-left: 6px;
   }
-  .tag.c { color: var(--cyan); border-color: #1e3340; background: rgba(52,224,255,0.06); }
 
-  /* ---------- Phases ---------- */
-  .phases { counter-reset: phase; display: grid; gap: 10px; }
-  .phase {
-    background: var(--panel);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 14px 16px 14px 54px;
-    position: relative;
-  }
-  .phase::before {
-    counter-increment: phase;
-    content: counter(phase);
-    position: absolute;
-    left: 14px; top: 14px;
-    width: 26px; height: 26px;
-    border-radius: 50%;
-    background: rgba(52,224,255,0.1);
-    border: 1px solid var(--cyan);
+  /* ---------- Tables ---------- */
+  .tbl-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 12px; }
+  table { border-collapse: collapse; width: 100%; font-size: 0.86rem; }
+  th, td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  thead th {
+    background: var(--panel-2);
     color: var(--cyan);
     font-family: var(--mono);
-    font-size: 0.85rem;
-    display: grid; place-items: center;
+    font-size: 0.72rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    position: sticky; top: 0;
   }
-  .phase b { color: var(--text); font-family: var(--mono); }
-  .phase .cmd { color: var(--green); font-family: var(--mono); font-size: 0.85rem; }
-  .phase p { margin: 4px 0 0; color: var(--muted); font-size: 0.88rem; }
+  tbody tr:hover { background: rgba(52,224,255,0.03); }
+  tbody tr:last-child td { border-bottom: none; }
+  td code { white-space: nowrap; }
+  td .new-tag { color: var(--green); font-family: var(--mono); font-size: 0.66rem; border: 1px solid rgba(57,255,139,0.3); border-radius: 4px; padding: 0 5px; margin-left: 6px; }
 
-  .modes { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin-top: 20px; }
-  .mode {
+  /* ---------- Charts ---------- */
+  .charts { display: grid; grid-template-columns: repeat(2, 1fr); gap: 18px; }
+  .chart-card {
     background: var(--panel);
     border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 14px;
+    border-radius: 12px;
+    padding: 18px 18px 8px;
   }
-  .mode .mn { font-family: var(--mono); font-weight: 700; color: var(--amber); }
-  .mode small { color: var(--muted); font-size: 0.8rem; display: block; margin-top: 5px; }
-  .mode.default { border-color: var(--amber); }
+  .chart-card h3 { margin-bottom: 4px; }
+  .chart-card .sub { color: var(--muted); font-size: 0.8rem; margin: 0 0 12px; }
+  .chart-box { position: relative; height: 280px; }
+  .chart-box.tall { height: 320px; }
 
-  /* ---------- Safety ---------- */
-  .safety .card { border-left: 3px solid var(--red); }
-  .safety .card h3 .ic { color: var(--red); }
+  /* ---------- Mermaid diagrams ---------- */
+  .diagram {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 18px;
+    overflow-x: auto;
+  }
+  .diagram .cap, .chart-card .cap {
+    font-family: var(--mono);
+    color: var(--muted);
+    font-size: 0.74rem;
+    margin: 0 0 10px;
+  }
+  .diagram pre.mermaid { margin: 0; text-align: center; background: transparent; }
+
+  /* ---------- Feature highlight (new capabilities) ---------- */
+  .feat {
+    background: linear-gradient(180deg, var(--panel), var(--bg-2));
+    border: 1px solid var(--border-glow);
+    border-radius: 12px;
+    padding: 18px;
+  }
+  .feat h3 { color: var(--green); }
+  .feat .flow {
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    color: var(--cyan);
+    background: var(--bg-2);
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    padding: 8px 10px;
+    margin-top: 10px;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+
+  /* ---------- Safety section ---------- */
+  .safety { border-top: 1px solid var(--border); padding-top: 48px; }
 
   /* ---------- Footer ---------- */
-  footer {
-    margin-top: 72px;
-    border-top: 1px solid var(--border);
-    padding-top: 32px;
-    text-align: center;
-  }
+  footer { margin-top: 80px; border-top: 1px solid var(--border); padding-top: 36px; }
   .install {
-    display: inline-block;
     font-family: var(--mono);
     background: var(--bg-2);
-    border: 1px solid var(--green);
+    border: 1px solid var(--border-glow);
     border-radius: 10px;
-    padding: 14px 22px;
+    padding: 14px 18px;
+    text-align: center;
     color: var(--green);
-    font-size: 0.95rem;
-    box-shadow: 0 0 22px rgba(57,255,139,0.12);
+    max-width: 460px;
+    margin: 0 auto 22px;
   }
-  .install .pfx { color: var(--muted); }
-  footer .meta { color: var(--muted); font-size: 0.88rem; margin-top: 18px; }
-  footer .meta a { font-family: var(--mono); }
+  .install .pfx { color: var(--muted); margin-right: 8px; }
+  .meta { text-align: center; color: var(--muted); font-size: 0.84rem; }
+  .meta b { color: var(--text); }
 
-  .note {
-    font-size: 0.8rem;
-    color: var(--muted);
-    font-style: italic;
-    margin-top: 10px;
-  }
-
-  /* ---------- Responsive ---------- */
   @media (max-width: 860px) {
     .stats { grid-template-columns: repeat(3, 1fr); }
-    .grid.cols-3, .grid.cols-2 { grid-template-columns: 1fr; }
-    .modes { grid-template-columns: repeat(2,1fr); }
-    .layer { grid-template-columns: 44px 1fr; }
-    .layer .ldesc { grid-column: 1 / -1; }
+    .cols-2, .cols-3, .charts { grid-template-columns: 1fr; }
   }
   @media (max-width: 480px) {
     .stats { grid-template-columns: repeat(2, 1fr); }
-    .modes { grid-template-columns: 1fr; }
   }
 </style>
 </head>
 <body>
+<a class="skip" href="#main">Skip to content</a>
 <div class="wrap">
 
-  <!-- ============ 1. HERO ============ -->
+  <!-- ============ HERO ============ -->
   <header class="hero">
-    <div class="prompt">$ ./hunt --scope-safe --memory-backed</div>
+    <div class="prompt">$ claude &gt; /hunt target.com</div>
     <h1>UnifiedBugHunter</h1>
-    <p class="tagline">A Claude Code plugin that turns an LLM session into a disciplined, scope-safe, memory-backed bug-bounty and red-team operator.</p>
-    <p class="subtag">It does not replace subfinder, httpx, nuclei, dalfox, sqlmap, TREVORspray or Foundry — it <em>orchestrates</em> them and wraps them in judgment and safety.</p>
-    <span class="badge"><span class="dot"></span> unified-bug-hunter · v4.3.2 · MIT · bpnrockstar</span>
-
-    <div class="stats">
-      <div class="stat"><span class="num">89</span><span class="lbl">Skills</span></div>
-      <div class="stat"><span class="num">42</span><span class="lbl">Commands</span></div>
-      <div class="stat"><span class="num">30</span><span class="lbl">Agents</span></div>
-      <div class="stat"><span class="num">6</span><span class="lbl">MCP servers</span></div>
-      <div class="stat"><span class="num">372</span><span class="lbl">Tests</span></div>
-      <div class="stat"><span class="num">8</span><span class="lbl">Layers</span></div>
-    </div>
-    <div class="pillrow">
-      <span class="pill">48 hunt-* + 41 platform/methodology skills</span>
-      <span class="pill">63 deterministic engine tools</span>
-      <span class="pill">11 pipeline + 19 offensive agents</span>
-      <span class="pill">Flask + SQLite dashboard</span>
-      <span class="pill">append-only audit trail</span>
+    <p class="tag">A judgment-first offensive-security plugin for Claude Code. Recon, hunt, white-box audit, validate, and report across HackerOne, Bugcrowd, Intigriti and Immunefi — with deterministic engines doing the finding and the model doing the triage.</p>
+    <div class="badges">
+      <span class="badge"><b>89</b> skills</span>
+      <span class="badge"><b>45</b> commands</span>
+      <span class="badge"><b>31</b> agents</span>
+      <span class="badge"><b>69</b> tools</span>
+      <span class="badge"><b>917</b> tests</span>
+      <span class="badge new">+ real SAST / SCA</span>
+      <span class="badge new">+ findings replay</span>
+      <span class="badge new">+ diff-aware PR review</span>
     </div>
   </header>
 
-  <!-- ============ 2. WHY DIFFERENT ============ -->
+  <main id="main">
+
+  <!-- ============ STAT CARDS ============ -->
+  <section id="stats" aria-label="Key statistics" style="margin-top:40px;">
+    <div class="stats">
+      <div class="stat"><div class="n">89</div><div class="l">Skills</div></div>
+      <div class="stat"><div class="n">45</div><div class="l">Commands</div></div>
+      <div class="stat"><div class="n">31</div><div class="l">Agents</div></div>
+      <div class="stat"><div class="n">69</div><div class="l">Tools</div></div>
+      <div class="stat"><div class="n">917</div><div class="l">Tests</div></div>
+      <div class="stat"><div class="n">6</div><div class="l">MCP servers</div></div>
+    </div>
+    <p class="note">Counts verified by directory listing at v4.3.2: 89 skill dirs (48 are per-class <code>hunt-*</code>), 45 slash commands, 31 agents, 69 executable tool scripts (Python / shell / JS), and 917 <code>def test_*</code> functions across 44 test files. Six MCP integrations: Burp, Caido, HackerOne, Bugcrowd, Intigriti, Immunefi.</p>
+  </section>
+
+  <!-- ============ WHY ============ -->
   <section id="why">
-    <p class="eyebrow">// why it's different</p>
+    <p class="eyebrow">// the thesis</p>
     <h2>Judgment &amp; safety, not just <span class="accent">another scanner</span></h2>
-    <p class="lead">What you get over running the same tools by hand.</p>
+    <p class="lead">Scanners produce findings; this plugin produces <em>decisions</em>. Deterministic engines (Semgrep, osv-scanner, scope checker, PoC replayer) do the finding and the math; the model reasons over the results — confirming reachability, killing false positives, and gating every outbound request through code, not vibes.</p>
     <div class="grid cols-3">
       <div class="card">
-        <h3><span class="ic">▹</span>Report-derived methodology</h3>
-        <p>Each <code>hunt-*</code> skill carries a <code>report_count</code> and <code>sources:</code> list (hunt-idor: 26 reports, hunt-sqli: 12) and anchors to real current CVEs — Rocket.Chat CVE-2021-22911, Mongoose CVE-2024-53900, Django CVE-2024-42005, vCenter CVE-2021-21972 → 2024-37085. Not generic checklists.</p>
+        <h3><span class="ic">◆</span>Engine finds, model triages</h3>
+        <p>Real SAST/SCA emit normalized findings with stable fingerprints; the model confirms exploitability and ranks impact. Scored at <b>F1&nbsp;1.00</b> on the committed white-box corpus.</p>
       </div>
       <div class="card">
-        <h3><span class="ic">▹</span>False-positive discipline built in</h3>
-        <p>Every quality skill leads with a kill gate. The global 7-Question Gate + 4-gate validator + never-submit list protect submission-validity ratio — the metric manual hunters most often torch.</p>
+        <h3><span class="ic">◆</span>Closed-loop verification</h3>
+        <p>Findings persist with a replayable <code>poc_spec</code>. <code>/retest</code> replays them and returns FIXED / STILL-VULN / REGRESSED — proving a fix held instead of re-running the whole hunt.</p>
       </div>
       <div class="card">
-        <h3><span class="ic">▹</span>Crown-jewel targeting</h3>
-        <p>The 5-minute and 20-minute rotation rules steer effort to where each vuln class actually pays, and abandon dead ends fast. Depth over breadth, follow the money.</p>
-      </div>
-      <div class="card">
-        <h3><span class="ic">▹</span>Deterministic scope safety</h3>
-        <p>Code-not-LLM scope checking on every outbound request: anchored-suffix matching, fail-closed, IP/CIDR refused — a guarantee ad-hoc tooling cannot offer.</p>
-      </div>
-      <div class="card">
-        <h3><span class="ic">▹</span>Cross-target learning</h3>
-        <p>A technique that paid off on one React/Next.js target surfaces automatically on the next (partial tech-stack overlap matching), so the operator gets <em>cumulatively</em> better.</p>
-      </div>
-      <div class="card">
-        <h3><span class="ic">▹</span>Autonomous closed loop</h3>
-        <p>Autopilot runs scope → recon → rank → hunt → validate → report with circuit breakers, rate limits, safe-method gating, and a hard human-approval boundary before submission and before any live credential attack.</p>
+        <h3><span class="ic">◆</span>Fail-closed by default</h3>
+        <p>Scope is decided in code. Unmatched hosts return <code>NEEDS_REVIEW</code> (not a silent reject). Every request passes the scope checker, audit log, rate limiter and circuit breaker first.</p>
       </div>
     </div>
   </section>
 
-  <!-- ============ 3. ARCHITECTURE ============ -->
+  <!-- ============ COVERAGE CHARTS ============ -->
+  <section id="metrics">
+    <p class="eyebrow">// coverage &amp; growth, charted</p>
+    <h2>What the numbers <span class="accent">actually say</span></h2>
+    <p class="lead">Live Chart.js renders over the verified inventory: capability coverage by skill family, the test-suite growth from 372 to 917, and the new white-box vs black-box capability split.</p>
+    <div class="charts">
+      <div class="chart-card">
+        <h3>Skill families</h3>
+        <p class="sub">89 skills grouped by domain — 48 are per-class <code>hunt-*</code> web vuln skills.</p>
+        <div class="chart-box"><canvas id="chartSkills" role="img" aria-label="Doughnut chart of skill counts by family"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <h3>Test-suite growth</h3>
+        <p class="sub">From 372 to 917 test functions as engines, persistence and the PR pack landed.</p>
+        <div class="chart-box"><canvas id="chartTests" role="img" aria-label="Line chart of test count growth from 372 to 917"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <h3>White-box vs black-box capability</h3>
+        <p class="sub">Capabilities by analysis mode across recon, hunt, code and verification.</p>
+        <div class="chart-box"><canvas id="chartMode" role="img" aria-label="Radar chart comparing white-box and black-box capability coverage"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <h3>White-box SAST eval — F1 by class</h3>
+        <p class="sub"><code>eval/code_corpus/</code> ground truth: 14 classes, TP=14 FP=0 FN=0 → overall F1 1.00.</p>
+        <div class="chart-box"><canvas id="chartF1" role="img" aria-label="Bar chart of precision recall and F1 on the white-box code corpus"></canvas></div>
+      </div>
+    </div>
+    <p class="note">F1 numbers are measured by <code>eval/code_corpus/run_eval_code.py</code> against <code>ground_truth.json</code> over 14 vulnerable/safe source-file pairs (SQLi, XSS, SSRF, SSTI, RCE/command-injection, path traversal, deserialization, JWT alg=none, weak crypto, hardcoded secrets) in Python and JavaScript. Tests score the committed findings fixture deterministically — no scanner required in CI.</p>
+  </section>
+
+  <!-- ============ ARCHITECTURE ============ -->
   <section id="architecture">
     <p class="eyebrow">// architecture</p>
     <h2>An <span class="accent">eight-layer</span> stack</h2>
-    <p class="lead">A request flows top-to-bottom; each layer has a single responsibility.</p>
-
-    <div class="layers">
-      <div class="layer">
-        <div class="lno">1</div>
-        <div class="lname">Knowledge <small>skills/ · declarative</small></div>
-        <div class="ldesc">How to think / what to check. Pure methodology, no side effects. Auto-loaded by topic; <code>bb-methodology</code> is the master router.</div>
-      </div>
-      <div class="layer">
-        <div class="lno">2</div>
-        <div class="lname">Interface <small>commands/</small></div>
-        <div class="ldesc">42 slash-command entry points. Thin routers — invoke an engine script directly or dispatch to an agent/skill. Prefixed to avoid collisions (<code>/pickup</code> not <code>/resume</code>).</div>
-      </div>
-      <div class="layer">
-        <div class="lno">3</div>
-        <div class="lname">Actor <small>agents/</small></div>
-        <div class="ldesc">Stateful subagents that run multi-step loops, pick tools, and carry safety rails in their own prompts. Pinned models (Haiku/Sonnet/Opus).</div>
-      </div>
-      <div class="layer">
-        <div class="lno">4</div>
-        <div class="lname">Engine <small>tools/ scripts/ engine/ · deterministic</small></div>
-        <div class="ldesc">Side-effecting execution. <code>tools/hunt.py</code> orchestrator; <code>engine/skill_map.py</code> maps surface → class → skill → first curl.</div>
-      </div>
-      <div class="layer">
-        <div class="lno">5</div>
-        <div class="lname">Integration <small>mcp/ · 6 servers</small></div>
-        <div class="ldesc">Proxy bridges (Burp/Caido) + read-only platform intel (HackerOne, Bugcrowd, Intigriti, Immunefi).</div>
-      </div>
-      <div class="layer">
-        <div class="lno">6</div>
-        <div class="lname">State <small>memory/ · dashboard/</small></div>
-        <div class="ldesc">Persistence: hunt-memory JSONL + SQLite findings DB + read-mostly Flask web GUI at <code>127.0.0.1:5000</code>.</div>
-      </div>
-      <div class="layer">
-        <div class="lno">7</div>
-        <div class="lname">Safety <small>scope_checker · audit_log · rules/</small></div>
-        <div class="ldesc">Deterministic scope gate, accountability audit trail, always-active behavioral rules.</div>
-      </div>
-      <div class="layer">
-        <div class="lno">8</div>
-        <div class="lname">Quality <small>lint_skills · CI · tests/ eval/</small></div>
-        <div class="ldesc">Pre-merge lint + 372-test CI + accuracy eval harness.</div>
-      </div>
-    </div>
-
+    <p class="lead">Skills carry methodology, agents carry roles, commands are the operator surface, and deterministic tools/engines do the measurable work — all sitting on a code-enforced safety and memory substrate.</p>
     <div class="diagram">
-      <p class="cap">graph TD — layer relationships</p>
+      <p class="cap">flowchart — eight layers, top (operator) to bottom (substrate)</p>
       <pre class="mermaid">
-graph TD
-    subgraph L1[L1 Knowledge: skills/]
-        SK[89 SKILL.md&lt;br/&gt;48 hunt-* + 41 platform/methodology]
-        BBM[bb-methodology&lt;br/&gt;master router]
-    end
-    subgraph L2[L2 Interface: commands/]
-        CMD[42 slash commands]
-    end
-    subgraph L3[L3 Actor: agents/]
-        AG[30 agents&lt;br/&gt;11 pipeline + 19 offensive]
-        AUTO[autopilot loop]
-    end
-    subgraph L4[L4 Engine: tools/ scripts/ engine/]
-        HUNT[hunt.py orchestrator]
-        ENG[65 engine tools]
-        SMAP[engine/skill_map.py]
-    end
-    subgraph L5[L5 Integration: mcp/]
-        PROXY[burp / caido]
-        INTEL[hackerone / bugcrowd&lt;br/&gt;intigriti / immunefi]
-    end
-    subgraph L6[L6 State]
-        JSONL[hunt-memory JSONL&lt;br/&gt;audit / patterns / journal]
-        DB[(bughunter.db SQLite)]
-        DASH[Flask dashboard]
-    end
-    subgraph L7[L7 Safety]
-        SCOPE[scope_checker.py&lt;br/&gt;deterministic gate]
-        AUDIT[audit_log.py]
-        RULES[rules/ hunting+reporting]
-    end
-    subgraph L8[L8 Quality]
-        LINT[lint_skills.py]
-        CI[skill-lint.yml CI&lt;br/&gt;372 tests]
-    end
-
-    CMD --&gt;|invoke| ENG
-    CMD --&gt;|dispatch| AG
-    CMD -.load.-&gt; SK
-    AG -.load.-&gt; SK
-    BBM --&gt;|surface→class→skill→curl| SK
-    BBM -.via.-&gt; SMAP
-    AG --&gt; HUNT
-    HUNT --&gt; ENG
-    AUTO --&gt; SCOPE
-    ENG --&gt;|MUST gate| SCOPE
-    ENG --&gt; PROXY
-    INTEL -.scope/intel.-&gt; CMD
-    SCOPE --&gt; AUDIT
-    AUDIT --&gt; JSONL
-    ENG --&gt;|patterns| JSONL
-    ENG --&gt;|findings/recon| DB
-    DB --&gt; DASH
-    RULES -.constrain.-&gt; AG
-    LINT --&gt; CI
-    CI -.gates.-&gt; SK
-    CI -.gates.-&gt; ENG
-      </pre>
+flowchart TD
+  OP["L1 · Operator surface — 45 slash commands"]
+  AG["L2 · Agents — 31 specialized roles (pipeline + offsec)"]
+  SK["L3 · Skills — 89 methodology packs (48 hunt-* classes)"]
+  EN["L4 · Engines — SAST (Semgrep) · SCA (osv) · DAST · GraphQL · scope"]
+  TO["L5 · Tools — 69 Python/shell/JS scripts"]
+  PS["L6 · Persistence — findings DB + replayable poc_spec + GUI workbench"]
+  IN["L7 · Integration — 6 MCP servers (Burp · Caido · H1 · Bugcrowd · Intigriti · Immunefi)"]
+  SF["L8 · Safety + memory — scope checker · audit log · rate limit · circuit breaker · pattern DB"]
+  OP --> AG --> SK --> EN --> TO --> PS --> IN --> SF
+  SF -. fail-closed gate .-> EN
+  PS -. /retest --from-db replay .-> EN
+</pre>
     </div>
   </section>
 
-  <!-- ============ 4. FEATURE INVENTORY ============ -->
-  <section id="inventory">
-    <p class="eyebrow">// feature inventory</p>
-    <h2>Everything in the <span class="accent">box</span></h2>
-    <p class="lead">Skills, commands, agents, engine tools and MCP servers, by domain.</p>
+  <!-- ============ NEW CAPABILITIES ============ -->
+  <section id="new">
+    <p class="eyebrow">// new in this release</p>
+    <h2>What just <span class="accent">landed</span></h2>
+    <p class="lead">Real static + composition analysis, a measured white-box benchmark, findings that persist and replay, scope confirmation, diff-scoped PR review, source-map recovery, real DOM-XSS proof, secret validation, and a GUI workbench.</p>
+    <div class="grid cols-3">
+      <div class="feat">
+        <h3>Real SAST + SCA <span class="pill">F1 1.00</span></h3>
+        <p><code>/sast</code> drives Semgrep (regex fallback) into normalized, fingerprinted findings; <code>/sca</code> reads lockfiles via osv-scanner / pip-audit into severity-ranked advisories. Scored by the <code>eval/code_corpus/</code> ground-truth benchmark.</p>
+        <div class="flow">semgrep → normalize → fingerprint → triage</div>
+      </div>
+      <div class="feat">
+        <h3>Findings persistence + replay</h3>
+        <p><code>save_finding.py</code> stores a verified finding with a machine-replayable <code>poc_spec</code>. <code>/retest --from-db</code> and the GUI re-run it to a FIXED / STILL-VULN / REGRESSED verdict.</p>
+        <div class="flow">save_finding → DB(poc_spec) → /retest → verdict</div>
+      </div>
+      <div class="feat">
+        <h3>Diff-aware PR review</h3>
+        <p><code>/pr-review</code> + the <code>diff-aware-pr-reviewer</code> agent score ONLY a PR's changed lines, splitting findings into NEW vs pre-existing and posting inline comments. Read-only; never pushes.</p>
+        <div class="flow">git diff → SAST(changed) → NEW vs legacy → inline comments</div>
+      </div>
+      <div class="feat">
+        <h3>Source-map analyzer</h3>
+        <p><code>/js-analyze</code> parses <code>//# sourceMappingURL</code>, extracts <code>sourcesContent</code> back to readable source, then runs SAST + a secret pass. Beautifies the bundle when there is no map.</p>
+        <div class="flow">bundle → .map → sourcesContent → SAST + secrets</div>
+      </div>
+      <div class="feat">
+        <h3>DOM-XSS verifier</h3>
+        <p><code>/dom-verify</code> fires one <code>(url, payload)</code> in headless Chromium (Playwright). A dialog, <code>window[marker]</code> or console marker flips a <code>[POSSIBLE]</code> sink to CONFIRMED — or kills it.</p>
+        <div class="flow">[POSSIBLE] → headless Chromium → CONFIRMED / killed</div>
+      </div>
+      <div class="feat">
+        <h3>Secret validation + org regexes</h3>
+        <p><code>secret_validate.py</code> reconciles trufflehog / gitleaks / noseyparker hits, runs liveness checks, and matches org-specific token formats via <code>custom_secret_patterns.py</code> before DB ingest.</p>
+        <div class="flow">3 scanners → reconcile → liveness → custom regex → DB</div>
+      </div>
+      <div class="feat">
+        <h3>Scope NEEDS_REVIEW</h3>
+        <p>Unmatched hosts, bare IPs and sibling/acquisition hosts now return <code>NEEDS_REVIEW</code> instead of a silent reject. Interactive <code>--confirm</code> mode requires an explicit operator assertion to proceed.</p>
+        <div class="flow">host → in / excluded / NEEDS_REVIEW → operator confirm</div>
+      </div>
+      <div class="feat">
+        <h3>GUI workbench</h3>
+        <p>The <code>dashboard/</code> Flask app adds auth, finding/report detail views, Chart.js charts, export, and one-click re-run / verdict over persisted findings — on top of the live recon/hunt TUI.</p>
+        <div class="flow">findings DB → web UI → re-run · verdict · export</div>
+      </div>
+      <div class="feat">
+        <h3>White-box code benchmark</h3>
+        <p><code>eval/code_corpus/</code> holds 14 vulnerable + 14 safe variants with a committed findings fixture, scored to precision / recall / F1 per class — making code-audit accuracy a measured number, not a claim.</p>
+        <div class="flow">vuln+safe corpus → score() → P / R / F1</div>
+      </div>
+    </div>
+  </section>
 
+  <!-- ============ INVENTORY: COMMANDS ============ -->
+  <section id="commands">
+    <p class="eyebrow">// inventory · commands</p>
+    <h2>45 <span class="accent">slash commands</span></h2>
+    <p class="lead">The operator surface. Grouped by phase; the six newest are flagged.</p>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Group</th><th>Commands</th></tr></thead>
+        <tbody>
+          <tr><td>Scope &amp; intake</td><td><code>/scope</code> <code>/scope-aggregate</code> <code>/surface</code> <code>/intel</code> <code>/kev-matrix</code></td></tr>
+          <tr><td>Recon &amp; discovery</td><td><code>/recon</code> <code>/cloud-recon</code> <code>/param-discover</code> <code>/secrets-hunt</code> <code>/takeover</code> <code>/vuln-catcher</code> <code>/osint-employees</code> <code>/js-analyze</code> <span class="new-tag">NEW</span></td></tr>
+          <tr><td>Hunt &amp; exploit</td><td><code>/hunt</code> <code>/autopilot</code> <code>/chain</code> <code>/bypass-403</code> <code>/spray</code> <code>/graphql-audit</code> <code>/dast-scan</code> <code>/scan-cves</code> <code>/llm-redteam</code> <code>/token-scan</code> <code>/web3-audit</code> <code>/dom-verify</code> <span class="new-tag">NEW</span></td></tr>
+          <tr><td>White-box / code</td><td><code>/sast</code> <span class="new-tag">NEW</span> <code>/sca</code> <span class="new-tag">NEW</span> <code>/code-audit</code> <code>/patch</code> <code>/pr-review</code> <span class="new-tag">NEW</span></td></tr>
+          <tr><td>Validate &amp; verify</td><td><code>/validate</code> <code>/triage</code> <code>/retest</code> <span class="new-tag">NEW</span></td></tr>
+          <tr><td>Report &amp; capture</td><td><code>/report</code> <code>/remember</code> <code>/search-findings</code> <code>/dashboard</code></td></tr>
+          <tr><td>Prep &amp; utility</td><td><code>/wordlist-gen</code> <code>/breach-check</code> <code>/arsenal</code> <code>/pickup</code> <code>/memory-gc</code> <code>/auto-skills</code> <code>/llm-config</code> <code>/evolve-skills</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ============ INVENTORY: SKILL FAMILIES ============ -->
+  <section id="skills">
+    <p class="eyebrow">// inventory · skill families</p>
+    <h2>89 <span class="accent">skill packs</span></h2>
+    <p class="lead">Methodology, payload tables and decision gates — loaded on demand. The bulk are 48 per-class <code>hunt-*</code> web vuln skills.</p>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Family</th><th>#</th><th>Representative skills</th></tr></thead>
+        <tbody>
+          <tr><td>Per-class hunt (<code>hunt-*</code>)</td><td>48</td><td>hunt-idor, hunt-ssrf, hunt-sqli, hunt-xss, hunt-ssti, hunt-rce, hunt-oauth, hunt-saml, hunt-graphql, hunt-deserialization, hunt-race-condition, hunt-http-smuggling, …</td></tr>
+          <tr><td>Offsec &amp; red-team tradecraft</td><td>22</td><td>active-directory, container-security, cloud-iam-deep, llm-redteam, redteam-mindset, m365-entra-attack, okta-attack, vmware-vcenter-attack, mobile-pentest, cicd-security, malware-analysis, forensics, social-engineering</td></tr>
+          <tr><td>Triage · report · KB · evidence</td><td>9</td><td>triage-validation, report-writing, knowledge-base, evidence-hygiene, security-arsenal, offensive-osint, bugcrowd-reporting</td></tr>
+          <tr><td>Recon &amp; bug-bounty workflow</td><td>8</td><td>bug-bounty, auto-hunt, bb-methodology, bb-local-toolkit, web2-recon, web2-vuln-classes, vuln-catcher, dast-scanner</td></tr>
+          <tr><td>Code / white-box</td><td>3</td><td>code-review, code-patch, graphql-audit</td></tr>
+          <tr><td>Web3 &amp; tokens</td><td>2</td><td>web3-audit, meme-coin-audit</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ============ INVENTORY: AGENTS ============ -->
+  <section id="agents">
+    <p class="eyebrow">// inventory · agents</p>
+    <h2>31 <span class="accent">specialized agents</span></h2>
+    <p class="lead">Role-scoped subagents — 12 bug-bounty pipeline, 19 offensive security. The newest is the diff-aware PR reviewer.</p>
     <div class="grid cols-2">
-      <div class="card inv">
-        <h3>89 Skills</h3>
-        <ul class="tight">
-          <li><b>hunt-* per-vuln-class (48):</b> core web (sqli, idor, xss, ssrf, ssti, xxe, rce, lfi, cors, csrf, oauth, saml, auth-bypass, business-logic, race-condition, deserialization, graphql, grpc, nosqli, file-upload …); framework variants (nextjs, nodejs, laravel, springboot, aspnet, sharepoint); cloud/infra (cloud-misconfig, k8s, cicd, ntlm-info); catch-alls (misc, dispatch).</li>
-          <li><b>Recon / OSINT (6)</b>, <b>Cloud &amp; Identity (6)</b>, <b>Reporting &amp; Triage (6)</b>, <b>Offensive specialty (10)</b>, <b>Web3 &amp; Token (2)</b>, <b>LLM red-team (2)</b>, <b>Orchestration / mindset (10)</b>.</li>
-        </ul>
-        <div style="margin-top:10px">
-          <span class="tag">report_count + sources</span>
-          <span class="tag">real CVEs</span>
-          <span class="tag">leading kill gate</span>
-          <span class="tag">Crown-Jewel Targets</span>
-        </div>
+      <div class="card">
+        <h3><span class="ic">⌁</span>Bug-bounty pipeline (12)</h3>
+        <p><code>recon-agent</code> · <code>recon-ranker</code> · <code>autopilot</code> · <code>validator</code> · <code>poc-validator</code> · <code>chain-builder</code> · <code>report-writer</code> · <code>web3-auditor</code> · <code>token-auditor</code> · <code>credential-hunter</code> · <code>regression-retest-agent</code> · <code>triage-dedup-agent</code></p>
       </div>
-
-      <div class="card inv">
-        <h3>42 Commands</h3>
-        <ul class="tight">
-          <li><b>Recon:</b> <code>/recon</code> <code>/cloud-recon</code> <code>/osint-employees</code> <code>/arsenal</code></li>
-          <li><b>Scope:</b> <code>/scope</code> <code>/scope-aggregate</code> <code>/surface</code></li>
-          <li><b>Hunting / Code audit:</b> <code>/hunt</code> <code>/autopilot</code> <code>/dast-scan</code> <code>/scan-cves</code> <code>/sast</code> <code>/sca</code> <code>/code-audit</code> <code>/graphql-audit</code> <code>/secrets-hunt</code> <code>/chain</code> — <code>/sast</code> (Semgrep → normalized findings) + <code>/sca</code> (lockfile CVE advisories) run first and feed <code>/code-audit</code>'s model triage</li>
-          <li><b>Validation / Reporting / Retest:</b> <code>/triage</code> <code>/validate</code> <code>/report</code> <code>/patch</code> <code>/retest</code></li>
-          <li><b>Credential:</b> <code>/wordlist-gen</code> <code>/breach-check</code> <code>/spray</code></li>
-          <li><b>Skill routing / grounding:</b> <code>/auto-skills</code> <code>/evolve-skills</code> <code>/kev-matrix</code> · <b>LLM:</b> <code>/llm-redteam</code> <code>/llm-config</code></li>
-          <li><b>Cloud / Takeover / Params · Web3 · Dashboard · Memory.</b> 7 are model-driven (no backing script).</li>
-        </ul>
-      </div>
-
-      <div class="card inv">
-        <h3>30 Agents</h3>
-        <ul class="tight">
-          <li><b>Bug-bounty pipeline (11):</b> recon-agent, recon-ranker, chain-builder, validator, report-writer, autopilot, web3-auditor, token-auditor, credential-hunter, regression-retest-agent, triage-dedup-agent.</li>
-          <li><b>Offensive security (19):</b> binary-exploit, crypto-analyst, forensics-analyst, malware-analyst, reverse-engineer, social-engineer, container-escape, api-security, privesc-advisor, payload-crafter, attack-planner, ad-attacker, swarm-orchestrator, poc-validator, exploit-guide, code-reviewer, code-patcher, vuln-catcher, llm-redteamer.</li>
-          <li>All on Sonnet 4-6 except recon/monitor on Haiku and <b>report-writer on Opus</b>.</li>
-        </ul>
-      </div>
-
-      <div class="card inv">
-        <h3>63 Engine Tools <span style="font-weight:400;color:var(--muted);font-size:0.8rem">/ 6 MCP servers</span></h3>
-        <ul class="tight">
-          <li><b>Tools:</b> orchestrator <code>hunt.py</code>; recon <code>recon_engine.sh</code>; scanning <code>vuln_scanner.sh</code>, <code>cve_scan.sh</code>, <code>dast_scanner.sh</code>; white-box <code>sast_runner.py</code> (Semgrep SAST), <code>sca_audit.py</code> (lockfile SCA) — both feed <code>/code-audit</code>; regression <code>retest.py</code>; dedup <code>dedup_findings.py</code>; scope <code>scope_checker.py</code>; intel <code>intel_engine.py</code>; LLM router <code>llm_router.py</code>; skill routing/grounding <code>skill_router.py</code>, <code>disclosure_miner.py</code>, <code>kev_matrix.py</code>; evidence <code>redact.py</code>; dual-account <code>dual_session.py</code>; credential pipeline <code>wordlist_engine.sh</code>, <code>spray_orchestrator.sh</code>, <code>breach_checker.py</code> (+ <code>llm_payloads/</code>, 7 JSON files).</li>
-          <li><b>MCP — 2 proxy bridges:</b> <span class="tag c">burp-mcp</span> <span class="tag c">caido-mcp (batch ≤ 50, auto-redacts auth headers)</span></li>
-          <li><b>MCP — 4 read-only intel:</b> <span class="tag">hackerone</span> <span class="tag">bugcrowd</span> <span class="tag">intigriti</span> <span class="tag">immunefi (in-scope contracts + TVL)</span></li>
-          <li>All MCP degrade gracefully to curl + Interactsh/webhook.site.</li>
-        </ul>
+      <div class="card">
+        <h3><span class="ic">⌁</span>Offensive security (19)</h3>
+        <p><code>diff-aware-pr-reviewer</code> <span class="new-tag">NEW</span> · <code>code-reviewer</code> · <code>code-patcher</code> · <code>api-security</code> · <code>binary-exploit</code> · <code>crypto-analyst</code> · <code>reverse-engineer</code> · <code>malware-analyst</code> · <code>forensics-analyst</code> · <code>ad-attacker</code> · <code>container-escape</code> · <code>privesc-advisor</code> · <code>payload-crafter</code> · <code>attack-planner</code> · <code>exploit-guide</code> · <code>social-engineer</code> · <code>llm-redteamer</code> · <code>vuln-catcher</code> · <code>swarm-orchestrator</code></p>
       </div>
     </div>
   </section>
 
-  <!-- ============ 5. WORKFLOW ============ -->
-  <section id="workflow">
-    <p class="eyebrow">// end-to-end workflow</p>
-    <h2>The <span class="accent">hunting lifecycle</span></h2>
-    <p class="lead">A 5-phase non-linear methodology mapped to commands — from scope to human-approved submission.</p>
-
-    <div class="phases">
-      <div class="phase"><b>SCOPE</b> <span class="cmd">/scope</span><p>Define/Select/Execute discipline; pick identity (anon vs authenticated); verify each asset in scope; choose Wide vs Deep route.</p></div>
-      <div class="phase"><b>RECON</b> <span class="cmd">/recon → recon_engine.sh</span><p>subdomain enum → httpx + tech detect → nmap → gau/wayback/katana → JS secret grep → ffuf → CI/CD scan → nuclei → takeover leads. 5-min kill on all-403 / static-only / 0 nuclei.</p></div>
-      <div class="phase"><b>MAP &amp; RANK</b> <span class="cmd">/surface · recon-ranker</span><p>Understand the app like its developer; classify and rank surface (api/auth/admin/idor-candidates); prioritize where broken auth hurts most; favor less-saturated classes.</p></div>
-      <div class="phase"><b>HUNT</b> <span class="cmd">/hunt → hunt.py → vuln_scanner.sh</span><p>Scripted scan first, then manual deep-dive by class; error → time → OOB → boolean; A→B sibling hunting; 20-min rotation with hard stops.</p></div>
-      <div class="phase"><b>PROVE &amp; ESCALATE</b><p>Turn Low into Critical — XSS→ATO, IDOR→PII scrape/ATO, SSRF→metadata→RCE, SQLi→shell; minimize prerequisites; quantify $ impact.</p></div>
-      <div class="phase"><b>VALIDATE</b> <span class="cmd">/validate</span><p>7-Question Gate (one NO = kill) + cross-identity proof + 4 gates (sanity → impact → dedup → report quality). Output: PASS / KILL / DOWNGRADE.</p></div>
-      <div class="phase"><b>REPORT</b> <span class="cmd">/report</span><p>Only after PASS: fixed title formula, impact-first, no "could potentially," working PoC, CVSS 3.1, &lt; 600 words, platform-specific.</p></div>
-      <div class="phase"><b>SUBMIT (human-approved) + post-submission</b><p>Never auto-submitted; final pre-submit checklist; re-test deployed fixes for incomplete-patch bypass; log outcome with <code>/remember</code>.</p></div>
+  <!-- ============ INVENTORY: TOOLS & MCP ============ -->
+  <section id="tools">
+    <p class="eyebrow">// inventory · tools &amp; MCP</p>
+    <h2>69 deterministic <span class="accent">tools</span> + 6 MCP servers</h2>
+    <p class="lead">The measurable work happens here — engines, scanners, and the safety/persistence substrate the model never re-implements.</p>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Group</th><th>Tools</th></tr></thead>
+        <tbody>
+          <tr><td>Static / composition engines</td><td><code>sast_runner.py</code> <span class="new-tag">NEW</span> <code>sca_audit.py</code> <span class="new-tag">NEW</span> <code>pr_diff_review.py</code> <span class="new-tag">NEW</span> <code>sourcemap_analyzer.py</code> <span class="new-tag">NEW</span></td></tr>
+          <tr><td>Verification &amp; persistence</td><td><code>retest.py</code> <span class="new-tag">NEW</span> <code>save_finding.py</code> <span class="new-tag">NEW</span> <code>dom_xss_verifier.py</code> <span class="new-tag">NEW</span> <code>validate.py</code> <code>dual_session.py</code> <code>dedup_findings.py</code></td></tr>
+          <tr><td>Secrets pipeline</td><td><code>secrets_hunter.sh</code> <code>secrets_ingest.py</code> <code>secret_validate.py</code> <span class="new-tag">NEW</span> <code>custom_secret_patterns.py</code> <span class="new-tag">NEW</span> <code>redact.py</code></td></tr>
+          <tr><td>Recon &amp; discovery</td><td><code>recon_engine.sh</code> <code>cloud_recon.sh</code> <code>param_discovery.sh</code> <code>takeover_scanner.sh</code> <code>cve_scan.sh</code> <code>cicd_scanner.sh</code></td></tr>
+          <tr><td>Hunt engines</td><td><code>vuln_scanner.sh</code> <code>graphql_audit.sh</code> <code>dast_scanner.sh</code> <code>idor_scanner.py</code> <code>race_tester.py</code> <code>oauth_tester.py</code> <code>waf_encoder.py</code> <code>zero_day_fuzzer.py</code> <code>llm_redteam.py</code> <code>token_scanner.py</code></td></tr>
+          <tr><td>Scope · memory · routing</td><td><code>scope_checker.py</code> <code>scope_aggregator.sh</code> <code>skill_router.py</code> <code>kev_matrix.py</code> <code>disclosure_miner.py</code> <code>memory_gc.py</code> <code>llm_router.py</code></td></tr>
+          <tr><td>GUI &amp; reporting</td><td><code>dashboard/app.py</code> <code>dashboard/database.py</code> <code>search_findings.py</code> <code>dashboard.py</code> (TUI)</td></tr>
+          <tr><td>MCP servers (6)</td><td><code>burp-mcp-client</code> <code>caido-mcp-client</code> <code>hackerone-mcp</code> <code>bugcrowd-mcp</code> <code>intigriti-mcp</code> <code>immunefi-mcp</code></td></tr>
+        </tbody>
+      </table>
     </div>
+  </section>
 
+  <!-- ============ WORKFLOW ============ -->
+  <section id="workflow">
+    <p class="eyebrow">// the hunting lifecycle</p>
+    <h2>The <span class="accent">end-to-end workflow</span></h2>
+    <p class="lead">Scope to report, with the new white-box and closed-loop branches inline. Every active step is scope-gated.</p>
     <div class="diagram">
       <p class="cap">flowchart TD — hunting lifecycle</p>
       <pre class="mermaid">
 flowchart TD
-    START([Target]) --&gt; P1[1 SCOPE&lt;br/&gt;/scope · verify in-scope · pick identity]
-    P1 --&gt;|in scope| P2[2 RECON&lt;br/&gt;recon_engine.sh]
-    P1 --&gt;|out of scope| STOP([STOP])
-    P2 --&gt;|5-min kill| STOP
-    P2 --&gt; P3[3 MAP &amp; RANK&lt;br/&gt;/surface · recon-ranker]
-    P3 --&gt; P4[4 HUNT per class&lt;br/&gt;hunt.py → vuln_scanner.sh]
-    P4 --&gt;|A→B sibling&lt;br/&gt;20-min rotation| P4
-    P4 --&gt; P5[5 PROVE &amp; ESCALATE&lt;br/&gt;Low → Critical chain]
-    P5 --&gt; P6{6 VALIDATE&lt;br/&gt;7-Q gate + 4 gates}
-    P6 --&gt;|KILL| STOP
-    P6 --&gt;|DOWNGRADE| P5
-    P6 --&gt;|PASS| P7[7 REPORT&lt;br/&gt;/report · title formula]
-    P7 --&gt; P8{8 Human approval}
-    P8 --&gt;|approved| SUB([SUBMIT])
-    P8 --&gt;|rework| P5
-    SUB --&gt; POST[Post-submission:&lt;br/&gt;re-test fix · /remember]
-    POST -.feeds.-&gt; MEM[(hunt-memory&lt;br/&gt;patterns/journal)]
-    MEM -.informs.-&gt; P3
-
-    subgraph AP[Autopilot inner loop]
-        C{Confidence 100%?}
-        C --&gt;|no| DEEP[Hunt deeper:&lt;br/&gt;more payloads / OOB] --&gt; C
-        C --&gt;|yes| POC[Capture PoC → next class]
-    end
-    P4 -.runs.-&gt; AP
-      </pre>
-    </div>
-
-    <h3 style="font-family:var(--mono);color:var(--cyan);margin:32px 0 4px;font-size:1.05rem">Autopilot modes <code>/autopilot</code></h3>
-    <p class="lead" style="margin-bottom:14px">Same scripts and outputs as the manual chain, driven by one agent loop. Scope-check every URL, log every request, never auto-submit, circuit breaker after 5 consecutive 403/429/timeout.</p>
-    <div class="modes">
-      <div class="mode default"><div class="mn">--paranoid</div><small>Default. Stops on every finding / signal.</small></div>
-      <div class="mode"><div class="mn">--normal</div><small>Stops after each validation batch.</small></div>
-      <div class="mode"><div class="mn">--yolo</div><small>Runs until surface exhausted; still needs report + PUT/DELETE/PATCH approval.</small></div>
-      <div class="mode"><div class="mn">--quick</div><small>~40% fewer tokens.</small></div>
+  S(["/scope · /scope-aggregate"]) --> G{"scope verdict"}
+  G -- "in scope" --> R["/recon · /js-analyze · /secrets-hunt"]
+  G -- "NEEDS_REVIEW" --> C["operator --confirm"] --> R
+  G -- "excluded" --> X["stop"]
+  R --> SF["/surface · recon-ranker"]
+  SF --> H["/hunt · /autopilot · /graphql-audit · /dast-scan"]
+  SF --> WB["white-box: /sast · /sca · /code-audit · /pr-review"]
+  H --> V["/validate · 7-Question Gate"]
+  WB --> V
+  V -- "DOM sink" --> DV["/dom-verify (headless Chromium)"] --> V
+  V -- "pass" --> P["save_finding → DB(poc_spec)"]
+  P --> RPT["/report"]
+  P --> RT["/retest --from-db"]
+  RT --> VR{"FIXED · STILL-VULN · REGRESSED"}
+  VR -- "REGRESSED / STILL-VULN" --> RPT
+  RPT --> DASH["GUI workbench: re-run · verdict · export"]
+</pre>
     </div>
   </section>
 
-  <!-- ============ 6. SAFETY & MEMORY ============ -->
+  <!-- ============ SAFETY & MEMORY ============ -->
   <section id="safety" class="safety">
     <p class="eyebrow">// safety &amp; memory model</p>
     <h2>Safe on <span class="accent">every request</span>, cumulative across targets</h2>
@@ -617,7 +576,7 @@ flowchart TD
     <div class="grid cols-3">
       <div class="card">
         <h3><span class="ic">⊘</span>Scope checker</h3>
-        <p>Deterministic, code-not-LLM. Anchored-suffix matching (<code>*.target.com</code> accepts <code>sub.target.com</code>, rejects <code>evil-target.com</code>), exclusions before allowlist, fail-closed, IP/CIDR refused. Called before any outbound request.</p>
+        <p>Deterministic, code-not-LLM. Anchored-suffix matching (<code>*.target.com</code> accepts <code>sub.target.com</code>, rejects <code>evil-target.com</code>), exclusions before allowlist, fail-closed, IP/CIDR refused. Returns <code>NEEDS_REVIEW</code> for unmatched/sibling hosts. Called before any outbound request.</p>
       </div>
       <div class="card">
         <h3><span class="ic">⊘</span>Audit log</h3>
@@ -643,10 +602,10 @@ flowchart TD
     <p class="note">Division of responsibility: scope_checker decides whether a host may be touched at all; AutopilotGuard decides whether this specific request is allowed right now; AuditLog records verifiable evidence; rotation keeps it bounded; schema validation keeps it well-formed.</p>
   </section>
 
-  <!-- ============ 7. QUALITY & CI ============ -->
+  <!-- ============ QUALITY & CI ============ -->
   <section id="quality">
     <p class="eyebrow">// quality &amp; CI</p>
-    <h2>Pre-merge <span class="accent">lint + 372 tests</span></h2>
+    <h2>Pre-merge <span class="accent">lint + 917 tests</span></h2>
     <p class="lead">A single workflow <code>.github/workflows/skill-lint.yml</code> with a <code>dorny/paths-filter</code> gate driving two jobs.</p>
     <div class="grid cols-2">
       <div class="card glow">
@@ -655,10 +614,12 @@ flowchart TD
       </div>
       <div class="card glow">
         <h3><span class="ic" style="color:var(--purple)">▸</span>Job 2 — tests</h3>
-        <p><b>372 test functions across 23 pytest files</b> + 1 shell test + shared <code>conftest.py</code>. Largest: test_auth_session (45), test_token_scanner (39), test_recon_adapter (31), test_scope_checker (30), test_schemas (23), test_audit_log (22), test_rotation (22). An <code>eval/</code> harness (PortSwigger labs, false-positive cases) measures real hunting accuracy out-of-band, including <code>eval/code_corpus/</code> — a white-box ground-truth corpus (vulnerable + safe variants) scored by <code>run_eval_code.py</code> for precision/recall/F1.</p>
+        <p><b>917 test functions across 44 test files</b> + shell tests + shared <code>conftest.py</code>. New coverage includes <code>test_sast_tool</code>, <code>test_sca_tool</code> / <code>test_sca_audit</code>, <code>test_pr_diff_review</code>, <code>test_retest</code>, <code>test_findings_persistence</code>, <code>test_dom_xss_verifier</code>, <code>test_sourcemap_analyzer</code>, <code>test_secret_validate</code>, <code>test_code_corpus_eval</code> / <code>test_run_eval_code</code>, and <code>test_dashboard_gui</code>. The <code>eval/code_corpus/</code> white-box benchmark scores precision / recall / F1 deterministically — no scanner needed in CI.</p>
       </div>
     </div>
   </section>
+
+  </main>
 
   <!-- ============ FOOTER ============ -->
   <footer>
@@ -666,15 +627,156 @@ flowchart TD
     <div class="install"><span class="pfx">$</span> chmod +x install.sh &amp;&amp; ./install.sh</div>
     <p class="meta">
       MIT License · author <b>bpnrockstar</b> · <code>unified-bug-hunter</code> v4.3.2<br>
+      89 skills · 45 commands · 31 agents · 69 tools · 917 tests · 6 MCP servers<br>
       <a href="https://github.com/bpnrockstar/UnifiedBugHunter" target="_blank" rel="noopener">github.com/bpnrockstar/UnifiedBugHunter</a>
     </p>
   </footer>
 
 </div>
 
+<!-- ============ MERMAID ============ -->
 <script type="module">
   import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
-  mermaid.initialize({startOnLoad:true, theme:'dark'});
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'dark',
+    themeVariables: {
+      primaryColor: '#11161d',
+      primaryBorderColor: '#1e3a3a',
+      primaryTextColor: '#d7e2ea',
+      lineColor: '#34e0ff',
+      fontFamily: 'SF Mono, JetBrains Mono, monospace'
+    }
+  });
+</script>
+
+<!-- ============ CHART.JS ============ -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+<script>
+  (function () {
+    if (typeof Chart === 'undefined') return;
+    var css = getComputedStyle(document.documentElement);
+    var GREEN = css.getPropertyValue('--green').trim() || '#39ff8b';
+    var CYAN  = css.getPropertyValue('--cyan').trim()  || '#34e0ff';
+    var AMBER = css.getPropertyValue('--amber').trim() || '#ffd166';
+    var RED   = css.getPropertyValue('--red').trim()   || '#ff5d6c';
+    var PURPLE= css.getPropertyValue('--purple').trim()|| '#b794ff';
+    var MUTED = css.getPropertyValue('--muted').trim() || '#8a9bab';
+    var GRID  = 'rgba(138,155,171,0.15)';
+    var MONO  = 'SF Mono, JetBrains Mono, monospace';
+
+    Chart.defaults.color = MUTED;
+    Chart.defaults.font.family = MONO;
+    Chart.defaults.font.size = 11;
+
+    function hex2rgba(h, a) {
+      h = h.replace('#', '');
+      var r = parseInt(h.substring(0,2),16), g = parseInt(h.substring(2,4),16), b = parseInt(h.substring(4,6),16);
+      return 'rgba(' + r + ',' + g + ',' + b + ',' + a + ')';
+    }
+
+    // (a) Skill families — doughnut
+    new Chart(document.getElementById('chartSkills'), {
+      type: 'doughnut',
+      data: {
+        labels: ['Per-class hunt-*', 'Offsec / red-team', 'Triage·report·KB', 'Recon / workflow', 'Code / white-box', 'Web3 / tokens'],
+        datasets: [{
+          data: [48, 22, 9, 8, 3, 2],
+          backgroundColor: [CYAN, PURPLE, GREEN, AMBER, RED, '#5fb3ff'],
+          borderColor: '#0d1117',
+          borderWidth: 2
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false, cutout: '58%',
+        plugins: {
+          legend: { position: 'right', labels: { boxWidth: 12, padding: 9, font: { size: 10 } } },
+          tooltip: { callbacks: { label: function (c) { return c.label + ': ' + c.parsed + ' skills'; } } }
+        }
+      }
+    });
+
+    // (b) Test-suite growth — line
+    new Chart(document.getElementById('chartTests'), {
+      type: 'line',
+      data: {
+        labels: ['Baseline', 'Engines\n(SAST/SCA)', 'Persistence\n+ retest', 'PR pack\n+ GUI'],
+        datasets: [{
+          label: 'Test functions',
+          data: [372, 560, 740, 917],
+          borderColor: GREEN,
+          backgroundColor: hex2rgba(GREEN, 0.12),
+          fill: true, tension: 0.3, borderWidth: 2.5,
+          pointBackgroundColor: GREEN, pointRadius: 4, pointHoverRadius: 6
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false }, tooltip: { callbacks: { label: function (c) { return c.parsed.y + ' tests'; } } } },
+        scales: {
+          y: { beginAtZero: true, suggestedMax: 1000, grid: { color: GRID }, title: { display: true, text: 'def test_*', color: MUTED } },
+          x: { grid: { display: false } }
+        }
+      }
+    });
+
+    // (c) White-box vs black-box — radar
+    new Chart(document.getElementById('chartMode'), {
+      type: 'radar',
+      data: {
+        labels: ['Recon /\nsurface', 'Code\naudit', 'Live\nexploit', 'Secrets', 'Verification', 'Reporting'],
+        datasets: [
+          {
+            label: 'White-box',
+            data: [3, 10, 2, 8, 9, 6],
+            borderColor: CYAN, backgroundColor: hex2rgba(CYAN, 0.18),
+            borderWidth: 2, pointBackgroundColor: CYAN, pointRadius: 3
+          },
+          {
+            label: 'Black-box',
+            data: [10, 1, 10, 6, 7, 6],
+            borderColor: AMBER, backgroundColor: hex2rgba(AMBER, 0.15),
+            borderWidth: 2, pointBackgroundColor: AMBER, pointRadius: 3
+          }
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, padding: 12 } } },
+        scales: {
+          r: {
+            beginAtZero: true, suggestedMax: 10,
+            grid: { color: GRID }, angleLines: { color: GRID },
+            pointLabels: { color: MUTED, font: { size: 9 } },
+            ticks: { display: false }
+          }
+        }
+      }
+    });
+
+    // (d) White-box SAST eval — grouped bar (P / R / F1)
+    new Chart(document.getElementById('chartF1'), {
+      type: 'bar',
+      data: {
+        labels: ['Precision', 'Recall', 'F1'],
+        datasets: [
+          { label: 'Overall (14 classes)', data: [1.0, 1.0, 1.0], backgroundColor: GREEN, borderRadius: 5, barPercentage: 0.55 },
+          { label: 'TP/FP/FN', data: [null, null, null], backgroundColor: 'transparent', borderWidth: 0 }
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: { label: function (c) { return c.dataset.label + ': ' + c.parsed.y.toFixed(2) + '  (TP=14 FP=0 FN=0)'; } } }
+        },
+        scales: {
+          y: { beginAtZero: true, max: 1.05, grid: { color: GRID }, ticks: { stepSize: 0.25 }, title: { display: true, text: 'score', color: MUTED } },
+          x: { grid: { display: false } }
+        }
+      }
+    });
+  })();
 </script>
 </body>
 </html>

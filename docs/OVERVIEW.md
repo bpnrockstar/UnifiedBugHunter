@@ -2,13 +2,13 @@
 
 > A Claude Code plugin that turns an LLM session into a disciplined, scope-safe, memory-backed bug-bounty and red-team operator.
 
-**At a glance:** `unified-bug-hunter` v4.3.2 · MIT · author `bpnrockstar` · **89 skills** · **42 commands** · **30 agents** · **65 engine tools** · **6 MCP servers** · **372 tests** · Flask + SQLite dashboard
+**At a glance:** `unified-bug-hunter` v4.3.2 · MIT · author `bpnrockstar` · **89 skills** · **45 commands** · **31 agents** · **70 engine tools** · **6 MCP servers** · **372 tests** · Flask + SQLite dashboard
 
 ---
 
 ## What it is
 
-UnifiedBugHunter is a Claude Code *plugin* that orchestrates real offensive tooling with judgment and safety — it does **not** replace the underlying tools. Instead of running `subfinder`, `httpx`, `nuclei`, `dalfox`, `sqlmap`, `TREVORspray`, `Foundry`, etc. by hand, it wraps them in a deterministic scope checker, an append-only audit trail, cross-target pattern learning, a Flask/SQLite dashboard, and a hardened linter + CI suite. It ships **89 methodology skills, 42 slash commands, 30 subagents, 63 deterministic engine tools, and 6 MCP servers** — all governed so the operator gets cumulatively better and stays inside the rules.
+UnifiedBugHunter is a Claude Code *plugin* that orchestrates real offensive tooling with judgment and safety — it does **not** replace the underlying tools. Instead of running `subfinder`, `httpx`, `nuclei`, `dalfox`, `sqlmap`, `TREVORspray`, `Foundry`, etc. by hand, it wraps them in a deterministic scope checker, an append-only audit trail, cross-target pattern learning, a Flask/SQLite dashboard, and a hardened linter + CI suite. It ships **89 methodology skills, 45 slash commands, 31 subagents, 70 deterministic engine tools, and 6 MCP servers** — all governed so the operator gets cumulatively better and stays inside the rules.
 
 ---
 
@@ -30,8 +30,8 @@ UnifiedBugHunter is an **eight-layer stack**; a request flows top-to-bottom thro
 | # | Layer | Directory / key files | Responsibility |
 |---|-------|------------------------|----------------|
 | 1 | **Knowledge** (declarative) | `skills/` (89 `SKILL.md` dirs) | *How to think / what to check.* Pure methodology, no side effects. Auto-load by topic. `bb-methodology` is the master router. |
-| 2 | **Interface** | `commands/` (42 `.md`) | Slash-command entry points. Thin routers — invoke an engine script or dispatch to an agent/skill. Prefixed to avoid collisions (`/pickup` not `/resume`). |
-| 3 | **Actor** | `agents/` (30 `.md`) | Stateful subagents that run multi-step loops, pick tools, and carry safety rails in their prompts. Pinned models (Haiku/Sonnet/Opus). |
+| 2 | **Interface** | `commands/` (45 `.md`) | Slash-command entry points. Thin routers — invoke an engine script or dispatch to an agent/skill. Prefixed to avoid collisions (`/pickup` not `/resume`). |
+| 3 | **Actor** | `agents/` (31 `.md`) | Stateful subagents that run multi-step loops, pick tools, and carry safety rails in their prompts. Pinned models (Haiku/Sonnet/Opus). |
 | 4 | **Engine** (deterministic) | `tools/`, `scripts/`, `engine/` | Side-effecting execution. `tools/hunt.py` orchestrator; `engine/skill_map.py` maps surface→class→skill→first curl. |
 | 5 | **Integration** | `mcp/` (6 servers) | Proxy bridges (Burp/Caido) + read-only platform intel (H1/Bugcrowd/Intigriti/Immunefi). |
 | 6 | **State** | `memory/` (JSONL), `dashboard/data/bughunter.db` (SQLite), `dashboard/app.py` (Flask) | Persistence: hunt-memory + findings DB + read-mostly web GUI. |
@@ -45,15 +45,15 @@ graph TD
         BBM[bb-methodology<br/>master router]
     end
     subgraph L2[L2 Interface: commands/]
-        CMD[42 slash commands]
+        CMD[45 slash commands]
     end
     subgraph L3[L3 Actor: agents/]
-        AG[30 agents<br/>11 pipeline + 19 offensive]
+        AG[31 agents<br/>12 pipeline + 19 offensive]
         AUTO[autopilot loop]
     end
     subgraph L4[L4 Engine: tools/ scripts/ engine/]
         HUNT[hunt.py orchestrator]
-        ENG[65 engine tools]
+        ENG[70 engine tools]
         SMAP[engine/skill_map.py]
     end
     subgraph L5[L5 Integration: mcp/]
@@ -115,11 +115,11 @@ The legacy `find-*` family has been deleted. Families:
 - **LLM red-team (2):** `hunt-llm-ai`, `llm-redteam`.
 - **Orchestration / methodology / mindset (10):** `bug-bounty`, `auto-hunt`, `bb-methodology`, `redteam-mindset`, `mid-engagement-ir-detection`, `security-arsenal`, `web2-vuln-classes`, `cicd-security`, `graphql-audit`, `dast-scanner`.
 
-### Commands — 42 (7 model-driven, no backing script)
+### Commands — 45 (7 model-driven, no backing script)
 
 - **Recon:** `/recon`, `/cloud-recon`, `/osint-employees`, `/arsenal`.
 - **Scope:** `/scope`, `/scope-aggregate`, `/surface`.
-- **Hunting / Code audit:** `/hunt`, `/autopilot`, `/dast-scan`, `/scan-cves`, `/sast` (Semgrep SAST → normalized findings, regex fallback), `/sca` (lockfile SCA via osv-scanner/pip-audit → CVE advisories), `/code-audit` (runs `sast_runner`/`sca_audit` first, then the model triages), `/graphql-audit`, `/secrets-hunt`, `/chain`.
+- **Hunting / Code audit:** `/hunt`, `/autopilot`, `/dast-scan`, `/scan-cves`, `/sast` (Semgrep SAST → normalized findings, regex fallback), `/sca` (lockfile SCA via osv-scanner/pip-audit → CVE advisories), `/code-audit` (runs `sast_runner`/`sca_audit` first, then the model triages), `/pr-review` (diff-scoped PR review: NEW vs pre-existing findings + secret scan on added lines + inline comments), `/js-analyze` (recover pre-minified source from a live JS bundle via source map, then SAST + secret-regex), `/dom-verify` (auto-confirm a [POSSIBLE] DOM-XSS in headless Chromium), `/graphql-audit`, `/secrets-hunt`, `/chain`.
 - **Validation / Reporting / Retest:** `/triage`, `/validate`, `/report`, `/patch`, `/retest` (PoC-replay → FIXED/STILL-VULN/REGRESSED).
 - **Credential pipeline:** `/wordlist-gen`, `/breach-check`, `/spray`.
 - **Cloud / Takeover / Params:** `/takeover`, `/bypass-403`, `/param-discover`.
@@ -129,18 +129,18 @@ The legacy `find-*` family has been deleted. Families:
 - **Monitoring / Dashboard:** `/vuln-catcher`, `/dashboard`, `/search-findings`.
 - **Memory / Intel:** `/intel`, `/pickup`, `/remember`, `/memory-gc`.
 
-### Agents — 30 (11 pipeline + 19 offensive)
+### Agents — 31 (12 pipeline + 19 offensive)
 
 All on `claude-sonnet-4-6` except: recon/monitor agents on Haiku (`recon-agent`, `recon-ranker`, `vuln-catcher`); `report-writer` on Opus.
 
-- **Bug-bounty pipeline (11):** `recon-agent`, `recon-ranker`, `chain-builder`, `validator`, `report-writer`, `autopilot`, `web3-auditor`, `token-auditor`, `credential-hunter`, `regression-retest-agent` (drives `/retest` across a finding batch), `triage-dedup-agent` (clusters/dedups large finding sets, flags dups vs submitted).
+- **Bug-bounty pipeline (12):** `recon-agent`, `recon-ranker`, `chain-builder`, `validator`, `report-writer`, `autopilot`, `web3-auditor`, `token-auditor`, `credential-hunter`, `regression-retest-agent` (drives `/retest` across a finding batch), `triage-dedup-agent` (clusters/dedups large finding sets, flags dups vs submitted), `diff-aware-pr-reviewer` (diff-scoped PR/MR reviewer — reviews only the lines a PR changed, partitions NEW vs pre-existing, posts inline comments; read-only).
 - **Offensive security (19):** `binary-exploit`, `crypto-analyst`, `forensics-analyst`, `malware-analyst`, `reverse-engineer`, `social-engineer`, `container-escape`, `api-security`, `privesc-advisor`, `payload-crafter`, `attack-planner`, `ad-attacker`, `swarm-orchestrator`, `poc-validator`, `exploit-guide`, `code-reviewer`, `code-patcher`, `vuln-catcher`, `llm-redteamer`.
 
 The pipeline is a sequential funnel (recon-agent → recon-ranker → hunt → optional chain-builder → validator + poc-validator → report-writer), with `autopilot` driving it single-threaded and `swarm-orchestrator` fanning specialists out concurrently. The critical human-in-the-loop boundary is `credential-hunter`'s **hard stop before `/spray`**.
 
-### Engine tools — 63 (in `tools/`)
+### Engine tools — 70 (in `tools/`)
 
-Python on `python3`, shell on Bash. Orchestrator `hunt.py`; recon `recon_engine.sh`; scanning `vuln_scanner.sh`, `cve_scan.sh`, `dast_scanner.sh`, `graphql_audit.sh`; white-box SAST `sast_runner.py` (Semgrep-backed, regex fallback) and lockfile SCA `sca_audit.py` (osv-scanner/pip-audit/govulncheck), both backing `/code-audit`'s engine pass; validation `validate.py`; regression `retest.py` (PoC-replay → FIXED/STILL-VULN/REGRESSED); dedup `dedup_findings.py`; intel `intel_engine.py`, `learn.py`; scope `scope_checker.py`, `scope_aggregator.sh`; discovery/bypass `secrets_hunter.sh`, `takeover_scanner.sh`, `cloud_recon.sh`, `param_discovery.sh`, `bypass_403.sh`; dual-account harness `dual_session.py`; CI/CD `cicd_scanner.sh`; web3 `token_scanner.py`; LLM `llm_redteam.py` (+ `llm_payloads/` library, 7 JSON files), multi-provider router `llm_router.py`; skill routing/grounding `skill_router.py`, `disclosure_miner.py`, `kev_matrix.py`; evidence hygiene `redact.py`; registry `external_arsenal.sh`; credential pipeline `wordlist_engine.sh`, `osint_employees.sh`, `breach_checker.py`, `spray_orchestrator.sh`. Credential gating: `wordlist_engine.sh`, `osint_employees.sh`, and `spray_orchestrator.sh` (TREVOR o365/okta modes) require `--with-credential-attack`.
+Python on `python3`, shell on Bash. Orchestrator `hunt.py`; recon `recon_engine.sh`; scanning `vuln_scanner.sh`, `cve_scan.sh`, `dast_scanner.sh`, `graphql_audit.sh`; white-box SAST `sast_runner.py` (Semgrep-backed, regex fallback) and lockfile SCA `sca_audit.py` (osv-scanner/pip-audit/govulncheck), both backing `/code-audit`'s engine pass; validation `validate.py`; regression `retest.py` (PoC-replay → FIXED/STILL-VULN/REGRESSED); dedup `dedup_findings.py`; intel `intel_engine.py`, `learn.py`; scope `scope_checker.py`, `scope_aggregator.sh`; discovery/bypass `secrets_hunter.sh`, `takeover_scanner.sh`, `cloud_recon.sh`, `param_discovery.sh`, `bypass_403.sh`; dual-account harness `dual_session.py`; CI/CD `cicd_scanner.sh`; web3 `token_scanner.py`; LLM `llm_redteam.py` (+ `llm_payloads/` library, 7 JSON files), multi-provider router `llm_router.py`; skill routing/grounding `skill_router.py`, `disclosure_miner.py`, `kev_matrix.py`; diff-scoped PR review `pr_diff_review.py` (backs `/pr-review` + the `diff-aware-pr-reviewer` agent); JS source-map recovery `sourcemap_analyzer.py` (backs `/js-analyze`); Playwright DOM-XSS confirmation `dom_xss_verifier.py` (backs `/dom-verify`); cross-engine secret reconciliation/validation `secret_validate.py` with org-specific regexes `custom_secret_patterns.py`; evidence hygiene `redact.py`; registry `external_arsenal.sh`; credential pipeline `wordlist_engine.sh`, `osint_employees.sh`, `breach_checker.py`, `spray_orchestrator.sh`. Credential gating: `wordlist_engine.sh`, `osint_employees.sh`, and `spray_orchestrator.sh` (TREVOR o365/okta modes) require `--with-credential-attack`.
 
 ### MCP servers — 6
 
@@ -225,9 +225,9 @@ A single workflow `.github/workflows/skill-lint.yml` runs a `changes` job (`dorn
 | Plugin / version | `unified-bug-hunter` v4.3.2 (MIT, author `bpnrockstar`) |
 | Type | Claude Code plugin (8-layer stack), marketplace owner `bpnrockstar` |
 | Skills | **89** = 48 `hunt-*` per-vuln-class + 41 platform/methodology |
-| Slash commands | **42** (7 model-driven, no backing script) |
-| Agents | **30** = 11 bug-bounty pipeline + 19 offensive security |
-| Engine tools | **63** in `tools/` (+ `llm_payloads/` library, 7 JSON files) |
+| Slash commands | **45** (7 model-driven, no backing script) |
+| Agents | **31** = 12 bug-bounty pipeline + 19 offensive security |
+| Engine tools | **70** in `tools/` (+ `llm_payloads/` library, 7 JSON files) |
 | MCP servers | **6** = 2 proxy bridges (Burp, Caido) + 4 intel (H1, Bugcrowd, Intigriti, Immunefi) |
 | Models in use | Sonnet 4-6 (default), Haiku 4-5 (recon/monitor), Opus 4-7 (report-writer) |
 | Dashboard | Flask `app.py` at `127.0.0.1:5000` over SQLite `bughunter.db` (WAL, FK on; 7 tables, `scan_history` unused) |

@@ -2,7 +2,7 @@
 
 **A scope-safe, memory-backed bug-bounty and red-team operator for Claude Code.**
 
-89 skills · 42 commands · 30 agents · 6 MCP servers · 372 tests
+89 skills · 45 commands · 31 agents · 6 MCP servers · 372 tests
 
 > **Warning**: For authorized security testing only. Always read and respect program scope.
 
@@ -24,9 +24,9 @@ UnifiedBugHunter turns a Claude Code session into a disciplined offensive operat
 | Layer | What you get |
 |-------|--------------|
 | **89 skills** | 48 `hunt-*` per-vuln-class + framework skills (SQLi, IDOR, XSS, SSRF, SSTI, OAuth, SAML, GraphQL, Next.js, Spring Boot, …) and 41 platform/methodology skills (recon/OSINT, cloud & enterprise identity, AD, mobile, reporting, LLM red-team, Web3). `bb-methodology` is the master router. |
-| **42 commands** | Recon, scope, hunting, SAST/SCA, validation/reporting, regression retest, the credential pipeline, cloud/takeover/params, Web3, LLM red-team, KEV coverage, monitoring, and memory/intel — thin routers that invoke an engine script or dispatch an agent. |
-| **30 agents** | An 11-agent bug-bounty pipeline (recon → rank → hunt → chain → validate → report, plus regression-retest and triage-dedup) plus 19 offensive specialists (binary exploit, crypto, forensics, malware, AD, container escape, API, privesc, payload crafting, …). |
-| **65 engine tools** | Deterministic Python/shell execution: `hunt.py` orchestrator, recon/scan engines, a Semgrep-backed SAST engine and lockfile SCA auditor, the scope checker, the credential pipeline, a PoC-replay regression engine, finding dedup, a multi-provider LLM router, and an arsenal registry of ~50 external tools. |
+| **45 commands** | Recon, scope, hunting, SAST/SCA, diff-scoped PR review, JS source-map analysis, DOM-XSS verification, validation/reporting, regression retest, the credential pipeline, cloud/takeover/params, Web3, LLM red-team, KEV coverage, monitoring, and memory/intel — thin routers that invoke an engine script or dispatch an agent. |
+| **31 agents** | A 12-agent bug-bounty pipeline (recon → rank → hunt → chain → validate → report, plus regression-retest, triage-dedup, and a diff-aware PR reviewer) plus 19 offensive specialists (binary exploit, crypto, forensics, malware, AD, container escape, API, privesc, payload crafting, …). |
+| **70 engine tools** | Deterministic Python/shell execution: `hunt.py` orchestrator, recon/scan engines, a Semgrep-backed SAST engine and lockfile SCA auditor, a diff-scoped PR reviewer, a JS source-map analyzer, a Playwright DOM-XSS verifier, cross-engine secret validation, the scope checker, the credential pipeline, a PoC-replay regression engine, finding dedup, a multi-provider LLM router, and an arsenal registry of ~50 external tools. |
 | **6 MCP servers** | 2 proxy bridges (Burp, Caido) + 4 read-only intel feeds (HackerOne, Bugcrowd, Intigriti, Immunefi); all degrade gracefully to curl + OOB if not connected. |
 
 Full breakdown: see **[docs/OVERVIEW.md](docs/OVERVIEW.md)** and **[CLAUDE.md](CLAUDE.md)**.

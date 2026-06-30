@@ -1,52 +1,164 @@
 {% extends "base.html" %}
 {% block title %}Findings — Unified Bug Hunter{% endblock %}
+{#
+  findings.html — the master findings table.
+
+  This page previously rendered an unstyled table (flat severity/status text).
+  It now uses the shared theme: color-coded severity badges (.sev-*), status
+  badges (.status-*), client-side column sorting, and Export CSV / Markdown
+  buttons. The current filter state (q / severity / class / status / target_id)
+  is preserved into the export links so "what you see is what you export".
+
+  Sorting is CLIENT-SIDE and progressive: if JS is disabled the table still
+  renders in the server's (severity-then-date) order — sorting just won't toggle.
+#}
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-3">
-    <h4><i class="bi-shield-exclamation me-2"></i>Findings <small class="text-secondary">({{ total }} total)</small></h4>
-    <form class="d-flex gap-2" method="GET">
-        <input name="q" class="form-control form-control-sm" placeholder="Search..." value="{{ search or '' }}" style="width:200px">
-        <select name="severity" class="form-select form-select-sm" style="width:auto" onchange="this.form.submit()">
-            <option value="">All Severities</option>
-            {% for s in ['critical','high','medium','low','info'] %}
-            <option value="{{ s }}" {{ 'selected' if severity == s }}>{{ s|capitalize }}</option>
-            {% endfor %}
-        </select>
-        <select name="class" class="form-select form-select-sm" style="width:auto" onchange="this.form.submit()">
-            <option value="">All Classes</option>
-            {% for c in ['xss','sqli','ssrf','idor','rce','ssti','xxe','csrf','idor','auth-bypass','ato','race-condition','business-logic','graphql','api-misconfig','cloud-misconfig','subdomain-takeover','file-upload','llm-ai','mfa-bypass','http-smuggling','cache-poison','saml','oidc','other'] %}
-            <option value="{{ c }}" {{ 'selected' if bug_class == c }}>{{ c|replace('-',' ')|title }}</option>
-            {% endfor %}
-        </select>
-        <select name="status" class="form-select form-select-sm" style="width:auto" onchange="this.form.submit()">
-            <option value="">All Status</option>
-            {% for s in ['open','verified','false_positive','fixed','accepted'] %}
-            <option value="{{ s }}" {{ 'selected' if status == s }}>{{ s|replace('_',' ')|title }}</option>
-            {% endfor %}
-        </select>
-        <button class="btn btn-outline-primary btn-sm" type="submit"><i class="bi-funnel"></i></button>
-    </form>
+
+{# Severity -> badge class. Centralized so detail/target pages can mirror it. #}
+{% set sev_class = {
+    'critical': 'sev-critical',
+    'high': 'sev-high',
+    'medium': 'sev-medium',
+    'low': 'sev-low',
+    'info': 'sev-info'
+} %}
+{# Numeric rank drives client-side severity sorting (critical first). #}
+{% set sev_rank = {'critical': 0, 'high': 1, 'medium': 2, 'low': 3, 'info': 4} %}
+{% set status_class = {
+    'open': 'status-open',
+    'verified': 'status-verified',
+    'fixed': 'status-fixed',
+    'accepted': 'status-accepted',
+    'false_positive': 'status-false_positive'
+} %}
+
+{# Carry the active filters through to the export endpoints so exports match the view. #}
+{% set export_qs = request.query_string.decode('utf-8') %}
+
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <h4 class="mb-0"><i class="bi-shield-exclamation me-2"></i>Findings <small class="text-secondary">({{ total }} total)</small></h4>
+    <div class="d-flex gap-2 flex-wrap align-items-center">
+        <div class="btn-group" role="group" aria-label="Export findings">
+            <a class="btn btn-outline-secondary btn-sm" href="/findings.csv{{ '?' ~ export_qs if export_qs }}" title="Download the current view as CSV">
+                <i class="bi-filetype-csv me-1"></i>Export CSV
+            </a>
+            <a class="btn btn-outline-secondary btn-sm" href="/findings.md{{ '?' ~ export_qs if export_qs }}" title="Download the current view as Markdown">
+                <i class="bi-filetype-md me-1"></i>Export Markdown
+            </a>
+        </div>
+        <form class="d-flex gap-2 flex-wrap" method="GET">
+            <input name="q" class="form-control form-control-sm" placeholder="Search..." value="{{ search or '' }}" style="width:180px">
+            {% if target_id %}<input type="hidden" name="target_id" value="{{ target_id }}">{% endif %}
+            <select name="severity" class="form-select form-select-sm" style="width:auto" onchange="this.form.submit()">
+                <option value="">All Severities</option>
+                {% for s in ['critical','high','medium','low','info'] %}
+                <option value="{{ s }}" {{ 'selected' if severity == s }}>{{ s|capitalize }}</option>
+                {% endfor %}
+            </select>
+            <select name="class" class="form-select form-select-sm" style="width:auto" onchange="this.form.submit()">
+                <option value="">All Classes</option>
+                {% for c in ['xss','sqli','ssrf','idor','rce','ssti','xxe','csrf','auth-bypass','ato','race-condition','business-logic','graphql','api-misconfig','cloud-misconfig','subdomain-takeover','file-upload','llm-ai','mfa-bypass','http-smuggling','cache-poison','saml','oidc','secret','other'] %}
+                <option value="{{ c }}" {{ 'selected' if bug_class == c }}>{{ c|replace('-',' ')|title }}</option>
+                {% endfor %}
+            </select>
+            <select name="status" class="form-select form-select-sm" style="width:auto" onchange="this.form.submit()">
+                <option value="">All Status</option>
+                {% for s in ['open','verified','false_positive','fixed','accepted'] %}
+                <option value="{{ s }}" {{ 'selected' if status == s }}>{{ s|replace('_',' ')|title }}</option>
+                {% endfor %}
+            </select>
+            <button class="btn btn-outline-primary btn-sm" type="submit"><i class="bi-funnel"></i></button>
+        </form>
+    </div>
 </div>
 
 <div class="card">
     <div class="card-body p-0">
-        <table class="table table-dark table-sm mb-0">
-            <thead><tr><th>Severity</th><th>Title</th><th>Class</th><th>Domain</th><th>Status</th><th>Date</th></tr></thead>
-            <tbody>
-                {% for f in findings %}
-                <tr>
-                    <td><span class="badge bg-{{ 'danger' if f.severity == 'critical' else 'warning' if f.severity == 'high' else 'primary' if f.severity == 'medium' else 'secondary' }} severity-badge">{{ f.severity }}</span></td>
-                    <td><a href="/findings/{{ f.id }}">{{ f.title }}</a></td>
-                    <td><code>{{ f.bug_class or '-' }}</code></td>
-                    <td><a href="/targets/{{ f.target_id }}">{{ f.domain }}</a></td>
-                    {% set status_badge = {'fixed':'success','verified':'danger','open':'danger','accepted':'warning','false_positive':'secondary'} %}
-                    <td><span class="badge bg-{{ status_badge.get(f.status, 'secondary') }}">{{ f.status }}</span></td>
-                    <td><small class="text-secondary">{{ f.created_at[:10] }}</small></td>
-                </tr>
-                {% else %}
-                <tr><td colspan="6" class="text-secondary text-center py-3">No findings match your criteria.</td></tr>
-                {% endfor %}
-            </tbody>
-        </table>
+        <div class="table-responsive">
+            <table class="table table-hover table-sm mb-0" id="findings-table">
+                <thead>
+                    <tr>
+                        <th class="sortable" data-type="number">Severity</th>
+                        <th class="sortable" data-type="text">Title</th>
+                        <th class="sortable" data-type="text">Class</th>
+                        <th class="sortable" data-type="text">Domain</th>
+                        <th class="sortable" data-type="text">Status</th>
+                        <th class="sortable" data-type="number">CVSS</th>
+                        <th class="sortable" data-type="text">Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for f in findings %}
+                    <tr>
+                        {# data-sort holds the rank so sorting is by severity order, not alpha. #}
+                        <td data-sort="{{ sev_rank.get(f.severity, 5) }}">
+                            <span class="badge severity-badge {{ sev_class.get(f.severity, 'sev-info') }}">{{ f.severity or 'info' }}</span>
+                        </td>
+                        <td><a href="/findings/{{ f.id }}">{{ f.title }}</a></td>
+                        <td><code>{{ f.bug_class or '-' }}</code></td>
+                        <td><a href="/targets/{{ f.target_id }}">{{ f.domain }}</a></td>
+                        <td>
+                            <span class="badge status-badge {{ status_class.get(f.status, 'status-false_positive') }}">{{ (f.status or 'unknown')|replace('_',' ') }}</span>
+                        </td>
+                        <td data-sort="{{ f.cvss_score if f.cvss_score is not none else -1 }}">
+                            {{ '%.1f'|format(f.cvss_score) if f.cvss_score is not none else '—' }}
+                        </td>
+                        <td data-sort="{{ f.created_at or '' }}"><small class="text-secondary">{{ (f.created_at or '')[:10] }}</small></td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="7" class="text-secondary text-center py-3">No findings match your criteria.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Lightweight, dependency-free column sorting for the findings table.
+// Clicking a header toggles ascending/descending; numeric columns use the
+// data-sort attribute (severity rank, CVSS, ISO date) so ordering is correct.
+(function () {
+  var table = document.getElementById('findings-table');
+  if (!table) return;
+  var tbody = table.tBodies[0];
+  if (!tbody) return;
+
+  function cellValue(row, idx, type) {
+    var cell = row.cells[idx];
+    if (!cell) return type === 'number' ? -Infinity : '';
+    var raw = cell.hasAttribute('data-sort') ? cell.getAttribute('data-sort') : cell.textContent.trim();
+    if (type === 'number') {
+      var n = parseFloat(raw);
+      return isNaN(n) ? -Infinity : n;
+    }
+    return raw.toLowerCase();
+  }
+
+  Array.prototype.forEach.call(table.tHead.rows[0].cells, function (th, idx) {
+    if (!th.classList.contains('sortable')) return;
+    th.addEventListener('click', function () {
+      var type = th.getAttribute('data-type') || 'text';
+      var asc = th.getAttribute('aria-sort') !== 'ascending';
+      // Reset other headers' indicators.
+      Array.prototype.forEach.call(table.tHead.rows[0].cells, function (o) { o.removeAttribute('aria-sort'); });
+      th.setAttribute('aria-sort', asc ? 'ascending' : 'descending');
+
+      var rows = Array.prototype.slice.call(tbody.rows).filter(function (r) {
+        // Skip the "no findings" placeholder row (single spanning cell).
+        return r.cells.length > 1;
+      });
+      rows.sort(function (a, b) {
+        var av = cellValue(a, idx, type), bv = cellValue(b, idx, type);
+        if (av < bv) return asc ? -1 : 1;
+        if (av > bv) return asc ? 1 : -1;
+        return 0;
+      });
+      rows.forEach(function (r) { tbody.appendChild(r); });
+    });
+  });
+})();
+</script>
 {% endblock %}

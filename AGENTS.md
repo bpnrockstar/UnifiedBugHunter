@@ -18,7 +18,7 @@ This repo is an agent-portable bug bounty plugin for professional hunting across
 | `skills/report-writing/` | H1/Bugcrowd/Intigriti/Immunefi report templates, CVSS 3.1, human tone |
 | `skills/triage-validation/` | 7-Question Gate, 4 gates, never-submit list, conditionally valid table |
 
-### Commands (42 slash commands)
+### Commands (45 slash commands)
 
 > **Note:** All commands are prefixed to avoid conflicts with Codex's built-in commands.
 > `/resume` is a reserved Codex command — use `/pickup` to continue a previous hunt.
@@ -55,10 +55,13 @@ This repo is an agent-portable bug bounty plugin for professional hunting across
 | `/llm-config` | `/llm-config [--provider] [--model]` — multi-provider LLM completion router (`tools/llm_router.py`) |
 | `/evolve-skills` | `/evolve-skills <report-source>` — ground/evolve skills from disclosed reports (`tools/disclosure_miner.py`) |
 | `/kev-matrix` | `/kev-matrix` — map CISA-KEV catalog to skill coverage (`tools/kev_matrix.py`) |
+| `/pr-review` | `/pr-review --base <target-branch> [--path .] [--json]` — diff-scoped PR security review: partition findings into NEW (on added lines) vs pre-existing, scan added lines for secrets, triage the NEW set, post inline comments (`tools/pr_diff_review.py`) |
+| `/js-analyze` | `/js-analyze <url\|file> [--out <dir>] [--json]` — recover pre-minified source from a live JS bundle via `//# sourceMappingURL`, then run SAST + secret-regex over it (`tools/sourcemap_analyzer.py`) |
+| `/dom-verify` | `/dom-verify <url> <payload> [--marker m] [--json]` — auto-confirm a [POSSIBLE] DOM-XSS in headless Chromium (Playwright) → CONFIRMED / UNVERIFIED (`tools/dom_xss_verifier.py`) |
 
-### Agents (30 specialized agents)
+### Agents (31 specialized agents)
 
-#### Bug Bounty Pipeline (11)
+#### Bug Bounty Pipeline (12)
 - `recon-agent` — subdomain enum + live host discovery
 - `report-writer` — generates H1/Bugcrowd/Immunefi reports
 - `validator` — 4-gate checklist on a finding
@@ -70,6 +73,7 @@ This repo is an agent-portable bug bounty plugin for professional hunting across
 - `credential-hunter` — wordlist-gen + OSINT + breach-check + spray hard-stop
 - `regression-retest-agent` — drives `/retest` across a finding batch against live targets (FIXED/STILL-VULN/REGRESSED)
 - `triage-dedup-agent` — clusters/dedups a large finding set and flags duplicates vs already-submitted
+- `diff-aware-pr-reviewer` — diff-scoped PR/MR security reviewer; reviews ONLY the lines a PR changed (drives `tools/pr_diff_review.py`, partitions NEW vs pre-existing, posts inline comments via `code-review --comment`); read-only, never modifies code
 
 #### Offensive Security (19)
 - `binary-exploit` — memory corruption, ROP, shellcode, format string exploitation
@@ -126,6 +130,11 @@ This repo is an agent-portable bug bounty plugin for professional hunting across
 - `tools/disclosure_miner.py` — skill grounding/evolution from disclosed reports
 - `tools/kev_matrix.py` — CISA-KEV catalog → skill-coverage matrix
 - `tools/dual_session.py` — dual-account IDOR/privesc test harness
+- `tools/sourcemap_analyzer.py` — recover pre-minified source from a live JS bundle via `//# sourceMappingURL` (beautify fallback), then run SAST + secret-regex; backs `/js-analyze`
+- `tools/secret_validate.py` — cross-engine secret reconciliation + liveness validation + org-specific regex scan (`scan_custom()`)
+- `tools/dom_xss_verifier.py` — auto-confirm a [POSSIBLE] DOM-XSS by firing `(url, payload)` in headless Chromium (Playwright); backs `/dom-verify`
+- `tools/pr_diff_review.py` — review ONLY a PR's diff: intersect findings with diff-touched lines, partition NEW vs pre-existing; backs `/pr-review` and the `diff-aware-pr-reviewer` agent
+- `tools/custom_secret_patterns.py` — org-specific secret regexes consumed by `secret_validate.scan_custom()`
 
 ### External tool references
 

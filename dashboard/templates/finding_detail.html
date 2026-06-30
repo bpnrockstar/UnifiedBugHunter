@@ -1,26 +1,34 @@
 {% extends "base.html" %}
 {% block title %}{{ finding.title }} — Unified Bug Hunter{% endblock %}
 {% block content %}
+{# Shared badge palettes — mirror findings.html so the look is identical. #}
+{% set sev_class = {
+    'critical': 'sev-critical',
+    'high': 'sev-high',
+    'medium': 'sev-medium',
+    'low': 'sev-low',
+    'info': 'sev-info'
+} %}
+{% set status_class = {
+    'open': 'status-open',
+    'verified': 'status-verified',
+    'fixed': 'status-fixed',
+    'accepted': 'status-accepted',
+    'false_positive': 'status-false_positive'
+} %}
 <a href="/findings" class="text-decoration-none">&larr; Findings</a>
 <div class="d-flex justify-content-between align-items-start mt-2 mb-3">
     <div>
         <h4>{{ finding.title }}</h4>
         <p class="text-secondary">
-            <span class="badge bg-{{ 'danger' if finding.severity == 'critical' else 'warning' if finding.severity == 'high' else 'primary' if finding.severity == 'medium' else 'secondary' }} me-2">{{ finding.severity|upper }}</span>
+            <span class="badge severity-badge {{ sev_class.get(finding.severity, 'sev-info') }} me-2">{{ (finding.severity or 'info')|upper }}</span>
             <code>{{ finding.bug_class }}</code> &middot;
             <a href="/targets/{{ finding.target_id }}">{{ finding.domain }}</a> &middot;
             Status:
-            {# Verdict badge: maps the stored status to a regression-retest color.
-               fixed=green, verified/open=red (still vulnerable), accepted=orange
-               (regressed/known-vulnerable), false_positive/unknown=grey. #}
-            {% set status_badge = {
-                'fixed': 'success',
-                'verified': 'danger',
-                'open': 'danger',
-                'accepted': 'warning',
-                'false_positive': 'secondary'
-            } %}
-            <span class="badge bg-{{ status_badge.get(finding.status, 'secondary') }}">{{ (finding.status or 'unknown')|replace('_',' ')|upper }}</span>
+            {# Status badge uses the shared .status-* palette: fixed=green,
+               verified/open=red (still vulnerable), accepted=orange,
+               false_positive/unknown=grey. #}
+            <span class="badge status-badge {{ status_class.get(finding.status, 'status-false_positive') }}">{{ (finding.status or 'unknown')|replace('_',' ') }}</span>
         </p>
     </div>
     {% if finding.cvss_score %}

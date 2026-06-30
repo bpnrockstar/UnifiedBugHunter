@@ -12,7 +12,7 @@
     {
       "name": "unified-bug-hunter",
       "source": "./",
-      "description": "Scope-safe, memory-backed bug-bounty & red-team plugin — 89 skills, 42 commands, 30 agents, 6 MCP servers. Orchestrates real offensive tooling (subfinder/httpx/nuclei/dalfox/sqlmap/Foundry) with report-derived methodology, a 7-Question false-positive gate, a deterministic fail-closed scope checker, and cross-target pattern learning. Skills auto-load by topic; reports never auto-submit.",
+      "description": "Scope-safe, memory-backed bug-bounty & red-team plugin — 89 skills, 45 commands, 31 agents, 6 MCP servers. Orchestrates real offensive tooling (subfinder/httpx/nuclei/dalfox/sqlmap/Foundry) with report-derived methodology, a 7-Question false-positive gate, a deterministic fail-closed scope checker, and cross-target pattern learning. Skills auto-load by topic; reports never auto-submit.",
       "version": "4.3.2",
       "author": {
         "name": "bpnrockstar",

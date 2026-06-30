@@ -137,6 +137,15 @@ $(location
 
 12. **Validate in target browser** — Always confirm in a real browser before reporting. Many payloads echo back in Burp but fail to execute in a real browser due to CSP, output encoding, framework auto-escaping, context mismatch, WAF normalization, or browser HTML-parsing differences. (Note: Chrome's XSS Auditor was removed in Chrome 78 / Oct 2019 and no shipping browser has one — never attribute a failed PoC to an "XSS auditor".)
 
+    **Auto-confirm DOM-XSS — `tools/dom_xss_verifier.py`.** For a **[POSSIBLE]** DOM-XSS candidate (a `location.hash`/`location.search`/`document.referrer` source reaching `innerHTML` / `document.write` / `eval` / `dangerouslySetInnerHTML`), don't eyeball Burp — hand the single `(url, payload)` to the verifier and let headless Chromium decide:
+
+    ```bash
+    python3 tools/dom_xss_verifier.py --url 'https://TARGET/page' \
+      --payload '<img src=x onerror=window.__xss_fired__=1>' [--marker __xss_fired__] [--json]
+    ```
+
+    Importable: `is_available() -> bool` and `verify_dom_xss(url, payload, *, marker='__xss_fired__', timeout=15) -> dict`. Detection = a JS **dialog** opening **OR** `window[marker]` set **OR** a console message carrying the marker → `verdict` `CONFIRMED`. A clean load with no signal is `NOT-TRIGGERED` (false positive under this payload); `UNVERIFIED` means Playwright/Chromium aren't installed (`pip install playwright && playwright install chromium`) — install before claiming or killing the bug. **CONFIRMED is the browser proof Gate 0 below demands** for DOM-based XSS, and it satisfies the `hunt-dom` validation discipline. The engine is optional — absence never crashes and exits 0. (`/dom-verify` wraps this; it confirms one payload, it does not crawl.)
+
 ---
 
 ## Payload & Detection Patterns

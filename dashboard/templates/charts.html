@@ -1,0 +1,174 @@
+{% extends "base.html" %}
+{% block title %}Charts — Unified Bug Hunter{% endblock %}
+{#
+  charts.html — visual analytics for the finding corpus.
+
+  Renders two Chart.js charts from data fetched at runtime from /api/trends:
+    1. Findings over time   — line chart (daily finding counts)
+    2. Top vulnerability classes — doughnut + bar of the most common bug_class
+
+  GRACEFUL DEGRADATION (matches the repo's engine-wrapper convention):
+    - Chart.js comes from a CDN in base.html. If it failed to load we detect the
+      missing global and show a clear "charting library unavailable" label.
+    - The /api/trends endpoint is owned by the Flask app. If it 404s, errors, or
+      returns an unexpected shape, each chart shows a plain "no data" / "trends
+      endpoint unavailable" message instead of a blank canvas or a JS exception.
+    - The response shape is parsed defensively: we accept both the get_stats()
+      shape ({findings_over_time:[{day,cnt}], top_classes:[{bug_class,cnt}]}) and
+      a flatter {labels, values} shape, so the template doesn't hard-couple to
+      one server implementation.
+#}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <h4 class="mb-0"><i class="bi-bar-chart-line me-2"></i>Charts</h4>
+    <small class="text-secondary">Source: <code>/api/trends</code></small>
+</div>
+
+<div class="row g-3">
+    <div class="col-lg-7">
+        <div class="card chart-card h-100">
+            <div class="card-header"><i class="bi-graph-up me-2"></i>Findings Over Time</div>
+            <div class="card-body">
+                <canvas id="trendChart" aria-label="Findings over time line chart"></canvas>
+                <div id="trendEmpty" class="chart-empty d-none"></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-5">
+        <div class="card chart-card h-100">
+            <div class="card-header"><i class="bi-pie-chart me-2"></i>Top Vulnerability Classes</div>
+            <div class="card-body">
+                <canvas id="classChart" aria-label="Top vulnerability classes chart"></canvas>
+                <div id="classEmpty" class="chart-empty d-none"></div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+  // ---- helpers -----------------------------------------------------------
+  function showEmpty(canvasId, emptyId, message) {
+    var canvas = document.getElementById(canvasId);
+    var empty = document.getElementById(emptyId);
+    if (canvas) canvas.classList.add('d-none');
+    if (empty) {
+      empty.textContent = message;
+      empty.classList.remove('d-none');
+    }
+  }
+
+  // Accept several response shapes for the time series.
+  function parseTrend(data) {
+    if (!data) return null;
+    // get_stats() shape
+    var series = data.findings_over_time || data.trend || data.series;
+    if (Array.isArray(series)) {
+      return {
+        labels: series.map(function (p) { return p.day || p.date || p.label || ''; }),
+        values: series.map(function (p) { return Number(p.cnt != null ? p.cnt : (p.count != null ? p.count : p.value)) || 0; })
+      };
+    }
+    // flat {labels, values}
+    if (Array.isArray(data.labels) && Array.isArray(data.values)) {
+      return { labels: data.labels, values: data.values.map(Number) };
+    }
+    return null;
+  }
+
+  // Accept several response shapes for the class breakdown.
+  function parseClasses(data) {
+    if (!data) return null;
+    var rows = data.top_classes || data.classes || data.by_class;
+    if (Array.isArray(rows)) {
+      return {
+        labels: rows.map(function (r) { return r.bug_class || r.class || r.label || 'unclassified'; }),
+        values: rows.map(function (r) { return Number(r.cnt != null ? r.cnt : (r.count != null ? r.count : r.value)) || 0; })
+      };
+    }
+    return null;
+  }
+
+  var PALETTE = ['#e5484d', '#fd7e14', '#ffc107', '#4c8dff', '#2fb344',
+                 '#a855f7', '#06b6d4', '#ec4899', '#84cc16', '#6c757d'];
+
+  function renderTrend(parsed) {
+    if (!parsed || !parsed.labels.length) {
+      showEmpty('trendChart', 'trendEmpty', 'No findings recorded yet — nothing to chart.');
+      return;
+    }
+    new Chart(document.getElementById('trendChart'), {
+      type: 'line',
+      data: {
+        labels: parsed.labels,
+        datasets: [{
+          label: 'Findings',
+          data: parsed.values,
+          borderColor: '#4c8dff',
+          backgroundColor: 'rgba(76,141,255,0.18)',
+          fill: true,
+          tension: 0.25,
+          pointRadius: 3
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { ticks: { color: '#8a96ab' }, grid: { color: 'rgba(37,48,74,0.5)' } },
+          y: { beginAtZero: true, ticks: { color: '#8a96ab', precision: 0 }, grid: { color: 'rgba(37,48,74,0.5)' } }
+        }
+      }
+    });
+  }
+
+  function renderClasses(parsed) {
+    if (!parsed || !parsed.labels.length) {
+      showEmpty('classChart', 'classEmpty', 'No classified findings yet.');
+      return;
+    }
+    new Chart(document.getElementById('classChart'), {
+      type: 'doughnut',
+      data: {
+        labels: parsed.labels,
+        datasets: [{
+          data: parsed.values,
+          backgroundColor: parsed.labels.map(function (_, i) { return PALETTE[i % PALETTE.length]; }),
+          borderColor: '#161d2b',
+          borderWidth: 2
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { position: 'bottom', labels: { color: '#d7dde8', boxWidth: 12 } } }
+      }
+    });
+  }
+
+  // ---- guard: Chart.js present? -----------------------------------------
+  if (typeof Chart === 'undefined') {
+    showEmpty('trendChart', 'trendEmpty', 'Charting library unavailable (Chart.js failed to load).');
+    showEmpty('classChart', 'classEmpty', 'Charting library unavailable (Chart.js failed to load).');
+    return;
+  }
+
+  // ---- fetch + render ----------------------------------------------------
+  fetch('/api/trends', { headers: { 'Accept': 'application/json' } })
+    .then(function (resp) {
+      if (!resp.ok) throw new Error('HTTP ' + resp.status);
+      return resp.json();
+    })
+    .then(function (data) {
+      renderTrend(parseTrend(data));
+      renderClasses(parseClasses(data));
+    })
+    .catch(function () {
+      // Endpoint missing / network error / bad JSON — clear, non-fatal label.
+      showEmpty('trendChart', 'trendEmpty', 'Trends endpoint unavailable (/api/trends).');
+      showEmpty('classChart', 'classEmpty', 'Trends endpoint unavailable (/api/trends).');
+    });
+})();
+</script>
+{% endblock %}

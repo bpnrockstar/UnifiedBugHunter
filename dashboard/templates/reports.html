@@ -10,7 +10,8 @@
             <tbody>
                 {% for r in reports %}
                 <tr>
-                    <td>{{ r.title }}</td>
+                    {# Title links to the rendered report view. #}
+                    <td><a href="/reports/{{ r.id }}">{{ r.title }}</a></td>
                     <td><a href="/targets/{{ r.target_id }}">{{ r.domain }}</a></td>
                     <td>{{ r.finding_count }}</td>
                     <td><span class="badge bg-secondary">{{ r.format }}</span></td>
