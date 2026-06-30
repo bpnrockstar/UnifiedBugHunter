@@ -21,6 +21,15 @@ Deserialization bugs are almost always Critical — they lead directly to RCE wi
 
 ---
 
+## CVE Grounding (proven RCE classes)
+
+- **Log4Shell — CVE-2021-44228** (+ bypass **CVE-2021-45046**) — Java; `${jndi:ldap://...}` interpolation in any logged string (`Logger.error/info`) → remote class load → RCE.
+- **Spring4Shell — CVE-2022-22965** — Java/Spring MVC; data-binding reaches `class.module.classLoader.*` properties on a POJO → write a webshell via the Tomcat AccessLogValve → RCE.
+- **Apache Shiro — CVE-2016-4437** — Java; `rememberMe` cookie decrypted with the hardcoded default AES-CBC key, then a ysoserial gadget chain is deserialized → RCE.
+- **Telerik UI for ASP.NET AJAX — CVE-2019-18935** — .NET; insecure JSON deserialization in `RadAsyncUpload` (`JavaScriptSerializer` with attacker-controlled `Type`) → mixed-mode assembly upload → RCE.
+
+---
+
 ## Attack Surface Signals
 
 ### Detection Patterns
@@ -165,3 +174,29 @@ git clone https://github.com/pimps/JNDI-Exploit-Kit
 ✅ Command output in response: full RCE confirmed
 
 **Severity:** Almost always **Critical** — RCE with server process privileges.
+
+---
+
+## KILL GATE — Do Not Report Without Proof
+
+A deserialization finding is **only valid** when ONE of the following is true:
+
+1. **Out-of-band proof** — a DNS/HTTP callback lands on your controlled host (Interactsh or Burp Collaborator) carrying a unique per-test token, OR
+2. **Observable command output / reflected execution** — your injected command's output (e.g. `id`, `whoami`, contents of `/etc/passwd`) appears in the response, on disk, or in any side channel you can read.
+
+### NOT a valid finding (false positives — kill these)
+
+- ❌ A **stack trace**, `ClassNotFoundException`, `InvalidClassException`, type/cast error, or deserialization exception **alone**. It proves a sink exists, not that you achieved execution.
+- ❌ An **app crash, hang, or 500** with no callback and no command output. That is **DoS at most — never report it as RCE.** Do not upgrade a crash into "RCE" because the sink "looked" deserializable.
+- ❌ A reflected/echoed payload string with no callback and no execution — you only proved the input was processed, not that a gadget fired.
+
+**Rule:** No Interactsh/Collaborator hit and no command output ⇒ the finding is unproven. Keep probing for OOB or output before writing anything up. Reporting DoS-only as RCE is an instant N/A and burns your signal/validity ratio.
+
+---
+
+## Related Skills
+
+- **triage-validation** — run the 7-Question Gate / kill gates before submitting; confirms the OOB-or-output proof above.
+- **hunt-rce** — broader command-execution hunting once a deserialization sink is confirmed.
+- **hunt-source-leak** — recovered source code exposes `unserialize`/`pickle.loads`/`Marshal.load` sinks and gadget-bearing dependencies.
+- **security-arsenal** — payload bank, gadget-chain references, and the always-rejected list.

@@ -4,6 +4,7 @@ description: Finding validator. Runs the 7-Question Gate and 4-gate checklist on
 tools:
   read: true
   webfetch: true
+  bash: true
 model: claude-sonnet-4-6
 ---
 
@@ -19,6 +20,16 @@ For every finding, output exactly one of:
 - **KILL [Q#]** — Failed at question N. Reason. Move on.
 - **DOWNGRADE** — Valid bug, but severity overclaimed. Specific change needed.
 - **CHAIN REQUIRED** — Valid on the never-submit list but can be chained. Specific chain needed.
+
+## Deterministic Engine First
+
+Before reasoning by hand, run the deterministic 4-gate + CVSS engine:
+
+```bash
+python3 tools/validate.py --program <h1-handle> [--scanner-summary <vuln_scanner summary.json>] [--scanner-confidence confirmed|possible|informational|unknown]
+```
+
+Pass `--program` (and `--scanner-summary` when a `vuln_scanner` summary.json exists for this finding) whenever available. The tool prompts on stdin for program/vuln-type/endpoint, then runs Gate1 (real) / Gate2 (in-scope) / Gate3 (exploitable) / Gate4 (not-dup), computes CVSS, and emits a report skeleton. Treat its output as the baseline — then apply your judgment to confirm, override, or refine it. Do NOT fully re-derive the four gates by hand when the engine has already produced them.
 
 ## The 7-Question Gate
 

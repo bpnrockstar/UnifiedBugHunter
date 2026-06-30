@@ -1,6 +1,7 @@
 ---
 description: Validate a finding — runs 7-Question Gate + 4-gate checklist. Kills weak findings before report writing. Prevents N/A submissions that hurt validity ratio.
-argument-hint: "[--scanner-summary findings/<target>/summary.json]"
+argument-hint: "[--program <h1-handle>] [--scanner-summary findings/<target>/summary.json] [--scanner-confidence confirmed|possible|informational|unknown]"
+allowed-tools: Bash, Read
 ---
 
 # /validate
@@ -14,6 +15,58 @@ Run full validation on the current finding before writing a report.
 3. Runs 4 pre-submission gates
 4. Outputs: PASS (write the report) or KILL (move on)
 
+## Run This
+
+`/validate` is backed by `tools/validate.py` — the interactive 4-gate
+assistant. **Run the script and answer its prompts. Do NOT re-implement the
+gates inline** — the prose below is the reference the script already
+implements (and a fallback for when Python is unavailable).
+
+Substitute `<h1-handle>`, `<target>`, and `<class>` for the current finding,
+then run:
+
+```bash
+python3 tools/validate.py \
+  --program <h1-handle> \
+  --output findings/<target>-<class>/report-skeleton.md \
+  --notes-output findings/<target>-<class>/submission-notes.md
+```
+
+If you already ran the scanner, attach its tiering so the validation record
+captures how the finding graduated from a scanner hit:
+
+```bash
+python3 tools/validate.py \
+  --program <h1-handle> \
+  --output findings/<target>-<class>/report-skeleton.md \
+  --notes-output findings/<target>-<class>/submission-notes.md \
+  --scanner-summary findings/<target>/summary.json \
+  --scanner-confidence confirmed
+```
+
+Flags (all optional except as noted):
+
+- `--program <h1-handle>` — HackerOne program handle, used for the Gate 4 dup check.
+- `--output <path>` — where to write the report skeleton. Its **directory** also
+  receives the persisted `validation.json` (auto-named) and the submission
+  notes. Use `findings/<target>-<class>/` so `/report` and `/remember` find them.
+- `--notes-output <path>` — submission-notes file (`submission-notes.md`) that
+  `/report` updates instead of creating a second notes file.
+- `--scanner-summary <summary.json>` — `tools/vuln_scanner.sh` summary for calibration handoff.
+- `--scanner-confidence {confirmed,possible,informational,unknown}` — confidence from the scanner that produced this finding.
+
+The script prompts on stdin for the program handle, vulnerability type, and
+endpoint, then walks Gate 1 (real) → Gate 2 (in scope) → Gate 3 (exploitable) →
+Gate 4 (not duplicate), and finishes with a CVSS score + report skeleton.
+
+It always writes `validation.json` into the `--output` directory — i.e.
+`findings/<target>-<class>/validation.json`. That is the file `/report` reads
+for its `scanner_summary` context and `/remember --from-validate` pulls fields
+from, so keep the path consistent (do not rename it).
+
+If Python is unavailable, fall back to working the prose 4-gate methodology
+below by hand.
+
 ## Usage
 
 ```
@@ -25,10 +78,6 @@ Describe the finding when prompted. Include:
 - The bug class
 - What the PoC shows
 - The target program
-
-If you already ran the scanner, pass its `summary.json` with
-`--scanner-summary findings/<target>/summary.json` so the validation record
-captures the scanner tiering that led to this finding.
 
 ## The 7-Question Gate
 
