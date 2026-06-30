@@ -162,6 +162,8 @@ This repo is a Claude Code plugin for professional bug bounty hunting across Hac
 - `tools/disclosure_miner.py` — skill grounding/evolution from disclosed reports
 - `tools/kev_matrix.py` — CISA-KEV catalog → skill-coverage matrix
 - `tools/dual_session.py` — dual-account IDOR/privesc test harness
+- `tools/save_finding.py` — persist a verified finding to the DB **with a replayable `poc_spec`** (so `/retest --from-db` can re-run it later)
+- `tools/secrets_ingest.py` — ingest trufflehog/gitleaks/noseyparker output into the findings DB (`bug_class='secret'`, auto-redacted)
 
 ### External tool references
 

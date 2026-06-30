@@ -155,6 +155,16 @@ def init_db():
     CREATE INDEX IF NOT EXISTS idx_kb_class ON knowledge_base(bug_class);
     CREATE INDEX IF NOT EXISTS idx_kb_tags ON knowledge_base(tags);
     """)
+
+    # Additive, idempotent migration: store a replayable retest.py PoC-spec
+    # (JSON) alongside the existing free-text 'poc' evidence column. SQLite has
+    # no "ADD COLUMN IF NOT EXISTS", so re-runs raise OperationalError (column
+    # already exists) which we swallow.
+    try:
+        conn.execute("ALTER TABLE findings ADD COLUMN poc_spec TEXT")
+    except sqlite3.OperationalError:
+        pass
+
     conn.commit()
     conn.close()
 
@@ -186,7 +196,7 @@ def get_target(target_id):
     return dict(row) if row else None
 
 
-def add_finding(target_id, title, severity, bug_class, endpoint=None, description=None, poc=None, impact=None, remediation=None, cvss_score=None, cvss_vector=None, source="manual"):
+def add_finding(target_id, title, severity, bug_class, endpoint=None, description=None, poc=None, impact=None, remediation=None, cvss_score=None, cvss_vector=None, source="manual", poc_spec=None):
     # Scrub PII / secrets from free-text + evidence fields before storage.
     title = _scrub(title)
     endpoint = _scrub(endpoint)
@@ -194,10 +204,13 @@ def add_finding(target_id, title, severity, bug_class, endpoint=None, descriptio
     poc = _scrub(poc)
     impact = _scrub(impact)
     remediation = _scrub(remediation)
+    # poc_spec is a structured retest.py PoC-spec dict; persist as JSON. It is
+    # machine-replayable config (not free-text), so it is not run through _scrub.
+    poc_spec_json = json.dumps(poc_spec) if poc_spec is not None else None
     conn = get_db()
     cur = conn.execute(
-        "INSERT INTO findings (target_id, title, severity, bug_class, endpoint, description, poc, impact, remediation, cvss_score, cvss_vector, source) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-        (target_id, title, severity, bug_class, endpoint, description, poc, impact, remediation, cvss_score, cvss_vector, source),
+        "INSERT INTO findings (target_id, title, severity, bug_class, endpoint, description, poc, impact, remediation, cvss_score, cvss_vector, source, poc_spec) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        (target_id, title, severity, bug_class, endpoint, description, poc, impact, remediation, cvss_score, cvss_vector, source, poc_spec_json),
     )
     finding_id = cur.lastrowid
     conn.commit()
@@ -207,27 +220,39 @@ def add_finding(target_id, title, severity, bug_class, endpoint=None, descriptio
 
 def get_findings(target_id=None, severity=None, bug_class=None, status=None, search=None, limit=100, offset=0):
     conn = get_db()
-    query = "SELECT f.*, t.domain FROM findings f JOIN targets t ON f.target_id = t.id WHERE 1=1"
-    params = []
+    # Build the WHERE clause + params ONCE so the row query and the COUNT(*)
+    # query stay in lockstep. Previously `total` was hard-zeroed whenever any
+    # filter was active (and the search-only count used a mismatched 3-column
+    # WHERE), so the reported total was wrong under every filter — fixed here by
+    # counting with the exact same predicate as the rows.
+    where = " WHERE 1=1"
+    where_params = []
     if target_id:
-        query += " AND f.target_id = ?"
-        params.append(target_id)
+        where += " AND f.target_id = ?"
+        where_params.append(target_id)
     if severity:
-        query += " AND f.severity = ?"
-        params.append(severity)
+        where += " AND f.severity = ?"
+        where_params.append(severity)
     if bug_class:
-        query += " AND f.bug_class = ?"
-        params.append(bug_class)
+        where += " AND f.bug_class = ?"
+        where_params.append(bug_class)
     if status:
-        query += " AND f.status = ?"
-        params.append(status)
+        where += " AND f.status = ?"
+        where_params.append(status)
     if search:
-        query += " AND (f.title LIKE ? OR f.description LIKE ? OR f.endpoint LIKE ? OR f.poc LIKE ?)"
-        params.extend([f"%{search}%"] * 4)
-    query += " ORDER BY CASE f.severity WHEN 'critical' THEN 0 WHEN 'high' THEN 1 WHEN 'medium' THEN 2 WHEN 'low' THEN 3 ELSE 4 END, f.created_at DESC LIMIT ? OFFSET ?"
-    params.extend([limit, offset])
-    rows = conn.execute(query, params).fetchall()
-    total = conn.execute("SELECT COUNT(*) FROM findings f JOIN targets t ON f.target_id = t.id WHERE 1=1" + (f" AND (f.title LIKE ? OR f.description LIKE ? OR f.endpoint LIKE ?)" if search else ""), params[:4] if search else []).fetchone()[0] if not (target_id or severity or bug_class or status) else 0
+        where += " AND (f.title LIKE ? OR f.description LIKE ? OR f.endpoint LIKE ? OR f.poc LIKE ?)"
+        where_params.extend([f"%{search}%"] * 4)
+
+    query = (
+        "SELECT f.*, t.domain FROM findings f JOIN targets t ON f.target_id = t.id"
+        + where
+        + " ORDER BY CASE f.severity WHEN 'critical' THEN 0 WHEN 'high' THEN 1 WHEN 'medium' THEN 2 WHEN 'low' THEN 3 ELSE 4 END, f.created_at DESC LIMIT ? OFFSET ?"
+    )
+    rows = conn.execute(query, where_params + [limit, offset]).fetchall()
+    total = conn.execute(
+        "SELECT COUNT(*) FROM findings f JOIN targets t ON f.target_id = t.id" + where,
+        where_params,
+    ).fetchone()[0]
     conn.close()
     return [dict(r) for r in rows], total
 
@@ -237,6 +262,90 @@ def get_finding(finding_id):
     row = conn.execute("SELECT f.*, t.domain FROM findings f JOIN targets t ON f.target_id = t.id WHERE f.id = ?", (finding_id,)).fetchone()
     conn.close()
     return dict(row) if row else None
+
+
+# Allowed finding.status values — mirrors the CHECK(status IN (...)) enum on the
+# findings table. Kept in sync here so set_finding_status can validate before
+# issuing the UPDATE (a bad value would otherwise hit a sqlite IntegrityError).
+FINDING_STATUSES = ("open", "verified", "false_positive", "fixed", "accepted")
+
+
+def set_finding_status(finding_id, status):
+    """Update a finding's status (the missing UPDATE for retest verdicts).
+
+    Validates `status` against the findings.status CHECK enum and bumps
+    updated_at when that column exists. Returns True if a row was updated,
+    False if no finding matched the id.
+    """
+    if status not in FINDING_STATUSES:
+        raise ValueError(
+            f"invalid finding status {status!r}; expected one of {FINDING_STATUSES}"
+        )
+    conn = get_db()
+    try:
+        has_updated_at = any(
+            col["name"] == "updated_at"
+            for col in conn.execute("PRAGMA table_info(findings)").fetchall()
+        )
+        if has_updated_at:
+            cur = conn.execute(
+                "UPDATE findings SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+                (status, finding_id),
+            )
+        else:
+            cur = conn.execute(
+                "UPDATE findings SET status = ? WHERE id = ?",
+                (status, finding_id),
+            )
+        conn.commit()
+        return cur.rowcount > 0
+    finally:
+        conn.close()
+
+
+def get_retest_specs(target_id=None, status=None, ids=None):
+    """Return stored PoC-specs ready to feed retest.py's load_findings() shape.
+
+    Selects findings that carry a non-null poc_spec, applies optional
+    target_id / status / ids filters, JSON-decodes each poc_spec, injects the
+    DB row id as spec['id'], and maps the DB status onto spec['previous_status']
+    ('fixed' -> 'FIXED', anything else -> 'STILL-VULN'). Rows whose poc_spec is
+    malformed JSON (or not a JSON object) are skipped so one bad row can't break
+    a retest batch.
+    """
+    query = "SELECT id, target_id, status, poc_spec FROM findings WHERE poc_spec IS NOT NULL"
+    params = []
+    if target_id is not None:
+        query += " AND target_id = ?"
+        params.append(target_id)
+    if status is not None:
+        query += " AND status = ?"
+        params.append(status)
+    if ids:
+        placeholders = ",".join("?" for _ in ids)
+        query += f" AND id IN ({placeholders})"
+        params.extend(ids)
+    query += " ORDER BY id"
+
+    conn = get_db()
+    try:
+        rows = conn.execute(query, params).fetchall()
+    finally:
+        conn.close()
+
+    specs = []
+    for row in rows:
+        raw = row["poc_spec"]
+        try:
+            spec = json.loads(raw)
+        except (TypeError, ValueError):
+            continue  # malformed JSON — skip, stay resilient
+        if not isinstance(spec, dict):
+            continue  # not a PoC-spec object — skip
+        spec["id"] = row["id"]
+        spec["previous_status"] = "FIXED" if row["status"] == "fixed" else "STILL-VULN"
+        specs.append(spec)
+    return specs
 
 
 def add_recon_data(target_id, rtype, value, source=None, metadata=None):

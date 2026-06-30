@@ -55,6 +55,16 @@ CLI usage
   python3 tools/retest.py --batch findings.json --out report.json \\
       --timeout 20 --rps 2.0 --insecure
 
+  # Pull PoC specs straight from the dashboard DB (every finding with a poc_spec)
+  python3 tools/retest.py --from-db
+
+  # Restrict the DB pull to one target and/or specific finding ids
+  python3 tools/retest.py --from-db --target-id 7 --id 12 --id 34
+
+  # Retest from DB and write the verdict back onto each finding's status
+  #   FIXED -> 'fixed';  STILL-VULN / REGRESSED -> 'open';  ERROR -> skipped
+  python3 tools/retest.py --from-db --write-back
+
 Exit codes: 0 always when retests run (verdicts are data, not failure);
 non-zero only on usage error (bad args, unreadable/invalid input file).
 """
@@ -118,6 +128,20 @@ _VERDICT_COLOR = {
 }
 
 _DEFAULT_AUDIT_PATH = os.path.join("hunt-memory", "audit.jsonl")
+
+# ─── Verdict → DB-status mapping for --write-back ────────────────────────────────
+# Maps a retest verdict onto a dashboard.database FINDING_STATUSES value.
+#   FIXED       -> 'fixed'  (vuln confirmed resolved)
+#   STILL-VULN  -> 'open'   (still exploitable right now → stays actionable)
+#   REGRESSED   -> 'open'   (was fixed, vulnerable again → re-open it)
+#   ERROR       -> None     (inconclusive: request failed / out-of-scope / bad
+#                            spec — never overwrite a stored status on no signal)
+_VERDICT_TO_DB_STATUS = {
+    FIXED:      "fixed",
+    STILL_VULN: "open",
+    REGRESSED:  "open",
+    ERROR:      None,
+}
 
 
 # ─── Core matching logic ────────────────────────────────────────────────────────
@@ -343,6 +367,81 @@ def load_findings(path: str) -> list:
             raise ValueError(f"finding #{i} is not an object: {type(item).__name__}")
         findings.append(item)
     return findings
+
+
+def _load_database_module():
+    """Import dashboard.database defensively (repo path already on sys.path).
+
+    Returns the module or raises ValueError with a friendly message so the CLI
+    can fail fast on a clearly DB-dependent request rather than blowing up with
+    a raw ImportError. Importing retest.py never pulls this in — it is only
+    called by the --from-db code path.
+
+    Note: `dashboard/` is a namespace package (no __init__.py) and `tools/`
+    ships an unrelated `dashboard.py` (the TUI) that shadows it whenever
+    tools/ is on sys.path — which it is when retest.py runs as a script. So we
+    load dashboard/database.py from its known path under _REPO *first*, and
+    only fall back to plain package/module imports.
+    """
+    if _REPO not in sys.path:
+        sys.path.insert(0, _REPO)
+
+    db_path = os.path.join(_REPO, "dashboard", "database.py")
+    if os.path.isfile(db_path):
+        try:
+            import importlib.util
+            spec = importlib.util.spec_from_file_location("dashboard_database", db_path)
+            module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(module)  # type: ignore[union-attr]
+            return module
+        except Exception:
+            pass  # fall through to the import-based attempts
+
+    try:
+        from dashboard import database  # type: ignore[no-redef]
+        return database
+    except Exception:
+        try:
+            import database  # type: ignore[no-redef]
+            return database
+        except Exception as exc:
+            raise ValueError(
+                f"dashboard.database module unavailable (needed for --from-db): {exc}"
+            ) from exc
+
+
+def write_back_verdicts(database, report: dict) -> dict:
+    """Persist retest verdicts back into the findings DB via set_finding_status.
+
+    Maps each result's verdict through _VERDICT_TO_DB_STATUS and, when that
+    yields a concrete status, calls database.set_finding_status(id, status).
+    ERROR verdicts (status None) are skipped — an inconclusive retest never
+    overwrites a stored status. Results without an integer-coercible id are
+    skipped too. Best-effort and total: a per-row failure never aborts the rest.
+
+    Returns a summary dict {updated, skipped, not_found, failed}.
+    """
+    out = {"updated": 0, "skipped": 0, "not_found": 0, "failed": 0}
+    for r in report.get("results", []):
+        verdict = r.get("verdict")
+        new_status = _VERDICT_TO_DB_STATUS.get(verdict)
+        if new_status is None:
+            out["skipped"] += 1
+            continue
+        finding_id = r.get("id")
+        if finding_id is None:
+            out["skipped"] += 1
+            continue
+        try:
+            ok = database.set_finding_status(finding_id, new_status)
+        except Exception:
+            out["failed"] += 1
+            continue
+        if ok:
+            out["updated"] += 1
+        else:
+            out["not_found"] += 1
+    return out
 
 
 def _result(finding_id, verdict, detail, status, url):
@@ -619,6 +718,17 @@ def main(argv: list[str] | None = None) -> int:
     src = parser.add_mutually_exclusive_group(required=True)
     src.add_argument("--finding", help="Path to a single PoC spec JSON file")
     src.add_argument("--batch", help="Path to a JSON array of PoC specs")
+    src.add_argument("--from-db", action="store_true",
+                     help="Pull all findings carrying a poc_spec from the dashboard DB")
+
+    parser.add_argument("--id", dest="ids", action="append", type=int, default=None,
+                        help="Restrict --from-db to these finding ids (repeatable)")
+    parser.add_argument("--target-id", dest="target_id", type=int, default=None,
+                        help="Restrict --from-db to a single target id")
+    parser.add_argument("--write-back", action="store_true",
+                        help="After retesting --from-db, write verdicts back via "
+                             "set_finding_status (FIXED->'fixed', STILL-VULN/REGRESSED->'open', "
+                             "ERROR->skip)")
 
     parser.add_argument("--scope", help="Scope JSON file (fail-closed scope gating)")
     parser.add_argument("--out", help="Write the JSON report to this path")
@@ -631,9 +741,26 @@ def main(argv: list[str] | None = None) -> int:
                         help="Print the JSON report to stdout instead of the colored summary")
     args = parser.parse_args(argv)
 
+    # ── --write-back / filters only apply to the DB source ──
+    database = None
+    if args.from_db:
+        try:
+            database = _load_database_module()
+        except ValueError as exc:
+            parser.error(str(exc))
+    else:
+        if args.write_back:
+            parser.error("--write-back requires --from-db")
+        if args.ids:
+            parser.error("--id requires --from-db")
+        if args.target_id is not None:
+            parser.error("--target-id requires --from-db")
+
     # ── Load findings ──
     try:
-        if args.finding:
+        if args.from_db:
+            findings = database.get_retest_specs(target_id=args.target_id, ids=args.ids)
+        elif args.finding:
             findings = load_findings(args.finding)
         else:
             findings = load_findings(args.batch)
@@ -658,6 +785,10 @@ def main(argv: list[str] | None = None) -> int:
         rps=args.rps,
     )
 
+    # ── Write verdicts back to the DB (only with --from-db --write-back) ──
+    if args.from_db and args.write_back:
+        report["write_back"] = write_back_verdicts(database, report)
+
     # ── Output ──
     if args.out:
         out_dir = os.path.dirname(os.path.abspath(args.out)) or "."
@@ -673,6 +804,13 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps(report, indent=2, sort_keys=True))
     else:
         print_summary(report)
+        wb = report.get("write_back")
+        if wb is not None:
+            print(f"\n{_c('Write-back', BOLD)}  "
+                  f"updated: {wb.get('updated', 0)}    "
+                  f"skipped: {wb.get('skipped', 0)}    "
+                  f"not-found: {wb.get('not_found', 0)}    "
+                  f"failed: {wb.get('failed', 0)}")
         if args.out:
             print(f"\n{_c('Report written:', BOLD)} {args.out}")
 

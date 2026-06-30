@@ -2,7 +2,7 @@
 
 > A Claude Code plugin that turns an LLM session into a disciplined, scope-safe, memory-backed bug-bounty and red-team operator.
 
-**At a glance:** `unified-bug-hunter` v4.3.2 · MIT · author `bpnrockstar` · **89 skills** · **42 commands** · **30 agents** · **63 engine tools** · **6 MCP servers** · **372 tests** · Flask + SQLite dashboard
+**At a glance:** `unified-bug-hunter` v4.3.2 · MIT · author `bpnrockstar` · **89 skills** · **42 commands** · **30 agents** · **65 engine tools** · **6 MCP servers** · **372 tests** · Flask + SQLite dashboard
 
 ---
 
@@ -53,7 +53,7 @@ graph TD
     end
     subgraph L4[L4 Engine: tools/ scripts/ engine/]
         HUNT[hunt.py orchestrator]
-        ENG[63 engine tools]
+        ENG[65 engine tools]
         SMAP[engine/skill_map.py]
     end
     subgraph L5[L5 Integration: mcp/]

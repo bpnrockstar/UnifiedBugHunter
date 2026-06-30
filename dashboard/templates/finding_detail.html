@@ -9,7 +9,18 @@
             <span class="badge bg-{{ 'danger' if finding.severity == 'critical' else 'warning' if finding.severity == 'high' else 'primary' if finding.severity == 'medium' else 'secondary' }} me-2">{{ finding.severity|upper }}</span>
             <code>{{ finding.bug_class }}</code> &middot;
             <a href="/targets/{{ finding.target_id }}">{{ finding.domain }}</a> &middot;
-            Status: <span class="badge bg-{{ 'success' if finding.status == 'verified' else 'danger' if finding.status == 'false_positive' else 'primary' }}">{{ finding.status }}</span>
+            Status:
+            {# Verdict badge: maps the stored status to a regression-retest color.
+               fixed=green, verified/open=red (still vulnerable), accepted=orange
+               (regressed/known-vulnerable), false_positive/unknown=grey. #}
+            {% set status_badge = {
+                'fixed': 'success',
+                'verified': 'danger',
+                'open': 'danger',
+                'accepted': 'warning',
+                'false_positive': 'secondary'
+            } %}
+            <span class="badge bg-{{ status_badge.get(finding.status, 'secondary') }}">{{ (finding.status or 'unknown')|replace('_',' ')|upper }}</span>
         </p>
     </div>
     {% if finding.cvss_score %}
@@ -38,6 +49,41 @@
         </div>
     </div>
     <div class="col-md-4">
+        <div class="card mb-3 border-primary">
+            <div class="card-header"><i class="bi-arrow-repeat me-1"></i>Actions</div>
+            <div class="card-body">
+                <form method="POST" action="/findings/{{ finding.id }}/status" class="mb-3">
+                    <label for="status-select" class="form-label mb-1">Status</label>
+                    <div class="input-group input-group-sm">
+                        <select id="status-select" name="status" class="form-select form-select-sm">
+                            {% for s in ['open','verified','false_positive','fixed','accepted'] %}
+                            <option value="{{ s }}" {{ 'selected' if finding.status == s }}>{{ s|replace('_',' ')|title }}</option>
+                            {% endfor %}
+                        </select>
+                        <button class="btn btn-outline-primary btn-sm" type="submit">Save</button>
+                    </div>
+                </form>
+                <form method="POST" action="/findings/{{ finding.id }}/retest">
+                    <button class="btn btn-warning btn-sm w-100" type="submit"
+                            {{ 'disabled' if not finding.poc_spec }}>
+                        <i class="bi-play-circle me-1"></i>Re-run / Retest
+                    </button>
+                </form>
+                <p class="text-warning small mb-0 mt-2">
+                    <i class="bi-exclamation-triangle me-1"></i>Re-run sends a <strong>live request</strong> to the
+                    target (scope-gated by <code>retest.py</code>).
+                    {% if not finding.poc_spec %}<br>No replayable PoC-spec stored for this finding.{% endif %}
+                </p>
+            </div>
+        </div>
+        {% if finding.poc_spec %}
+        <div class="card mb-3">
+            <div class="card-header">PoC-Spec (replay config)</div>
+            <div class="card-body">
+                <pre class="mb-0 text-light">{{ finding.poc_spec }}</pre>
+            </div>
+        </div>
+        {% endif %}
         <div class="card mb-3">
             <div class="card-header">Details</div>
             <div class="card-body">

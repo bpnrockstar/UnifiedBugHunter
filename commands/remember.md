@@ -62,6 +62,32 @@ Save to hunt memory? [y/n]
 | Tested endpoint | — | — | tested_endpoints[] updated |
 | Tech stack | — | From target profile | — |
 
+## Saving a verified finding (replayable)
+
+The JSONL hunt-memory above is for patterns/journal. To persist a **verified
+finding into the dashboard DB with a replayable PoC** — so `/retest` can re-run
+it against the live target later — also call:
+
+```
+python3 tools/save_finding.py \
+  --target api.target.com \
+  --title "IDOR on /users/{id}" \
+  --severity high \
+  --class idor \
+  --url https://api.target.com/users/1 \
+  --method GET \
+  --header "Authorization: Bearer <token>" \
+  --match-status 200 \
+  --match-contains "ssn" \
+  [--body ... --match-regex ... --endpoint ... --impact ... --remediation ... --cvss 8.1]
+```
+
+This resolves/creates the target, stores the finding via
+`dashboard.database.add_finding(...)`, and attaches a structured `poc_spec`
+(url/method/headers/body/match) that `tools/retest.py` replays to decide
+FIXED / STILL-VULN / REGRESSED. It prints the new finding id. Importable too:
+`from tools.save_finding import save_finding`.
+
 ## Why This Matters
 
 - Next time you hunt a target with similar tech stack, your successful patterns are suggested first

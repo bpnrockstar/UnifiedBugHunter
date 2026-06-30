@@ -38,7 +38,8 @@
                     <td><a href="/findings/{{ f.id }}">{{ f.title }}</a></td>
                     <td><code>{{ f.bug_class or '-' }}</code></td>
                     <td><a href="/targets/{{ f.target_id }}">{{ f.domain }}</a></td>
-                    <td><span class="badge bg-{{ 'success' if f.status == 'verified' else 'danger' if f.status == 'false_positive' else 'primary' if f.status == 'open' else 'secondary' }}">{{ f.status }}</span></td>
+                    {% set status_badge = {'fixed':'success','verified':'danger','open':'danger','accepted':'warning','false_positive':'secondary'} %}
+                    <td><span class="badge bg-{{ status_badge.get(f.status, 'secondary') }}">{{ f.status }}</span></td>
                     <td><small class="text-secondary">{{ f.created_at[:10] }}</small></td>
                 </tr>
                 {% else %}
