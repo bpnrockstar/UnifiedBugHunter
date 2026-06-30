@@ -61,6 +61,7 @@
             <div class="card-header"><i class="bi-arrow-repeat me-1"></i>Actions</div>
             <div class="card-body">
                 <form method="POST" action="/findings/{{ finding.id }}/status" class="mb-3">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <label for="status-select" class="form-label mb-1">Status</label>
                     <div class="input-group input-group-sm">
                         <select id="status-select" name="status" class="form-select form-select-sm">
@@ -72,6 +73,7 @@
                     </div>
                 </form>
                 <form method="POST" action="/findings/{{ finding.id }}/retest">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <button class="btn btn-warning btn-sm w-100" type="submit"
                             {{ 'disabled' if not finding.poc_spec }}>
                         <i class="bi-play-circle me-1"></i>Re-run / Retest

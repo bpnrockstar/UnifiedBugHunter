@@ -256,6 +256,45 @@ def test_finding_detail_has_retest_and_status_controls(client, seeded_db):
         assert f'value="{status_value}"' in body
 
 
+# ─── CSRF protection on state-changing POSTs ─────────────────────────────────────
+
+def test_finding_detail_embeds_csrf_token(client, seeded_db):
+    """The status + retest forms must render a CSRF hidden field."""
+    body = client.get(f"/findings/{seeded_db['finding_id']}").get_data(as_text=True)
+    assert 'name="csrf_token"' in body
+
+
+def test_post_without_csrf_token_is_rejected(client, seeded_db):
+    """A state-changing POST with no CSRF token is rejected with 400."""
+    resp = client.post(
+        f"/findings/{seeded_db['finding_id']}/status", data={"status": "fixed"}
+    )
+    assert resp.status_code == 400
+
+
+def test_post_with_valid_csrf_token_is_accepted(client, seeded_db):
+    """A POST carrying the session's CSRF token passes the guard (not 400)."""
+    with client.session_transaction() as s:
+        s["_csrf_token"] = "tok-valid"
+    resp = client.post(
+        f"/findings/{seeded_db['finding_id']}/status",
+        data={"status": "fixed", "csrf_token": "tok-valid"},
+    )
+    assert resp.status_code != 400
+    assert resp.status_code in (200, 302, 303)
+
+
+def test_post_with_wrong_csrf_token_is_rejected(client, seeded_db):
+    """A mismatched CSRF token is rejected with 400 (constant-time compare)."""
+    with client.session_transaction() as s:
+        s["_csrf_token"] = "the-right-token"
+    resp = client.post(
+        f"/findings/{seeded_db['finding_id']}/status",
+        data={"status": "fixed", "csrf_token": "a-wrong-token"},
+    )
+    assert resp.status_code == 400
+
+
 # ─── Basic auth: opt-in via env; open by default ────────────────────────────────
 
 def test_default_no_auth_is_open(client):

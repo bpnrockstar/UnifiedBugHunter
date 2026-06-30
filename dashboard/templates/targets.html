@@ -29,6 +29,7 @@
 
 <div class="modal fade" id="addTargetModal"><div class="modal-dialog">
     <form method="POST" action="/targets/add">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <div class="modal-content bg-dark">
             <div class="modal-header"><h5>Add Target</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
             <div class="modal-body">

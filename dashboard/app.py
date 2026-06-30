@@ -57,11 +57,13 @@ sys.path.insert(0, str(REPO_ROOT))
 from flask import (
     Flask,
     Response,
+    abort,
     flash,
     jsonify,
     redirect,
     render_template,
     request,
+    session,
     stream_with_context,
     url_for,
 )
@@ -301,6 +303,7 @@ def create_app(config=None):
             app.secret_key = app.config["SECRET_KEY"]
 
     _register_auth(app)
+    _register_csrf(app)
     _register_routes(app)
     return app
 
@@ -328,6 +331,42 @@ def _register_auth(app):
             401,
             {"WWW-Authenticate": 'Basic realm="Unified Bug Hunter"'},
         )
+
+
+def _register_csrf(app):
+    """Session-based CSRF protection for state-changing form POSTs.
+
+    A per-session token is minted on first render and exposed to templates via
+    the ``csrf_token()`` global. Every POST/PUT/PATCH/DELETE must echo it back as
+    the ``csrf_token`` form field (or ``X-CSRFToken`` header); a missing/mismatched
+    token is rejected with 400. Safe methods and health probes are exempt. No
+    third-party dependency — uses the signed Flask session (SECRET_KEY) + a
+    constant-time comparison. The dashboard re-test action performs a live request,
+    so guarding its POST against cross-site forgery is the point of this hook.
+    """
+
+    def _get_token():
+        tok = session.get("_csrf_token")
+        if not tok:
+            tok = secrets.token_urlsafe(32)
+            session["_csrf_token"] = tok
+        return tok
+
+    @app.before_request
+    def _csrf_protect():  # noqa: ANN202 - Flask hook
+        if request.method in ("GET", "HEAD", "OPTIONS"):
+            return None
+        if request.path in _AUTH_EXEMPT:
+            return None
+        sent = request.form.get("csrf_token") or request.headers.get("X-CSRFToken")
+        expected = session.get("_csrf_token")
+        if not (expected and sent and secrets.compare_digest(str(sent), str(expected))):
+            abort(400, description="CSRF token missing or invalid")
+        return None
+
+    @app.context_processor
+    def _inject_csrf():  # noqa: ANN202 - Flask hook
+        return {"csrf_token": _get_token}
 
 
 def _register_routes(app):

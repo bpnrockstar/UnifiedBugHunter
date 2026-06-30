@@ -45,6 +45,7 @@
 
 <div class="modal fade" id="addKbModal"><div class="modal-dialog modal-lg">
     <form method="POST" action="/knowledge-base/add">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <div class="modal-content bg-dark">
             <div class="modal-header"><h5>Add Knowledge Base Entry</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
             <div class="modal-body">
