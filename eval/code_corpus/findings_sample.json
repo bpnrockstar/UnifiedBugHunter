@@ -1,0 +1,128 @@
+[
+  {
+    "tool": "semgrep",
+    "rule_id": "python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query",
+    "path": "eval/code_corpus/vulnerable/sqli.py",
+    "line": 12,
+    "severity": "high",
+    "vuln_class": "sqli",
+    "message": "Avoiding SQL string concatenation: untrusted input concatenated with raw SQL query."
+  },
+  {
+    "tool": "semgrep",
+    "rule_id": "javascript.lang.security.audit.sqli.node-mysql-sqli.node-mysql-sqli",
+    "path": "eval/code_corpus/vulnerable/sqli.js",
+    "line": 7,
+    "severity": "high",
+    "vuln_class": "sqli",
+    "message": "Detected a SQL string built from a template literal with user input."
+  },
+  {
+    "tool": "semgrep",
+    "rule_id": "python.flask.security.injection.raw-html-concat.raw-html-format",
+    "path": "eval/code_corpus/vulnerable/xss.py",
+    "line": 12,
+    "severity": "medium",
+    "vuln_class": "xss",
+    "message": "Detected user input flowing into an HTML response without escaping (reflected XSS)."
+  },
+  {
+    "tool": "semgrep",
+    "rule_id": "javascript.browser.security.insecure-document-method.insecure-document-method",
+    "path": "eval/code_corpus/vulnerable/xss.js",
+    "line": 8,
+    "severity": "medium",
+    "vuln_class": "xss",
+    "message": "User-controlled value assigned to innerHTML — DOM XSS."
+  },
+  {
+    "tool": "semgrep",
+    "rule_id": "python.lang.security.audit.subprocess-shell-true.subprocess-shell-true",
+    "path": "eval/code_corpus/vulnerable/command_injection.py",
+    "line": 11,
+    "severity": "high",
+    "vuln_class": "cmd-injection",
+    "message": "Found subprocess function with shell=True and a non-literal command — OS command injection."
+  },
+  {
+    "tool": "semgrep",
+    "rule_id": "javascript.lang.security.detect-child-process.detect-child-process",
+    "path": "eval/code_corpus/vulnerable/command_injection.js",
+    "line": 9,
+    "severity": "high",
+    "vuln_class": "cmd-injection",
+    "message": "Detected calling child_process.exec with a non-literal argument — OS command injection."
+  },
+  {
+    "tool": "semgrep",
+    "rule_id": "python.django.security.injection.ssrf.ssrf-injection-urllib.ssrf-injection-urllib",
+    "path": "eval/code_corpus/vulnerable/ssrf.py",
+    "line": 14,
+    "severity": "high",
+    "vuln_class": "ssrf",
+    "message": "Data from the request is passed to urlopen() — server-side request forgery."
+  },
+  {
+    "tool": "semgrep",
+    "rule_id": "python.lang.security.audit.path-traversal.path-traversal-open.path-traversal-open",
+    "path": "eval/code_corpus/vulnerable/path_traversal.py",
+    "line": 16,
+    "severity": "high",
+    "vuln_class": "path-traversal",
+    "message": "Found request data joined to a path and passed to open() — path traversal."
+  },
+  {
+    "tool": "semgrep",
+    "rule_id": "python.lang.security.deserialization.pickle.avoid-pickle",
+    "path": "eval/code_corpus/vulnerable/insecure_deserialization.py",
+    "line": 14,
+    "severity": "medium",
+    "vuln_class": "deserialization",
+    "message": "Avoid using pickle.loads on untrusted data — leads to remote code execution."
+  },
+  {
+    "tool": "semgrep",
+    "rule_id": "python.flask.security.xss.audit.template-injection.template-injection",
+    "path": "eval/code_corpus/vulnerable/ssti.py",
+    "line": 13,
+    "severity": "high",
+    "vuln_class": "ssti",
+    "message": "User input compiled as a Jinja2 template — server-side template injection."
+  },
+  {
+    "tool": "semgrep",
+    "rule_id": "python.lang.security.audit.md5-used-as-password.md5-used-as-password",
+    "path": "eval/code_corpus/vulnerable/weak_crypto.py",
+    "line": 11,
+    "severity": "medium",
+    "vuln_class": "crypto",
+    "message": "MD5 is used to hash a password — use a strong, salted KDF."
+  },
+  {
+    "tool": "semgrep",
+    "rule_id": "python.jwt.security.jwt-none-alg.jwt-python-none-alg",
+    "path": "eval/code_corpus/vulnerable/jwt_alg_none.py",
+    "line": 11,
+    "severity": "high",
+    "vuln_class": "other",
+    "message": "JWT decode allows the 'none' algorithm / disables signature verification."
+  },
+  {
+    "tool": "semgrep",
+    "rule_id": "generic.secrets.security.detected-generic-api-key.detected-generic-api-key",
+    "path": "eval/code_corpus/vulnerable/hardcoded_secret.py",
+    "line": 9,
+    "severity": "high",
+    "vuln_class": "secret",
+    "message": "Hardcoded credential detected — store secrets in a secrets manager."
+  },
+  {
+    "tool": "semgrep",
+    "rule_id": "generic.secrets.security.detected-stripe-api-key.detected-stripe-api-key",
+    "path": "eval/code_corpus/vulnerable/hardcoded_secret.js",
+    "line": 7,
+    "severity": "high",
+    "vuln_class": "secret",
+    "message": "Hardcoded API token detected — store secrets in a secrets manager."
+  }
+]

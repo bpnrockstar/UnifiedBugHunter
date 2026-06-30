@@ -7,12 +7,49 @@ argument-hint: "[path] [--mode quick|full] [--language py|js|all]"
 
 Run a white-box source code audit on a target codebase.
 
-> **Model-driven — no backing script.** This command is a model-driven audit:
-> Claude reads the source and applies the methodology below; there is no tool in
-> `tools/` to invoke. How the pieces relate:
-> **command `/code-audit` = the entrypoint**, **skill `code-review` = the
-> methodology** (SAST patterns + 10-phase process it follows), and **agent
-> `code-reviewer` = the autonomous reviewer** for hands-off, multi-file audits.
+> **Engine-backed deterministic pass + model triage layer.** This command is no
+> longer purely model-driven — it now has `tools/sast_runner.py` and
+> `tools/sca_audit.py` backing a deterministic first pass. The engine analyzes;
+> Claude triages. How the pieces relate:
+> **command `/code-audit` = the entrypoint**, **`tools/sast_runner.py` +
+> `tools/sca_audit.py` = the deterministic engine** (SAST + dependency CVEs),
+> **skill `code-review` = the methodology** (SAST patterns + 10-phase process the
+> triage/manual layer follows), and **agent `code-reviewer` = the autonomous
+> reviewer** for hands-off, multi-file audits.
+
+## Run This (engine first)
+
+**Always run the deterministic engine FIRST, then triage its output.** Do not be
+the sole analyzer — let the tools find the mechanical bugs, then confirm them and
+add the logic/authz bugs the engine misses.
+
+```bash
+# 1. SAST — normalized findings written under findings/sast/<ts>/sast.json
+python3 tools/sast_runner.py --path <target> --out findings/sast
+
+# 2. SCA — dependency CVEs from lockfiles
+python3 tools/sca_audit.py --path <target>
+```
+
+Notes on the engine:
+- `sast_runner.py` uses semgrep when on PATH, else gracefully degrades to a regex
+  fallback (`tool: regex-fallback`); it always exits 0 on scan completion and
+  emits normalized findings with a stable 12-hex `fingerprint` per hit.
+- `sca_audit.py` uses osv-scanner / pip-audit when present, else enumerates
+  lockfiles and notes "no scanner installed"; it always exits 0 (advisory, not a
+  gate). Add `--out <dir>` / `--json` to either for machine-readable output.
+
+**Then TRIAGE, don't re-scan:**
+1. Read each engine finding by `fingerprint`; confirm true positives, drop false
+   positives, and dedupe (the `fingerprint` is the dedup key).
+2. Layer the methodology below on top to catch what the engine cannot:
+   **business-logic flaws, broken authz / IDOR, missing auth, mass assignment,
+   and multi-step chains** — these need human reasoning, not pattern matching.
+3. Promote confirmed engine findings + your manual findings into the
+   prioritized output format below (with code snippet, PoC, fix, CVSS).
+
+The methodology below is the triage / manual layer — it runs *after* the engine,
+on top of the deterministic findings, not instead of them.
 
 ## When to Use This
 

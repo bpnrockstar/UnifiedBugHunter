@@ -1,0 +1,107 @@
+{
+  "version": "1.86.0",
+  "results": [
+    {
+      "check_id": "python.lang.security.audit.dangerous-subprocess-use.dangerous-subprocess-use",
+      "path": "app/handlers/run.py",
+      "start": {"line": 42, "col": 5},
+      "end": {"line": 42, "col": 60},
+      "extra": {
+        "message": "Detected subprocess function 'call' with user-controlled input. This could lead to OS command injection if the input is not sanitized.",
+        "severity": "ERROR",
+        "metadata": {
+          "cwe": ["CWE-78: Improper Neutralization of Special Elements used in an OS Command ('OS Command Injection')"],
+          "owasp": ["A03:2021 - Injection"],
+          "category": "security",
+          "confidence": "HIGH"
+        },
+        "lines": "    subprocess.call(\"ping \" + request.args.get('host'), shell=True)"
+      }
+    },
+    {
+      "check_id": "python.django.security.injection.sql.sql-injection-using-rawsql.sql-injection-using-rawsql",
+      "path": "app/models/user.py",
+      "start": {"line": 88, "col": 9},
+      "end": {"line": 88, "col": 72},
+      "extra": {
+        "message": "User-controlled data from a request is passed to RawSQL(). This could lead to a SQL injection.",
+        "severity": "ERROR",
+        "metadata": {
+          "cwe": ["CWE-89: Improper Neutralization of Special Elements used in an SQL Command ('SQL Injection')"],
+          "owasp": ["A03:2021 - Injection"],
+          "category": "security",
+          "confidence": "MEDIUM"
+        },
+        "lines": "        return User.objects.raw(\"SELECT * FROM users WHERE name = '%s'\" % name)"
+      }
+    },
+    {
+      "check_id": "javascript.express.security.audit.xss.direct-response-write.direct-response-write",
+      "path": "src/routes/profile.js",
+      "start": {"line": 17, "col": 3},
+      "end": {"line": 17, "col": 45},
+      "extra": {
+        "message": "Detected directly writing user input to the HTTP response with res.send(). This bypasses any templating engine's auto-escaping and may result in reflected XSS.",
+        "severity": "WARNING",
+        "metadata": {
+          "cwe": ["CWE-79: Improper Neutralization of Input During Web Page Generation ('Cross-site Scripting')"],
+          "owasp": ["A03:2021 - Injection"],
+          "category": "security",
+          "confidence": "MEDIUM"
+        },
+        "lines": "  res.send('<h1>Hello ' + req.query.name + '</h1>')"
+      }
+    },
+    {
+      "check_id": "python.requests.security.ssrf.ssrf-requests-get.ssrf-requests-get",
+      "path": "app/handlers/fetch.py",
+      "start": {"line": 23, "col": 5},
+      "end": {"line": 23, "col": 50},
+      "extra": {
+        "message": "Data from the request object is passed to requests.get(). This is a server-side request forgery (SSRF) if the URL is attacker-controlled.",
+        "severity": "WARNING",
+        "metadata": {
+          "cwe": ["CWE-918: Server-Side Request Forgery (SSRF)"],
+          "owasp": ["A10:2021 - Server-Side Request Forgery (SSRF)"],
+          "category": "security",
+          "confidence": "MEDIUM"
+        },
+        "lines": "    return requests.get(request.args['url']).text"
+      }
+    },
+    {
+      "check_id": "generic.secrets.security.detected-generic-api-key.detected-generic-api-key",
+      "path": "config/settings.py",
+      "start": {"line": 4, "col": 1},
+      "end": {"line": 4, "col": 55},
+      "extra": {
+        "message": "Generic API Key detected. Hardcoded credentials should be stored in a secrets manager.",
+        "severity": "ERROR",
+        "metadata": {
+          "cwe": ["CWE-798: Use of Hard-coded Credentials"],
+          "category": "security",
+          "confidence": "LOW"
+        },
+        "lines": "AWS_SECRET_ACCESS_KEY = \"AKIAIOSFODNN7EXAMPLE\""
+      }
+    },
+    {
+      "check_id": "python.lang.security.deserialization.pickle.avoid-pickle",
+      "path": "app/cache.py",
+      "start": {"line": 11, "col": 12},
+      "end": {"line": 11, "col": 40},
+      "extra": {
+        "message": "Avoid using pickle, which happily deserializes and executes arbitrary code. Untrusted input leads to remote code execution.",
+        "severity": "INFO",
+        "metadata": {
+          "cwe": ["CWE-502: Deserialization of Untrusted Data"],
+          "category": "security",
+          "confidence": "LOW"
+        },
+        "lines": "    return pickle.loads(blob)"
+      }
+    }
+  ],
+  "errors": [],
+  "paths": {"scanned": ["app", "src", "config"]}
+}

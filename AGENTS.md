@@ -18,7 +18,7 @@ This repo is an agent-portable bug bounty plugin for professional hunting across
 | `skills/report-writing/` | H1/Bugcrowd/Intigriti/Immunefi report templates, CVSS 3.1, human tone |
 | `skills/triage-validation/` | 7-Question Gate, 4 gates, never-submit list, conditionally valid table |
 
-### Commands (40 slash commands)
+### Commands (42 slash commands)
 
 > **Note:** All commands are prefixed to avoid conflicts with Codex's built-in commands.
 > `/resume` is a reserved Codex command — use `/pickup` to continue a previous hunt.
@@ -48,6 +48,8 @@ This repo is an agent-portable bug bounty plugin for professional hunting across
 | `/bypass-403` | `/bypass-403 <url>` — try header/method/encoding tricks against a 403/401 |
 | `/arsenal` | `/arsenal [tool]` — list installed external tools or get an install hint |
 | `/scan-cves` | `/scan-cves <host>` — focused nuclei CVE sweep (high/critical) + optional log4j-scan |
+| `/sast` | `/sast [path] [--engine semgrep\|auto] [--diff <base>]` — real Semgrep SAST → normalized findings (regex fallback); deterministic pass feeding `/code-audit` |
+| `/sca` | `/sca [path] [--osv]` — lockfile SCA via osv-scanner/pip-audit → CVE advisories with upgrade paths |
 | `/retest` | `/retest <finding-id\|poc>` — re-run a saved PoC against the live target → FIXED / STILL-VULN / REGRESSED |
 | `/auto-skills` | `/auto-skills <topic>` — topic-triggered skill routing (`tools/skill_router.py`) |
 | `/llm-config` | `/llm-config [--provider] [--model]` — multi-provider LLM completion router (`tools/llm_router.py`) |
@@ -113,6 +115,8 @@ This repo is an agent-portable bug bounty plugin for professional hunting across
 - `tools/cve_scan.sh` — focused nuclei CVE-tag sweep + optional log4j-scan
 - `tools/external_arsenal.sh` — installed-tool registry (~50 tools); other scripts source this for `_have <tool>`
 - `tools/cicd_scanner.sh` — GitHub Actions workflow scanner (sisakulint wrapper, remote scan)
+- `tools/sast_runner.py` — Semgrep-backed SAST engine (normalize/dedup/triage; regex fallback); backs `/sast` and the engine pass of `/code-audit`
+- `tools/sca_audit.py` — lockfile SCA via osv-scanner/pip-audit/govulncheck → CVE advisories with upgrade paths; backs `/sca`
 - `tools/token_scanner.py` — automated token red flag scanner (EVM + Solana)
 - `tools/retest.py` — PoC-replay regression engine (FIXED / STILL-VULN / REGRESSED)
 - `tools/dedup_findings.py` — finding dedup/cluster

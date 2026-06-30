@@ -44,7 +44,7 @@ mkdir -p ~/security-research && cd ~/security-research
 git clone https://github.com/bpnrockstar/UnifiedBugHunter.git
 cd UnifiedBugHunter
 
-# 2. Install (copies 89 skills + 40 commands into Claude Code)
+# 2. Install (copies 89 skills + 42 commands into Claude Code)
 ./scripts/install.sh
 
 # 3. Reload your shell so the 'hunt' command becomes available
@@ -378,7 +378,7 @@ Cross-reference this UUID in any chained submissions you file later.
 If another pentester wants to replicate this stack, the install steps are in [INSTALL.md](INSTALL.md). The short version:
 
 1. Clone this repo
-2. Run `./scripts/install.sh` (installs all 89 skills, 40 commands, and hunt scaffold in one step)
+2. Run `./scripts/install.sh` (installs all 89 skills, 42 commands, and hunt scaffold in one step)
 3. Set up Burp MCP (BApp Store extension + `claude mcp add burp ...`)
 4. (Optional) Refresh upstream snapshots via `./scripts/install-community-skills.sh`
 5. (Optional) Set up the skill regenerator with Anthropic + H1 API keys

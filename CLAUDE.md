@@ -35,7 +35,7 @@ This repo is a Claude Code plugin for professional bug bounty hunting across Hac
 | `skills/knowledge-base/` | Searchable vulnerability KB with disclosed reports, payloads, techniques |
 | `skills/llm-redteam/` | **Advanced LLM red teaming** — 15+ techniques (token smuggling, adversarial poetry, ArtPrompt, CipherChat, emoji smuggling, Best-of-N, Crescendo/GOAT/JBFuzz), 180+ payloads, MCP security testing, automated CLI tool |
 
-### Commands (40 slash commands)
+### Commands (42 slash commands)
 
 > **Note:** All commands are prefixed to avoid conflicts with Claude Code's built-in commands.
 > `/resume` is a reserved Claude Code command — use `/pickup` to continue a previous hunt.
@@ -70,7 +70,9 @@ This repo is a Claude Code plugin for professional bug bounty hunting across Hac
 | `/breach-check` | `/breach-check <wordlist>` — HIBP k-anonymity rank wordlist by real-world breach count |
 | `/spray` | `/spray <url> --mode http-form\|oauth\|o365\|okta --users <f> --passes <f>` — password spray with hard guards (typed-host confirm, lockout warn, audit log) |
 | `/graphql-audit` | `/graphql-audit <url>` — full GraphQL audit: introspection, batching DoS, IDOR, injection, alias bomb, graphw00f fingerprint |
-| `/code-audit` | `/code-audit [path] [--mode quick|full]` — white-box source code audit for 10 languages |
+| `/sast` | `/sast [path] [--engine semgrep\|auto] [--diff <base>]` — real Semgrep SAST → normalized findings (regex fallback); deterministic pass feeding `/code-audit` |
+| `/sca` | `/sca [path] [--osv]` — lockfile SCA via osv-scanner/pip-audit → CVE advisories with upgrade paths |
+| `/code-audit` | `/code-audit [path] [--mode quick|full]` — white-box source code audit for 10 languages; runs `sast_runner`/`sca_audit` first, then the model triages |
 | `/patch` | `/patch [file:line] [--lang py|js|java|go|rb|php|rs]` — generate tested security patch for vulnerable code |
 | `/vuln-catcher` | `/vuln-catcher <domain> [--check types] [--continuous]` — continuous recon monitor (subdomains, JS, ports, tech) |
 | `/dast-scan` | `/dast-scan nuclei|zap <url>` — automated DAST scanning with result import |
@@ -142,6 +144,8 @@ This repo is a Claude Code plugin for professional bug bounty hunting across Hac
 - `tools/cve_scan.sh` — focused nuclei CVE-tag sweep + optional log4j-scan
 - `tools/external_arsenal.sh` — installed-tool registry (~50 tools); other scripts source this for `_have <tool>`
 - `tools/cicd_scanner.sh` — GitHub Actions workflow scanner (sisakulint wrapper, remote scan)
+- `tools/sast_runner.py` — Semgrep-backed SAST engine (normalize/dedup/triage findings; regex fallback); backs `/sast` and the engine pass of `/code-audit`
+- `tools/sca_audit.py` — lockfile SCA via osv-scanner/pip-audit/govulncheck → CVE advisories with upgrade paths; backs `/sca`
 - `tools/token_scanner.py` — automated token red flag scanner (EVM + Solana)
 - `tools/wordlist_engine.sh` — company-specific password wordlist generator (cewler + hashcat rules); requires `--with-credential-attack`
 - `tools/osint_employees.sh` — employee names + email patterns for spray prep (theHarvester + username-anarchy, opt-in CrossLinked); requires `--with-credential-attack`

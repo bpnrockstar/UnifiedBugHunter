@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "description": "White-box ground truth for UBH's code-review (SAST) accuracy. Each entry in 'expected' is one true vulnerability that a finding must match (by file + vuln_class, with line within line_tolerance). Each entry in 'negatives' is a SAFE file that must produce ZERO findings. Paths are relative to eval/code_corpus/.",
+  "line_tolerance": 2,
+  "vuln_classes": [
+    "sqli",
+    "xss",
+    "command-injection",
+    "ssrf",
+    "path-traversal",
+    "insecure-deserialization",
+    "ssti",
+    "weak-crypto",
+    "jwt-alg-none",
+    "hardcoded-secret"
+  ],
+  "expected": [
+    {"file": "vulnerable/sqli.py", "line": 12, "vuln_class": "sqli", "language": "python", "cwe": "CWE-89", "note": "user_id interpolated into SQL string"},
+    {"file": "vulnerable/sqli.js", "line": 7, "vuln_class": "sqli", "language": "javascript", "cwe": "CWE-89", "note": "userId in template-literal query"},
+    {"file": "vulnerable/xss.py", "line": 12, "vuln_class": "xss", "language": "python", "cwe": "CWE-79", "note": "unescaped name reflected into HTML"},
+    {"file": "vulnerable/xss.js", "line": 8, "vuln_class": "xss", "language": "javascript", "cwe": "CWE-79", "note": "untrusted value to innerHTML"},
+    {"file": "vulnerable/command_injection.py", "line": 11, "vuln_class": "command-injection", "language": "python", "cwe": "CWE-78", "note": "shell=True with interpolated host"},
+    {"file": "vulnerable/command_injection.js", "line": 9, "vuln_class": "command-injection", "language": "javascript", "cwe": "CWE-78", "note": "child_process.exec with concatenated host"},
+    {"file": "vulnerable/ssrf.py", "line": 14, "vuln_class": "ssrf", "language": "python", "cwe": "CWE-918", "note": "urlopen of user-controlled URL, no allowlist"},
+    {"file": "vulnerable/path_traversal.py", "line": 16, "vuln_class": "path-traversal", "language": "python", "cwe": "CWE-22", "note": "os.path.join(base, user_input) with no containment check"},
+    {"file": "vulnerable/insecure_deserialization.py", "line": 14, "vuln_class": "insecure-deserialization", "language": "python", "cwe": "CWE-502", "note": "pickle.loads on untrusted bytes"},
+    {"file": "vulnerable/ssti.py", "line": 13, "vuln_class": "ssti", "language": "python", "cwe": "CWE-1336", "note": "user input compiled as Jinja2 template source"},
+    {"file": "vulnerable/weak_crypto.py", "line": 11, "vuln_class": "weak-crypto", "language": "python", "cwe": "CWE-327", "note": "MD5 used for password hashing"},
+    {"file": "vulnerable/jwt_alg_none.py", "line": 11, "vuln_class": "jwt-alg-none", "language": "python", "cwe": "CWE-347", "note": "verify_signature disabled, 'none' algorithm allowed"},
+    {"file": "vulnerable/hardcoded_secret.py", "line": 9, "vuln_class": "hardcoded-secret", "language": "python", "cwe": "CWE-798", "note": "AWS-style secret key in source"},
+    {"file": "vulnerable/hardcoded_secret.js", "line": 7, "vuln_class": "hardcoded-secret", "language": "javascript", "cwe": "CWE-798", "note": "API token in source"}
+  ],
+  "negatives": [
+    {"file": "safe/sqli.py", "vuln_class": "sqli", "language": "python"},
+    {"file": "safe/sqli.js", "vuln_class": "sqli", "language": "javascript"},
+    {"file": "safe/xss.py", "vuln_class": "xss", "language": "python"},
+    {"file": "safe/xss.js", "vuln_class": "xss", "language": "javascript"},
+    {"file": "safe/command_injection.py", "vuln_class": "command-injection", "language": "python"},
+    {"file": "safe/command_injection.js", "vuln_class": "command-injection", "language": "javascript"},
+    {"file": "safe/ssrf.py", "vuln_class": "ssrf", "language": "python"},
+    {"file": "safe/path_traversal.py", "vuln_class": "path-traversal", "language": "python"},
+    {"file": "safe/insecure_deserialization.py", "vuln_class": "insecure-deserialization", "language": "python"},
+    {"file": "safe/ssti.py", "vuln_class": "ssti", "language": "python"},
+    {"file": "safe/weak_crypto.py", "vuln_class": "weak-crypto", "language": "python"},
+    {"file": "safe/jwt_alg_none.py", "vuln_class": "jwt-alg-none", "language": "python"},
+    {"file": "safe/hardcoded_secret.py", "vuln_class": "hardcoded-secret", "language": "python"},
+    {"file": "safe/hardcoded_secret.js", "vuln_class": "hardcoded-secret", "language": "javascript"}
+  ]
+}

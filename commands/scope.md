@@ -46,6 +46,82 @@ python3 tools/scope_checker.py \
   --output recon/target.com/urls/in_scope.txt
 ```
 
+## Verdicts
+
+`classify(url)` returns one of four verdicts instead of a plain pass/fail:
+
+| Verdict | Meaning | Default action |
+|---|---|---|
+| `IN_SCOPE` | Matches an in-scope domain/wildcard, not excluded | Clear to test |
+| `OUT_OF_SCOPE` | Matches an **explicit exclusion** (excluded domain/path/class) | Hard block — never testable |
+| `NEEDS_REVIEW` | Doesn't match scope and isn't an explicit exclusion — an unmatched host, a bare IP, or a related/sibling host (acquisition, CNAME to a parent org) | Escalate to operator |
+| `ERROR` | Unparseable input | Block, surface the parse error |
+
+### Why `NEEDS_REVIEW` instead of a silent reject
+
+Previously, anything that didn't match the allowlist was silently auto-rejected.
+That quietly dropped a program's **siblings and acquisitions** — assets that are
+often legitimately in scope but live on a host the allowlist hasn't been told
+about yet. Silently vanishing them means **missed real findings**.
+
+So an unmatched/IP/related host now returns `NEEDS_REVIEW` and, in interactive
+mode, the operator is **asked to continue or skip** rather than having the asset
+disappear without a trace.
+
+### Guardrails
+
+- **Explicit exclusions are NEVER continuable.** An `OUT_OF_SCOPE` verdict
+  (excluded domain, excluded path, excluded vuln class) is a hard block. There
+  is no "continue" prompt — the operator cannot override it.
+- **Default non-interactive runs stay fail-closed.** Without `--interactive` /
+  `--confirm`, `confirm_in_scope()` returns `False` on `NEEDS_REVIEW` — the
+  asset is treated as not-in-scope and skipped. No silent traffic, no prompt.
+- **"Continue" requires authorization + is audit-logged.** Choosing to continue
+  on a `NEEDS_REVIEW` asset is an assertion by the operator that they have
+  authorization to test that asset. Every such override is recorded to the
+  audit log so the decision is traceable.
+
+### Interactive / confirm mode
+
+Pass `--interactive` (alias `--confirm`) to enable prompting. On a
+`NEEDS_REVIEW` verdict the checker pauses and asks the operator to **continue or
+skip** that asset:
+
+```bash
+python3 tools/scope_checker.py https://api.related-acquisition.com/v2/users \
+  --domain target.com \
+  --domain '*.target.com' \
+  --exclude-domain staging.target.com \
+  --confirm
+```
+
+```
+NEEDS_REVIEW: api.related-acquisition.com is not in the allowlist and is not an
+explicit exclusion (possible sibling/acquisition). Do you have authorization to
+test this asset?
+  [c]ontinue  — proceed, logged to audit
+  [s]kip      — treat as out of scope
+> 
+```
+
+`IN_SCOPE` proceeds silently; `OUT_OF_SCOPE` is hard-blocked with no prompt even
+under `--confirm`.
+
+## Run This
+
+```bash
+python3 tools/scope_checker.py https://api.target.com/v2/users \
+  --domain target.com \
+  --domain '*.target.com' \
+  --exclude-domain staging.target.com \
+  --confirm
+```
+
+`--confirm` (alias `--interactive`) enables the continue/skip prompt on a
+`NEEDS_REVIEW` verdict. Omit it for a fail-closed, non-interactive run that
+silently skips anything not `IN_SCOPE`. Explicit exclusions are hard-blocked
+either way.
+
 ## Scope Check Process
 
 ### Step 1: Read In-Scope List
@@ -119,7 +195,7 @@ Always confirm: does scope say "*.target.com" or only list production domains?
 
 **OUT OF SCOPE:** "target.com/admin/* is explicitly excluded in the program rules under 'Out of Scope: Internal admin panel.' Do not test. Move to a different endpoint."
 
-**UNCLEAR:** "third-party.target.com appears to be a CNAME to Zendesk. This is a third-party service not owned by TargetCorp. Most programs exclude third-party services even if they're in the scope wildcard. Do not test without explicit confirmation."
+**NEEDS REVIEW (unclear):** "third-party.target.com appears to be a CNAME to Zendesk — a third-party service not owned by TargetCorp, and it isn't on the allowlist. This is `NEEDS_REVIEW`, not an explicit exclusion. Under `--confirm` you'll be asked to continue or skip; continue only if you have authorization (the choice is audit-logged). In a default non-interactive run it fails closed and is skipped."
 
 ## Safe Harbor Check
 

@@ -68,7 +68,7 @@ opencode
 | `knowledge-base` | Searchable vulnerability KB — disclosed reports, payloads, bypass techniques |
 | `llm-redteam` | **Advanced LLM red teaming** — 15+ techniques, 180+ payloads, automated CLI |
 
-### Commands (40 commands)
+### Commands (42 commands)
 
 | Command | Usage |
 |---|---|
@@ -95,7 +95,9 @@ opencode
 | `bypass-403` | "bypass-403 <url>" — try header/method/encoding tricks |
 | `arsenal` | "arsenal [tool]" — list installed external tools |
 | `scan-cves` | "scan-cves <host>" — focused nuclei CVE sweep |
-| `code-audit` | "code-audit [path]" — white-box source code audit |
+| `sast` | "sast [path]" — Semgrep SAST → normalized findings (regex fallback); feeds code-audit |
+| `sca` | "sca [path]" — lockfile SCA via osv-scanner/pip-audit → CVE advisories with upgrade paths |
+| `code-audit` | "code-audit [path]" — white-box source code audit (runs sast/sca first, then model triages) |
 | `patch` | "patch [file:line]" — generate security patch for vulnerable code |
 | `vuln-catcher` | "vuln-catcher target.com [--continuous]" — continuous recon monitor |
 | `dast-scan` | "dast-scan nuclei target.com" — automated DAST scanning |
