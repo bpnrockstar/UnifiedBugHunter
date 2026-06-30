@@ -35,7 +35,7 @@ This repo is a Claude Code plugin for professional bug bounty hunting across Hac
 | `skills/knowledge-base/` | Searchable vulnerability KB with disclosed reports, payloads, techniques |
 | `skills/llm-redteam/` | **Advanced LLM red teaming** — 15+ techniques (token smuggling, adversarial poetry, ArtPrompt, CipherChat, emoji smuggling, Best-of-N, Crescendo/GOAT/JBFuzz), 180+ payloads, MCP security testing, automated CLI tool |
 
-### Commands (35 slash commands)
+### Commands (40 slash commands)
 
 > **Note:** All commands are prefixed to avoid conflicts with Claude Code's built-in commands.
 > `/resume` is a reserved Claude Code command — use `/pickup` to continue a previous hunt.
@@ -77,10 +77,15 @@ This repo is a Claude Code plugin for professional bug bounty hunting across Hac
 | `/search-findings` | `/search-findings <query> [--findings|--kb|--recon]` — search all database tables |
 | `/dashboard` | `/dashboard` — launch the web GUI |
 | `/llm-redteam` | `/llm-redteam <endpoint> [--category] [--model]` — automated LLM red teaming (180+ payloads, 6 categories) |
+| `/retest` | `/retest <finding-id\|poc>` — re-run a saved PoC against the live target → FIXED / STILL-VULN / REGRESSED |
+| `/auto-skills` | `/auto-skills <topic>` — topic-triggered skill routing (`tools/skill_router.py`) |
+| `/llm-config` | `/llm-config [--provider] [--model]` — multi-provider LLM completion router (`tools/llm_router.py`) |
+| `/evolve-skills` | `/evolve-skills <report-source>` — ground/evolve skills from disclosed reports (`tools/disclosure_miner.py`) |
+| `/kev-matrix` | `/kev-matrix` — map CISA-KEV catalog to skill coverage (`tools/kev_matrix.py`) |
 
-### Agents (28 specialized agents)
+### Agents (30 specialized agents)
 
-#### Bug Bounty Pipeline (9)
+#### Bug Bounty Pipeline (11)
 - `recon-agent` — subdomain enum + live host discovery
 - `report-writer` — generates H1/Bugcrowd/Immunefi reports
 - `validator` — 4-gate checklist on a finding
@@ -90,6 +95,8 @@ This repo is a Claude Code plugin for professional bug bounty hunting across Hac
 - `recon-ranker` — attack surface ranking from recon output + memory
 - `token-auditor` — fast meme coin/token rug pull and security analysis
 - `credential-hunter` — wordlist-gen + osint-employees + breach-check; HARD STOPS at spray
+- `regression-retest-agent` — drives `/retest` across a finding batch against live targets (FIXED/STILL-VULN/REGRESSED)
+- `triage-dedup-agent` — clusters/dedups a large finding set and flags duplicates vs already-submitted
 
 #### Offensive Security (19)
 - `binary-exploit` — memory corruption, ROP, shellcode, format string exploitation
@@ -143,6 +150,14 @@ This repo is a Claude Code plugin for professional bug bounty hunting across Hac
 - `tools/graphql_audit.sh` — 7-phase GraphQL audit: introspection + schema dump, graphw00f fingerprint, clairvoyance field discovery, batching DoS, alias bomb, gqlmap injection, graphql-cop checklist
 - `tools/llm_redteam.py` — **Advanced LLM red teaming**: 180+ payloads across 6 categories, OOB callback detection, confidence scoring, HTML reports, DB import
 - `tools/llm_payloads/` — Organized payload library: injection/, jailbreak/, exfil/, encoding/, agentic/, multi-turn/
+- `tools/retest.py` — PoC-replay regression engine (re-runs a saved PoC → FIXED / STILL-VULN / REGRESSED)
+- `tools/dedup_findings.py` — finding dedup/cluster (groups a large finding set, flags duplicates)
+- `tools/llm_router.py` — multi-provider LLM completion router
+- `tools/redact.py` — PII/secret evidence-hygiene redactor
+- `tools/skill_router.py` — topic→skill routing engine
+- `tools/disclosure_miner.py` — skill grounding/evolution from disclosed reports
+- `tools/kev_matrix.py` — CISA-KEV catalog → skill-coverage matrix
+- `tools/dual_session.py` — dual-account IDOR/privesc test harness
 
 ### External tool references
 

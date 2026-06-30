@@ -334,16 +334,16 @@
 
     <div class="stats">
       <div class="stat"><span class="num">89</span><span class="lbl">Skills</span></div>
-      <div class="stat"><span class="num">35</span><span class="lbl">Commands</span></div>
-      <div class="stat"><span class="num">28</span><span class="lbl">Agents</span></div>
+      <div class="stat"><span class="num">40</span><span class="lbl">Commands</span></div>
+      <div class="stat"><span class="num">30</span><span class="lbl">Agents</span></div>
       <div class="stat"><span class="num">6</span><span class="lbl">MCP servers</span></div>
       <div class="stat"><span class="num">372</span><span class="lbl">Tests</span></div>
       <div class="stat"><span class="num">8</span><span class="lbl">Layers</span></div>
     </div>
     <div class="pillrow">
       <span class="pill">48 hunt-* + 41 platform/methodology skills</span>
-      <span class="pill">~24 deterministic engine tools</span>
-      <span class="pill">9 pipeline + 19 offensive agents</span>
+      <span class="pill">61 deterministic engine tools</span>
+      <span class="pill">11 pipeline + 19 offensive agents</span>
       <span class="pill">Flask + SQLite dashboard</span>
       <span class="pill">append-only audit trail</span>
     </div>
@@ -397,7 +397,7 @@
       <div class="layer">
         <div class="lno">2</div>
         <div class="lname">Interface <small>commands/</small></div>
-        <div class="ldesc">35 slash-command entry points. Thin routers — invoke an engine script directly or dispatch to an agent/skill. Prefixed to avoid collisions (<code>/pickup</code> not <code>/resume</code>).</div>
+        <div class="ldesc">40 slash-command entry points. Thin routers — invoke an engine script directly or dispatch to an agent/skill. Prefixed to avoid collisions (<code>/pickup</code> not <code>/resume</code>).</div>
       </div>
       <div class="layer">
         <div class="lno">3</div>
@@ -440,15 +440,15 @@ graph TD
         BBM[bb-methodology&lt;br/&gt;master router]
     end
     subgraph L2[L2 Interface: commands/]
-        CMD[35 slash commands]
+        CMD[40 slash commands]
     end
     subgraph L3[L3 Actor: agents/]
-        AG[28 agents&lt;br/&gt;9 pipeline + 19 offensive]
+        AG[30 agents&lt;br/&gt;11 pipeline + 19 offensive]
         AUTO[autopilot loop]
     end
     subgraph L4[L4 Engine: tools/ scripts/ engine/]
         HUNT[hunt.py orchestrator]
-        ENG[~24 engine tools]
+        ENG[61 engine tools]
         SMAP[engine/skill_map.py]
     end
     subgraph L5[L5 Integration: mcp/]
@@ -517,30 +517,31 @@ graph TD
       </div>
 
       <div class="card inv">
-        <h3>35 Commands</h3>
+        <h3>40 Commands</h3>
         <ul class="tight">
           <li><b>Recon:</b> <code>/recon</code> <code>/cloud-recon</code> <code>/osint-employees</code> <code>/arsenal</code></li>
           <li><b>Scope:</b> <code>/scope</code> <code>/scope-aggregate</code> <code>/surface</code></li>
           <li><b>Hunting:</b> <code>/hunt</code> <code>/autopilot</code> <code>/dast-scan</code> <code>/scan-cves</code> <code>/code-audit</code> <code>/graphql-audit</code> <code>/secrets-hunt</code> <code>/chain</code></li>
-          <li><b>Validation / Reporting:</b> <code>/triage</code> <code>/validate</code> <code>/report</code> <code>/patch</code></li>
+          <li><b>Validation / Reporting / Retest:</b> <code>/triage</code> <code>/validate</code> <code>/report</code> <code>/patch</code> <code>/retest</code></li>
           <li><b>Credential:</b> <code>/wordlist-gen</code> <code>/breach-check</code> <code>/spray</code></li>
-          <li><b>Cloud / Takeover / Params · Web3 · LLM · Dashboard · Memory.</b> 8 are model-driven (no backing script).</li>
+          <li><b>Skill routing / grounding:</b> <code>/auto-skills</code> <code>/evolve-skills</code> <code>/kev-matrix</code> · <b>LLM:</b> <code>/llm-redteam</code> <code>/llm-config</code></li>
+          <li><b>Cloud / Takeover / Params · Web3 · Dashboard · Memory.</b> 8 are model-driven (no backing script).</li>
         </ul>
       </div>
 
       <div class="card inv">
-        <h3>28 Agents</h3>
+        <h3>30 Agents</h3>
         <ul class="tight">
-          <li><b>Bug-bounty pipeline (9):</b> recon-agent, recon-ranker, chain-builder, validator, report-writer, autopilot, web3-auditor, token-auditor, credential-hunter.</li>
+          <li><b>Bug-bounty pipeline (11):</b> recon-agent, recon-ranker, chain-builder, validator, report-writer, autopilot, web3-auditor, token-auditor, credential-hunter, regression-retest-agent, triage-dedup-agent.</li>
           <li><b>Offensive security (19):</b> binary-exploit, crypto-analyst, forensics-analyst, malware-analyst, reverse-engineer, social-engineer, container-escape, api-security, privesc-advisor, payload-crafter, attack-planner, ad-attacker, swarm-orchestrator, poc-validator, exploit-guide, code-reviewer, code-patcher, vuln-catcher, llm-redteamer.</li>
           <li>All on Sonnet 4-6 except recon/monitor on Haiku and <b>report-writer on Opus</b>.</li>
         </ul>
       </div>
 
       <div class="card inv">
-        <h3>~24 Engine Tools <span style="font-weight:400;color:var(--muted);font-size:0.8rem">/ 6 MCP servers</span></h3>
+        <h3>61 Engine Tools <span style="font-weight:400;color:var(--muted);font-size:0.8rem">/ 6 MCP servers</span></h3>
         <ul class="tight">
-          <li><b>Tools:</b> orchestrator <code>hunt.py</code>; recon <code>recon_engine.sh</code>; scanning <code>vuln_scanner.sh</code>, <code>cve_scan.sh</code>, <code>dast_scanner.sh</code>; scope <code>scope_checker.py</code>; intel <code>intel_engine.py</code>; credential pipeline <code>wordlist_engine.sh</code>, <code>spray_orchestrator.sh</code>, <code>breach_checker.py</code> (+ <code>llm_payloads/</code>, 7 JSON files).</li>
+          <li><b>Tools:</b> orchestrator <code>hunt.py</code>; recon <code>recon_engine.sh</code>; scanning <code>vuln_scanner.sh</code>, <code>cve_scan.sh</code>, <code>dast_scanner.sh</code>; regression <code>retest.py</code>; dedup <code>dedup_findings.py</code>; scope <code>scope_checker.py</code>; intel <code>intel_engine.py</code>; LLM router <code>llm_router.py</code>; skill routing/grounding <code>skill_router.py</code>, <code>disclosure_miner.py</code>, <code>kev_matrix.py</code>; evidence <code>redact.py</code>; dual-account <code>dual_session.py</code>; credential pipeline <code>wordlist_engine.sh</code>, <code>spray_orchestrator.sh</code>, <code>breach_checker.py</code> (+ <code>llm_payloads/</code>, 7 JSON files).</li>
           <li><b>MCP — 2 proxy bridges:</b> <span class="tag c">burp-mcp</span> <span class="tag c">caido-mcp (batch ≤ 50, auto-redacts auth headers)</span></li>
           <li><b>MCP — 4 read-only intel:</b> <span class="tag">hackerone</span> <span class="tag">bugcrowd</span> <span class="tag">intigriti</span> <span class="tag">immunefi (in-scope contracts + TVL)</span></li>
           <li>All MCP degrade gracefully to curl + Interactsh/webhook.site.</li>

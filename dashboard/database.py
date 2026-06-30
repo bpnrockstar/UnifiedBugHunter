@@ -14,6 +14,38 @@ DB_DIR = Path(__file__).resolve().parent / "data"
 DB_PATH = DB_DIR / "bughunter.db"
 
 
+# ─── Defensive redaction hook ────────────────────────────────────────────────
+# Scrub PII / secrets from inbound text fields before they are persisted. The
+# redactor lives in tools/redact.py. Import is best-effort: if the module is
+# missing or fails to load, _redact_text falls back to an identity function so
+# the database layer keeps working unchanged.
+_redact_text = None  # type: ignore[assignment]
+try:  # pragma: no cover - exercised indirectly
+    import importlib.util as _ilu
+
+    _redact_path = Path(__file__).resolve().parent.parent / "tools" / "redact.py"
+    if _redact_path.is_file():
+        _spec = _ilu.spec_from_file_location("_ubh_redact", str(_redact_path))
+        if _spec and _spec.loader:
+            _mod = _ilu.module_from_spec(_spec)
+            _spec.loader.exec_module(_mod)
+            _candidate = getattr(_mod, "redact_text", None)
+            if callable(_candidate):
+                _redact_text = _candidate
+except Exception:  # noqa: BLE001 - never let redaction break the DB
+    _redact_text = None
+
+
+def _scrub(value):
+    """Redact a single text field. Non-str / None / failures pass through."""
+    if _redact_text is None or not isinstance(value, str) or not value:
+        return value
+    try:
+        return _redact_text(value)
+    except Exception:  # noqa: BLE001 - redaction must never break a write
+        return value
+
+
 def get_db():
     DB_DIR.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(str(DB_PATH))
@@ -155,6 +187,13 @@ def get_target(target_id):
 
 
 def add_finding(target_id, title, severity, bug_class, endpoint=None, description=None, poc=None, impact=None, remediation=None, cvss_score=None, cvss_vector=None, source="manual"):
+    # Scrub PII / secrets from free-text + evidence fields before storage.
+    title = _scrub(title)
+    endpoint = _scrub(endpoint)
+    description = _scrub(description)
+    poc = _scrub(poc)
+    impact = _scrub(impact)
+    remediation = _scrub(remediation)
     conn = get_db()
     cur = conn.execute(
         "INSERT INTO findings (target_id, title, severity, bug_class, endpoint, description, poc, impact, remediation, cvss_score, cvss_vector, source) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
@@ -201,6 +240,9 @@ def get_finding(finding_id):
 
 
 def add_recon_data(target_id, rtype, value, source=None, metadata=None):
+    # Scrub PII / secrets from the recon value before storage / dedup lookup.
+    value = _scrub(value)
+    metadata_json = _scrub(json.dumps(metadata)) if metadata else None
     conn = get_db()
     existing = conn.execute(
         "SELECT id FROM recon_data WHERE target_id = ? AND type = ? AND value = ?",
@@ -211,7 +253,7 @@ def add_recon_data(target_id, rtype, value, source=None, metadata=None):
     else:
         conn.execute(
             "INSERT INTO recon_data (target_id, type, value, source, metadata) VALUES (?, ?, ?, ?, ?)",
-            (target_id, rtype, value, source, json.dumps(metadata) if metadata else None),
+            (target_id, rtype, value, source, metadata_json),
         )
     conn.commit()
     conn.close()
@@ -238,6 +280,10 @@ def get_recon_data(target_id=None, rtype=None, search=None, limit=100):
 
 
 def add_report(target_id, title, content, summary=None, finding_count=0):
+    # Scrub PII / secrets from report text before storage.
+    title = _scrub(title)
+    content = _scrub(content)
+    summary = _scrub(summary)
     conn = get_db()
     cur = conn.execute(
         "INSERT INTO reports (target_id, title, content, summary, finding_count) VALUES (?, ?, ?, ?, ?)",

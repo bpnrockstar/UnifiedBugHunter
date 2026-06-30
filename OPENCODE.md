@@ -68,7 +68,7 @@ opencode
 | `knowledge-base` | Searchable vulnerability KB — disclosed reports, payloads, bypass techniques |
 | `llm-redteam` | **Advanced LLM red teaming** — 15+ techniques, 180+ payloads, automated CLI |
 
-### Commands (35 commands)
+### Commands (40 commands)
 
 | Command | Usage |
 |---|---|
@@ -102,6 +102,11 @@ opencode
 | `search-findings` | "search-findings ssrf --severity high" — search all database tables |
 | `dashboard` | "dashboard" — launch web GUI |
 | `llm-redteam` | "llm-redteam openai --category jailbreak" — automated LLM red teaming |
+| `retest` | "retest <finding-id>" — re-run a saved PoC → FIXED / STILL-VULN / REGRESSED |
+| `auto-skills` | "auto-skills <topic>" — topic-triggered skill routing |
+| `llm-config` | "llm-config --provider <name>" — multi-provider LLM completion router |
+| `evolve-skills` | "evolve-skills <report-source>" — ground/evolve skills from disclosed reports |
+| `kev-matrix` | "kev-matrix" — map CISA-KEV catalog to skill coverage |
 
 ## Usage
 

@@ -433,6 +433,8 @@ app.post('/api/admin/delete', deleteUser);         // no server-side check
 
 **How to hunt:** enumerate every privileged endpoint (admin/export/delete/reset/impersonate, GraphQL admin queries), then replay each from a *regular* authenticated session — and again with no session. A 200 (or a differential vs the 403 its siblings return) is broken function-level access control.
 
+**Harness — `tools/dual_session.py privesc_probe`:** to verify a low-priv identity actually reaching an admin-marked resource, drive both sessions through the dual-account harness. `DualSession.privesc_probe(url, admin_marker="<str>")` fires the URL as the attacker (low-priv) and as the victim (admin baseline), then `decide_verdict` returns **VULNERABLE** only when the attacker is *not* denied AND the victim's `admin_marker` appears in the attacker's body — ERROR if the admin baseline can't see the marker (fail-closed, never a false SAFE). CLI: `python3 tools/dual_session.py --config dual.json --privesc <url> --admin-marker "<str>" [--method GET] [--json]` (exit 2 = finding, 0 = SAFE, 1 = ERROR). Optional `scope` in `dual.json` gates every request through `ScopeChecker`. Pair with `idor_probe` for the object-level (`hunt-idor`) variant.
+
 **Real paid example — HackerOne TrustHub:** `POST /graphql` with the `TrustHubQuery` operation had no authorization check — a regular user could read all vendors' data (CVSS 8.7, High). The object-level variant (e.g. a WebSocket `get_history` accepting an arbitrary UUID with no ownership check) belongs to `hunt-idor`.
 
 ---

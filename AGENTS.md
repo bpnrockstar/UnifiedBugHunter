@@ -18,7 +18,7 @@ This repo is an agent-portable bug bounty plugin for professional hunting across
 | `skills/report-writing/` | H1/Bugcrowd/Intigriti/Immunefi report templates, CVSS 3.1, human tone |
 | `skills/triage-validation/` | 7-Question Gate, 4 gates, never-submit list, conditionally valid table |
 
-### Commands (35 slash commands)
+### Commands (40 slash commands)
 
 > **Note:** All commands are prefixed to avoid conflicts with Codex's built-in commands.
 > `/resume` is a reserved Codex command — use `/pickup` to continue a previous hunt.
@@ -48,10 +48,15 @@ This repo is an agent-portable bug bounty plugin for professional hunting across
 | `/bypass-403` | `/bypass-403 <url>` — try header/method/encoding tricks against a 403/401 |
 | `/arsenal` | `/arsenal [tool]` — list installed external tools or get an install hint |
 | `/scan-cves` | `/scan-cves <host>` — focused nuclei CVE sweep (high/critical) + optional log4j-scan |
+| `/retest` | `/retest <finding-id\|poc>` — re-run a saved PoC against the live target → FIXED / STILL-VULN / REGRESSED |
+| `/auto-skills` | `/auto-skills <topic>` — topic-triggered skill routing (`tools/skill_router.py`) |
+| `/llm-config` | `/llm-config [--provider] [--model]` — multi-provider LLM completion router (`tools/llm_router.py`) |
+| `/evolve-skills` | `/evolve-skills <report-source>` — ground/evolve skills from disclosed reports (`tools/disclosure_miner.py`) |
+| `/kev-matrix` | `/kev-matrix` — map CISA-KEV catalog to skill coverage (`tools/kev_matrix.py`) |
 
-### Agents (28 specialized agents)
+### Agents (30 specialized agents)
 
-#### Bug Bounty Pipeline (9)
+#### Bug Bounty Pipeline (11)
 - `recon-agent` — subdomain enum + live host discovery
 - `report-writer` — generates H1/Bugcrowd/Immunefi reports
 - `validator` — 4-gate checklist on a finding
@@ -61,6 +66,8 @@ This repo is an agent-portable bug bounty plugin for professional hunting across
 - `recon-ranker` — attack surface ranking from recon output + memory
 - `token-auditor` — fast meme coin/token rug pull and security analysis
 - `credential-hunter` — wordlist-gen + OSINT + breach-check + spray hard-stop
+- `regression-retest-agent` — drives `/retest` across a finding batch against live targets (FIXED/STILL-VULN/REGRESSED)
+- `triage-dedup-agent` — clusters/dedups a large finding set and flags duplicates vs already-submitted
 
 #### Offensive Security (19)
 - `binary-exploit` — memory corruption, ROP, shellcode, format string exploitation
@@ -107,6 +114,14 @@ This repo is an agent-portable bug bounty plugin for professional hunting across
 - `tools/external_arsenal.sh` — installed-tool registry (~50 tools); other scripts source this for `_have <tool>`
 - `tools/cicd_scanner.sh` — GitHub Actions workflow scanner (sisakulint wrapper, remote scan)
 - `tools/token_scanner.py` — automated token red flag scanner (EVM + Solana)
+- `tools/retest.py` — PoC-replay regression engine (FIXED / STILL-VULN / REGRESSED)
+- `tools/dedup_findings.py` — finding dedup/cluster
+- `tools/llm_router.py` — multi-provider LLM completion router
+- `tools/redact.py` — PII/secret evidence-hygiene redactor
+- `tools/skill_router.py` — topic→skill routing engine
+- `tools/disclosure_miner.py` — skill grounding/evolution from disclosed reports
+- `tools/kev_matrix.py` — CISA-KEV catalog → skill-coverage matrix
+- `tools/dual_session.py` — dual-account IDOR/privesc test harness
 
 ### External tool references
 

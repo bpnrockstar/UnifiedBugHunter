@@ -125,6 +125,62 @@ state.currentUser.organizationId
 
 ---
 
+## Dual-Account Harness (attacker/victim)
+
+The two-account model above (steps 3–4) is formalized as a reusable harness in `tools/dual_session.py`. It holds two configured identities — `attacker` and `victim` — and runs the IDOR differential for you: fetch the victim's resource **as the victim**, then re-fetch the *same* URL **as the attacker**, and call it `VULNERABLE` only when the attacker's response carries the victim's marker.
+
+**`idor_probe` flow:** `fetch victim resource as victim → re-fetch as attacker → VULNERABLE if attacker sees the victim marker.` The `victim_marker` is a string only the owner should ever see in the body (an email, account number, private filename, internal ID). Verdicts are fail-closed:
+
+- **VULNERABLE** — attacker was not denied AND the victim's marker appears in the attacker's body.
+- **SAFE** — attacker got `401`/`403`, or an empty / marker-free body.
+- **ERROR** — a request errored, the URL was out-of-scope, or the **victim baseline itself lacks the marker** (wrong marker or victim can't see the resource → the test is untrustworthy, so it deliberately ERRORs rather than reporting SAFE).
+
+This kills the #1 false-positive: a `200` with no actual leaked data. The baseline gate proves the marker is real before the attacker request is ever trusted.
+
+**Programmatic use:**
+```python
+from tools.dual_session import DualSession, load_config
+
+cfg = load_config("dual.json")              # {"attacker": {...}, "victim": {...}, "scope": {...}}
+ds = DualSession(cfg["attacker"], cfg["victim"], cfg.get("scope"),
+                 audit_log_path="idor.jsonl")
+
+result = ds.idor_probe(
+    "https://api.target.com/v1/invoices/12345",
+    victim_marker="victim@corp.com",          # string only the owner should see
+    method="GET",
+)
+# result -> JSON-safe dict: {"verdict": "VULNERABLE"|"SAFE"|"ERROR", "reason": ...,
+#                            "baseline": {...}, "attacker": {...}}
+```
+`privesc_probe(url, admin_marker=...)` is the vertical-escalation sibling (attacker reaching an admin-only marker). Both probes return JSON-safe dicts only — never a raw response object.
+
+**CLI:**
+```bash
+# Exit codes: 0 = SAFE, 2 = VULNERABLE (a finding), 1 = ERROR / bad config
+python3 tools/dual_session.py --config dual.json \
+  --idor "https://api.target.com/v1/invoices/12345" \
+  --victim-marker "victim@corp.com" --method GET --audit-log idor.jsonl --json
+
+# Privilege-escalation variant
+python3 tools/dual_session.py --config dual.json \
+  --privesc "https://api.target.com/admin/users" \
+  --admin-marker "internal-only-field" --json
+```
+
+**Config (`dual.json`):** `attacker` and `victim` are required objects; each accepts any mix of `headers`, `cookies`, `token`, and `label`. A bare `token` is sent as `Authorization: Bearer <token>` unless an `Authorization` header is already set. The optional `scope` block maps onto the project's `ScopeChecker(domains, excluded_domains, excluded_classes)` — when present, every probe URL is gated and `excluded_classes` is enforced against the probe's vuln class (`idor`/`privesc`).
+```json
+{
+  "attacker": {"label": "low-priv", "cookies": {"session": "ATTACKER_SESSION"}},
+  "victim":   {"label": "victim",   "cookies": {"session": "VICTIM_SESSION"}},
+  "scope":    {"domains": ["*.target.com"], "excluded_classes": ["dos"]}
+}
+```
+
+**Fail-closed guarantees:** if a `scope` is configured but the scope checker can't be imported, `__init__` raises — the harness refuses to run ungated. An out-of-scope URL (or a scope-checker exception) returns an `error="out_of_scope"` summary, never a SAFE-looking dict. Audit logging is best-effort and never blocks a probe.
+
+---
+
 ## Payload & Detection Patterns
 
 **Basic IDOR test with curl (swap cookie/token):**
