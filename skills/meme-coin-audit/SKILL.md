@@ -1,6 +1,6 @@
 ---
 name: meme-coin-audit
-description: Meme coin and token security audit — rug pull detection (honeypot, hidden mint, fee manipulation, LP lock bypass), Solana SPL token analysis (freeze authority, mint authority, metadata mutability), Token-2022 extension risks (transfer hooks, permanent delegate), DEX liquidity pool attacks (sandwich amplification, LP drain, bonding curve exploits), pump.fun/Raydium/Jupiter integration risks, token_scanner.py automation, and real exploit examples from 2024-2025. Use for any token audit, rug pull assessment, meme coin security review, or pre-investment due diligence.
+description: "Meme coin and token security audit — rug pull detection (honeypot, hidden mint, fee manipulation, LP lock bypass), Solana SPL token analysis (freeze authority, mint authority, metadata mutability), Token-2022 extension risks (transfer hooks, permanent delegate), DEX liquidity pool attacks (sandwich amplification, LP drain, bonding curve exploits), pump.fun/Raydium/Jupiter integration risks, token_scanner.py automation, and real exploit examples from 2024-2025. Use for any token audit, rug pull assessment, meme coin security review, or pre-investment due diligence."
 ---
 
 # MEME COIN & TOKEN SECURITY AUDIT
@@ -288,7 +288,7 @@ When you don't have source code, check on-chain:
 
 ## FULL REFERENCE FILES
 
-For deep dives into specific areas:
-- `web3/10-meme-coin-bugs.md` — All 8 bug classes with full code examples and variants
-- `web3/11-solana-token-audit.md` — Solana-specific: SPL authorities, Token-2022, pump.fun, Raydium, Jupiter
-- `web3/12-dex-lp-attacks.md` — DEX & LP manipulation patterns (sandwich, pool sniping, CL position attacks)
+For deep dives into specific areas (paths relative to this skill, resolving to the repo-root `web3/` directory):
+- [`../../web3/10-meme-coin-bugs.md`](../../web3/10-meme-coin-bugs.md) — All 8 bug classes with full code examples and variants
+- [`../../web3/11-solana-token-audit.md`](../../web3/11-solana-token-audit.md) — Solana-specific: SPL authorities, Token-2022, pump.fun, Raydium, Jupiter
+- [`../../web3/12-dex-lp-attacks.md`](../../web3/12-dex-lp-attacks.md) — DEX and LP manipulation patterns (sandwich, pool sniping, CL position attacks)

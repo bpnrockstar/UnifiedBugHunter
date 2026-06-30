@@ -1,6 +1,6 @@
 ---
 name: web2-recon
-description: Web2 recon pipeline — subdomain enumeration (subfinder, Chaos API, assetfinder), live host discovery (dnsx, httpx), URL crawling (katana, waybackurls, gau), directory fuzzing (ffuf), JS analysis (LinkFinder, SecretFinder), continuous monitoring (new subdomain alerts, JS change detection, GitHub commit watch). Use when starting recon on any web2 target or when asked about asset discovery, subdomain enum, or attack surface mapping.
+description: "Web2 recon pipeline — subdomain enumeration (subfinder, Chaos API, assetfinder), live host discovery (dnsx, httpx), URL crawling (katana, waybackurls, gau), directory fuzzing (ffuf), JS analysis (LinkFinder, SecretFinder), continuous monitoring (new subdomain alerts, JS change detection, GitHub commit watch). Use when starting recon on any web2 target or when asked about asset discovery, subdomain enum, or attack surface mapping."
 ---
 
 # WEB2 RECON PIPELINE
@@ -359,7 +359,7 @@ cat /tmp/live.txt | awk '{print $1}' | naabu -port 80,443,8080,8443,3000,4000,50
 pip install trufflehog3 2>/dev/null || true
 trufflehog filesystem --only-verified recon/$TARGET/ 2>/dev/null
 
-# SecretFinder — manual JS bundle scan (already in tools/)
+# SecretFinder — manual JS bundle scan (external tool at ~/tools/SecretFinder)
 source ~/tools/SecretFinder/.venv/bin/activate
 cat /tmp/urls.txt | grep "\.js$" | head -100 | while read url; do
   python3 ~/tools/SecretFinder/SecretFinder.py -i "$url" -o cli 2>/dev/null

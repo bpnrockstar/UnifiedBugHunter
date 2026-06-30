@@ -1,9 +1,9 @@
 ---
 name: redteam-report-template
-description: Client-facing red-team deliverable format — codifies the Subject / Observations / Description / Impact / Recommendation / PoC structure used for external red-team engagements (not bug-bounty platform reports). Different audience, different tone, different cadence. Built from an authorized engagement deliverable where 14 findings were packaged into a 52KB MD + 2.2MB DOCX with 16 embedded screenshots. Use when the engagement is "external red team for an enterprise client" (not H1/Bugcrowd/Intigriti), when generating the final report, when the client has specified a custom report format, or when packaging findings into DOCX/PDF.
-sources: authorized-engagement-deliverable, enterprise-redteam-report-conventions
-report_count: 1
+description: 'Client-facing red-team deliverable format — codifies the Subject / Observations / Description / Impact / Recommendation / PoC structure used for external red-team engagements (not bug-bounty platform reports). Different audience, tone, and cadence. Use when the engagement is an external red team for an enterprise client (not H1/Bugcrowd/Intigriti), when generating the final report, when the client has specified a custom report format, or when packaging findings into DOCX/PDF.'
 ---
+
+# Red-Team Report Template
 
 ## When to use
 
@@ -18,13 +18,11 @@ Do NOT use for:
 - Quick proof-of-concept memos
 - Internal team writeups
 
----
-
 ## The 6-section format per finding
 
 This is the canonical structure each finding follows:
 
-```markdown
+````markdown
 ## Finding F##: <descriptive title>
 
 **Severity:** Critical / High / Medium / Low / Informational
@@ -65,9 +63,7 @@ This is the canonical structure each finding follows:
 
 **Screenshot:**
 ![F##_descriptive_name](screenshots/F##_descriptive_name.png)
-```
-
----
+````
 
 ## Severity & status disciplines
 
@@ -91,8 +87,6 @@ This is the field that distinguishes red-team deliverables from bug-bounty repor
 - **Suspected (1 signal)** — single indicator, not confirmed (rare — usually drop)
 - **Out-of-band** — finding from passive recon, not actively tested
 
----
-
 ## Mistakes to avoid (from authorized-engagement)
 
 ### 1. Don't retract findings that stopped reproducing
@@ -111,8 +105,6 @@ Recon notes (subdomains found, ports open, technologies fingerprinted) belong in
 
 ### 5. Don't bury the PoC
 Each finding MUST have reproducible steps. The PoC section is what proves the finding to a skeptical reader. If you can't write the PoC clearly, the finding probably isn't ready to ship.
-
----
 
 ## Document-level structure
 
@@ -159,8 +151,6 @@ Each finding MUST have reproducible steps. The PoC section is what proves the fi
 8. Appendices (raw output, screenshots index, full target list)
 ```
 
----
-
 ## DOCX generation pipeline (markdown → docx with embedded images)
 
 ```bash
@@ -202,8 +192,6 @@ F15_saml_metadata.png
 
 Variants get letter suffixes (F02a, F02b). Always zero-pad finding number.
 
----
-
 ## Writing tone — for client deliverables
 
 | Section | Tone |
@@ -227,8 +215,6 @@ Variants get letter suffixes (F02a, F02b). Always zero-pad finding number.
 - "We recommend implementing security best practices" — say which one specifically
 - "The application is vulnerable to..." without saying what specifically
 
----
-
 ## Audience translation — same finding, different framing
 
 Example: hardcoded JWT in APK
@@ -238,8 +224,6 @@ Example: hardcoded JWT in APK
 | Impact | "JWT signing key extracted from APK enables forging admin tokens" | "Anyone with the customer-facing mobile app can read any customer's invoice" | "A leaked secret in our mobile app lets attackers impersonate users" |
 
 The same finding's Impact paragraph should cover both ends — start with the business outcome, then drop into technical detail.
-
----
 
 ## Findings that are sometimes wrongly excluded
 
@@ -253,8 +237,6 @@ Red-team deliverables should include — not just bug-bounty payable bugs:
 
 Bug bounty would reject most of these. Red-team deliverables embrace them — the client paid for the assessment to know.
 
----
-
 ## Mid-engagement events to document
 
 Beyond findings themselves, the deliverable should include:
@@ -265,8 +247,6 @@ Beyond findings themselves, the deliverable should include:
 - Tooling failures (e.g., MCP timeout, CAPTCHA not solvable) — these affect what was/wasn't testable
 
 Each gives the client context about their real-world detection capability, which often matters more than the findings themselves.
-
----
 
 ## Template library (where to put canned text)
 
@@ -281,8 +261,6 @@ Maintain reusable boilerplate in:
 ```
 
 Don't write these from scratch each engagement; clone and customize.
-
----
 
 ## Quality checks before delivery
 
@@ -301,18 +279,6 @@ Pre-delivery checklist:
 - [ ] All tool versions noted in methodology
 - [ ] Status field set correctly on every finding (especially patched-mid-engagement)
 
----
-
-## Bridge to neighboring skills
-
-- `report-writing` — bug-bounty platform reports (different format, different audience)
-- `redteam-mindset` — informs what counts as a finding worth shipping
-- `mid-engagement-ir-detection` — informs the "patched mid-engagement" status pattern
-- `evidence-hygiene` — informs screenshot redaction discipline
-- `m365-entra-attack`, `enterprise-vpn-attack`, etc. — each provides finding-templates specific to its attack surface
-
----
-
 ## Anti-patterns
 
 - **DO NOT** write a 50-page report for 3 findings — pad-by-page erodes credibility
@@ -321,8 +287,6 @@ Pre-delivery checklist:
 - **DO NOT** include findings without PoCs — they read as speculative
 - **DO NOT** skip the Recommendation section's specificity — "patch and review" doesn't help
 - **DO NOT** mix bug-bounty CVSS scoring with red-team severity unthinkingly — context differs (e.g., a Medium on a CVSS basis can be Critical for the client if it touches a regulated dataset)
-
----
 
 ## Real engagement metric (authorized-engagement)
 
@@ -336,8 +300,6 @@ For calibration:
 
 These numbers are typical for a 1-week external red-team engagement on a mid-size enterprise. Scale down for short tests, up for full purple-team exercises.
 
----
-
 ## Related Skills & Chains
 
 - **`triage-validation`** — This template ingests findings that have ALREADY passed the 7-Question Gate. Engagement flow: every finding through `triage-validation` first → only validated findings → `redteam-report-template` packaging. Skipping triage produces a deliverable padded with informational noise that erodes client trust.
@@ -345,3 +307,4 @@ These numbers are typical for a 1-week external red-team engagement on a mid-siz
 - **`redteam-mindset`** — The Subject / Observations / Description / Impact / Recommendation / PoC structure assumes the operator already thinks like a red-teamer (impact-first, blast-radius framing). Engagement flow: `redteam-mindset` loaded at engagement start → findings collected with red-team framing baked in → `redteam-report-template` produces deliverable without rewriting every Impact section.
 - **`mid-engagement-ir-detection`** — Defensive-action findings (SOC patches mid-test, new IPS rules deployed, account lockouts triggered by external attacker) are first-class findings in red-team deliverables. Engagement flow: `mid-engagement-ir-detection` captures behavior-change events → each becomes its own Subject in the deliverable, framed as "client capability observation" not as "bug we missed."
 - **`report-writing`** + **`bugcrowd-reporting`** — Bug-bounty platform reports use DIFFERENT structure (one finding per submission, platform-specific severity scoring, OOS-clause counters). Engagement flow: if engagement mode is `bug-bounty` per project memory → use `report-writing` / `bugcrowd-reporting` instead. This template is ONLY for external red-team / enterprise client deliverables.
+- **`m365-entra-attack`**, **`enterprise-vpn-attack`**, and the other attack-surface skills — each supplies finding-templates and impact framing specific to its surface that drop directly into the 6-section format here.

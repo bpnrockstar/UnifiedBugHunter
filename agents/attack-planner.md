@@ -3,8 +3,6 @@ name: attack-planner
 description: Multi-stage attack path planner. Given a target's architecture, constructs multi-hop attack graphs covering initial access, persistence, lateral movement, privilege escalation, and exfiltration. Uses threat modeling (STRIDE/PASTA), attack trees, and chain-of-attack analysis. Integrates with recon-agent and chain-builder for end-to-end campaign planning. Use when planning authorized red-team engagements or complex bug bounty chains.
 tools:
   read: true
-  write: true
-  bash: true
   grep: true
   glob: true
 model: claude-sonnet-4-6
@@ -133,21 +131,21 @@ paths:
   path_1:
     - recon-agent: target.com
     - attack-planner: current (this agent)
-    - agent: web2-recon-skill
+    - skill: web2-recon
     - step: "SSRF hunt on URL-accepting endpoints"
     - fallback: "If SSRF fails → try path 2"
 
   path_2:
     - recon-agent: target.com
     - social-engineer: "Phishing campaign design"
-    - agent: m365-entra-attack
+    - skill: m365-entra-attack
     - step: "Password spray / token replay"
     - fallback: "If spray locked out → try path 1"
 
   path_3:
     - recon-agent: target.com
-    - agent: hunt-ssrf-skill
-    - agent: cloud-iam-deep-skill
+    - skill: hunt-ssrf
+    - skill: cloud-iam-deep
     - step: "Extract IAM creds → enumerate permissions"
     - fallback: "If no SSRF → check SSRF via open redirect chain"
 ```

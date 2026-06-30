@@ -1,5 +1,6 @@
 ---
-description: Smart contract security audit — runs through 10 bug class checklist (accounting desync, access control, incomplete path, off-by-one, oracle errors, ERC4626, reentrancy, flash loan, signature replay, proxy/upgrade). Applies pre-dive kill signals first. Generates Foundry PoC template for confirmed findings. Usage: /web3-audit <contract.sol>
+description: Smart contract security audit — runs through 10 bug class checklist (accounting desync, access control, incomplete path, off-by-one, oracle errors, ERC4626, reentrancy, flash loan, signature replay, proxy/upgrade). Applies pre-dive kill signals first. Generates Foundry PoC template for confirmed findings.
+argument-hint: <contract.sol-or-contracts-dir>
 ---
 
 # /web3-audit
@@ -10,8 +11,16 @@ Smart contract security audit using the 10-bug-class methodology.
 
 ```
 /web3-audit VulnerableContract.sol
+/web3-audit contracts/
 /web3-audit https://github.com/protocol/contracts
 /web3-audit [paste contract code]
+```
+
+Set `TARGET` to the contract file or source directory the user passed
+(default `$ARGUMENTS`), then reuse it in the grep sweeps below:
+
+```bash
+TARGET="${ARGUMENTS:-contracts/}"   # contract file or source directory to audit
 ```
 
 ## Step 0: Pre-Dive Kill Signals
@@ -39,10 +48,10 @@ Only proceed if score >= 6/10:
 
 ```bash
 # Find accounting variables
-grep -rn "totalSupply\|totalShares\|totalAssets\|totalDebt\|cumulativeReward" contracts/
+grep -rn "totalSupply\|totalShares\|totalAssets\|totalDebt\|cumulativeReward" "$TARGET"
 
 # Find ALL early returns in critical functions
-grep -rn "\breturn\b" contracts/ -B3 | grep -B3 "if\b"
+grep -rn "\breturn\b" "$TARGET" -B3 | grep -B3 "if\b"
 ```
 
 Check: For each early return in claim/redeem/withdraw functions:
@@ -54,17 +63,17 @@ Check: For each early return in claim/redeem/withdraw functions:
 
 ```bash
 # Sibling function families — do ALL have same modifier set?
-grep -rn "function vote\|function poke\|function reset\|function update\|function claim\|function harvest" contracts/ -A2
+grep -rn "function vote\|function poke\|function reset\|function update\|function claim\|function harvest" "$TARGET" -A2
 
 # Ownership check: existence vs ownership
-grep -rn "_requireOwned\|ownerOf\|_isApprovedOrOwner" contracts/ -B5
+grep -rn "_requireOwned\|ownerOf\|_isApprovedOrOwner" "$TARGET" -B5
 
 # Silent modifiers (if without revert)
-grep -rn "modifier\b" contracts/ -A8 | grep -B3 "if (" | grep -v "require\|revert"
+grep -rn "modifier\b" "$TARGET" -A8 | grep -B3 "if (" | grep -v "require\|revert"
 
 # Uninitialized proxy
-grep -rn "function initialize\b" contracts/ -A3
-grep -rn "_disableInitializers()" contracts/
+grep -rn "function initialize\b" "$TARGET" -A3
+grep -rn "_disableInitializers()" "$TARGET"
 ```
 
 Check: Does EVERY sibling function in a family have the SAME modifiers?
@@ -80,9 +89,9 @@ The function family comparison test:
 ```
 
 ```bash
-grep -rn "safeApprove\b" contracts/    # safeApprove without zero-reset?
-grep -rn "delete\b" contracts/ -B5     # delete before operation completes?
-grep -rn "function deposit\|function mint\|function withdraw\|function redeem" contracts/ -A10
+grep -rn "safeApprove\b" "$TARGET"    # safeApprove without zero-reset?
+grep -rn "delete\b" "$TARGET" -B5     # delete before operation completes?
+grep -rn "function deposit\|function mint\|function withdraw\|function redeem" "$TARGET" -A10
 ```
 
 ## Step 4: Off-By-One (22% of Highs)
@@ -91,26 +100,26 @@ Mental test: For EVERY `if (A > B)`: "What happens when A == B?" Is that correct
 
 ```bash
 # Boundary comparisons
-grep -rn "Period\|Epoch\|Deadline\|period\|epoch\|deadline" contracts/ -A3 | grep "[<>][^=]"
+grep -rn "Period\|Epoch\|Deadline\|period\|epoch\|deadline" "$TARGET" -A3 | grep "[<>][^=]"
 
 # Loop breaks
-grep -rn "\bbreak\b" contracts/ -B10
+grep -rn "\bbreak\b" "$TARGET" -B10
 
 # Array bounds
-grep -rn "\.length\s*-\s*1\|i\s*<=\s*.*\.length\b" contracts/
+grep -rn "\.length\s*-\s*1\|i\s*<=\s*.*\.length\b" "$TARGET"
 ```
 
 ## Step 5: Oracle / Price Manipulation
 
 ```bash
 # Missing staleness check
-grep -rn "latestRoundData" contracts/ -A5 | grep -v "updatedAt\|timestamp"
+grep -rn "latestRoundData" "$TARGET" -A5 | grep -v "updatedAt\|timestamp"
 
 # Pyth confidence interval
-grep -rn "getPriceUnsafe\|getPrice\b" contracts/ -A8 | grep -v "conf\|confidence"
+grep -rn "getPriceUnsafe\|getPrice\b" "$TARGET" -A8 | grep -v "conf\|confidence"
 
 # TWAP windows
-grep -rn "secondsAgo\|TWAP\|cardinality" contracts/ -A5
+grep -rn "secondsAgo\|TWAP\|cardinality" "$TARGET" -A5
 ```
 
 Check:
@@ -121,8 +130,8 @@ Check:
 ## Step 6: ERC4626 Vaults
 
 ```bash
-grep -rn "function deposit\|function mint\|function withdraw\|function redeem" contracts/ -A10
-grep -rn "function transfer\|function transferFrom" contracts/ -A15
+grep -rn "function deposit\|function mint\|function withdraw\|function redeem" "$TARGET" -A10
+grep -rn "function transfer\|function transferFrom" "$TARGET" -A15
 ```
 
 Check:
@@ -134,10 +143,10 @@ Check:
 
 ```bash
 # Effects after interactions
-grep -rn "\.call{value\|safeTransfer\|transfer(" contracts/ -B10 | grep -v "require\|revert"
+grep -rn "\.call{value\|safeTransfer\|transfer(" "$TARGET" -B10 | grep -v "require\|revert"
 
 # Missing nonReentrant
-grep -rn "function withdraw\|function redeem\|function claim" contracts/ -A2 | grep -v "nonReentrant"
+grep -rn "function withdraw\|function redeem\|function claim" "$TARGET" -A2 | grep -v "nonReentrant"
 ```
 
 Check: Does every function that transfers ETH or ERC20 follow CEI order?
@@ -146,7 +155,7 @@ Check: Does every function that transfers ETH or ERC20 follow CEI order?
 ## Step 8: Flash Loan Oracle Manipulation
 
 ```bash
-grep -rn "getReserves\|getAmountsOut\|slot0\b" contracts/ -A5
+grep -rn "getReserves\|getAmountsOut\|slot0\b" "$TARGET" -A5
 ```
 
 Check: Any spot price reading from Uniswap reserves/slot0? → flash loan manipulatable.
@@ -154,8 +163,8 @@ Check: Any spot price reading from Uniswap reserves/slot0? → flash loan manipu
 ## Step 9: Signature Replay
 
 ```bash
-grep -rn "ecrecover\|ECDSA\.recover" contracts/ -B20
-grep -rn "nonce\|_nonces\|nonces\[" contracts/
+grep -rn "ecrecover\|ECDSA\.recover" "$TARGET" -B20
+grep -rn "nonce\|_nonces\|nonces\[" "$TARGET"
 ```
 
 Check: Does signed hash include: nonce + chainId + contract address?
@@ -163,9 +172,9 @@ Check: Does signed hash include: nonce + chainId + contract address?
 ## Step 10: Proxy / Upgrade
 
 ```bash
-grep -rn "function initialize\b\|_disableInitializers\|initializer" contracts/
-grep -rn "delegatecall\b" contracts/ -B3
-grep -rn "0x360894\|_IMPLEMENTATION_SLOT\|EIP1967" contracts/
+grep -rn "function initialize\b\|_disableInitializers\|initializer" "$TARGET"
+grep -rn "delegatecall\b" "$TARGET" -B3
+grep -rn "0x360894\|_IMPLEMENTATION_SLOT\|EIP1967" "$TARGET"
 ```
 
 Check:
@@ -179,10 +188,14 @@ Apply the 7-Question Gate:
 ```
 1. Can I demonstrate this with a Foundry test?
 2. What is the financial impact (quantify in $)?
-3. Is this in the Immunefi scope?
-4. Is it a known issue or acknowledged behavior?
-5. Does my Foundry PoC actually run? (forge test -vvvv)
+3. Is the affected contract in the program's in-scope asset list?
+4. Is this in the Immunefi (or other program) scope tier for the severity claimed?
+5. Is it a known issue or acknowledged behavior (audits, past reports, docs)?
+6. Does this exploit work without privileged/admin keys an attacker can't obtain?
+7. Does my Foundry PoC actually run end-to-end? (forge test -vvvv)
 ```
+
+One NO = kill or downgrade the finding.
 
 ## Foundry PoC Template
 

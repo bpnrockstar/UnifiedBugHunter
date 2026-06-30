@@ -19,8 +19,8 @@ You also need [OpenCode](https://opencode.ai) installed.
 ### Install
 
 ```bash
-git clone https://github.com/UnifiedBugHunter.git
-cd unified-bug-hunter
+git clone https://github.com/bpnrockstar/UnifiedBugHunter.git
+cd UnifiedBugHunter
 chmod +x install_tools.sh && ./install_tools.sh   # scanning tools
 chmod +x install.sh && ./install.sh --opencode    # skills + commands
 ```
@@ -33,7 +33,7 @@ The installer will:
 ### Verify Installation
 
 ```bash
-cd unified-bug-hunter
+cd UnifiedBugHunter
 opencode
 # Ask: "do you have bug bounty skills?"
 # Should confirm skills are loaded
@@ -41,14 +41,14 @@ opencode
 
 ## What's Here
 
-### Skills (16 domains)
+### Skills (89 total, including 48 `hunt-*` per-class skills)
 
 | Skill | Domain |
 |---|---|
 | `bug-bounty` | Master workflow — recon to report, all vuln classes, LLM testing, chains |
 | `bb-methodology` | Hunting mindset + 5-phase non-linear workflow + tool routing + session discipline |
 | `web2-recon` | Subdomain enum, live host discovery, URL crawling, nuclei |
-| `web2-vuln-classes` | 21 bug classes with bypass tables (SSRF, open redirect, file upload, Agentic AI) |
+| `web2-vuln-classes` | 24 bug classes with bypass tables (SSRF, open redirect, file upload, Agentic AI) |
 | `security-arsenal` | Payloads, bypass tables, gf patterns, always-rejected list |
 | `web3-audit` | 10 smart contract bug classes, Foundry PoC template, pre-dive kill signals |
 | `meme-coin-audit` | Meme coin rug pull detection, token authority checks, bonding curve exploits, LP attacks |
@@ -66,9 +66,9 @@ opencode
 | `vuln-catcher` | Continuous recon monitor — subdomains, JS changes, ports, tech changes |
 | `dast-scanner` | Automated DAST scanning (OWASP ZAP + nuclei) with DB import |
 | `knowledge-base` | Searchable vulnerability KB — disclosed reports, payloads, bypass techniques |
-| `llm-redteam` | **Advanced LLM red teaming** — 15+ techniques, 200+ payloads, automated CLI |
+| `llm-redteam` | **Advanced LLM red teaming** — 15+ techniques, 180+ payloads, automated CLI |
 
-### Commands (27 commands)
+### Commands (35 commands)
 
 | Command | Usage |
 |---|---|
@@ -121,7 +121,7 @@ Commands auto-invoke based on context.
 ### Quick Start
 
 ```bash
-cd unified-bug-hunter
+cd UnifiedBugHunter
 opencode
 
 # In OpenCode:

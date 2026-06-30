@@ -1,9 +1,11 @@
 ---
 name: hunt-rce
-description: Hunting skill for rce vulnerabilities. Built from 67 public bug bounty reports. Use when hunting rce on any target.
+description: "Hunt Remote Code Execution. Built from 67 public bug bounty reports. Trigger on command-injection sinks (exec/system/popen/Runtime.exec/ProcessBuilder), unsafe deserialization (SnakeYAML, Ruby YAML.load, .NET ViewState/BinaryFormatter, Python pickle, Java ysoserial gadgets), SSTI-to-RCE in template engines (Jinja2/Twig/Freemarker/Velocity class-walkers, Spring SpEL CVE-2022-22963), and file-upload-to-RCE (webshell via path traversal, polyglot MIME bypass, phar:// stream wrappers). Also covers config-as-code injection (syslog-ng/collectd/nomad), dependency confusion, Apache path-traversal CVE-2021-41773/42013, Jenkins args4j CVE-2024-23897, and exposed Kubernetes APIs. Use when user input reaches an execution layer on any target."
 sources: github, hackerone_public
 report_count: 67
 ---
+
+# HUNT-RCE — Remote Code Execution
 
 ## Crown Jewel Targets
 

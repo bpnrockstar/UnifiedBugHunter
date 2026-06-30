@@ -1,5 +1,7 @@
 ---
-description: Meme coin and token security scan — checks for rug pull vectors (hidden mint, honeypot, fee manipulation, LP lock bypass, authority retention, bonding curve exploits, fake renounce, sandwich amplification). Runs automated token_scanner.py + manual 8-class audit. Usage: /token-scan <contract_path_or_dir> [--chain solana]
+description: Meme coin and token security scan — checks for rug pull vectors (hidden mint, honeypot, fee manipulation, LP lock bypass, authority retention, bonding curve exploits, fake renounce, sandwich amplification). Runs automated token_scanner.py + manual 8-class audit.
+argument-hint: <contract-path-or-dir> [--chain solana] [--recursive]
+allowed-tools: Bash
 ---
 
 # /token-scan
@@ -13,6 +15,13 @@ Fast rug pull detection for meme coins and token contracts. Covers EVM (Solidity
 /token-scan src/ --recursive                             # Scan entire directory
 /token-scan programs/token/ --chain solana --recursive   # Solana program
 /token-scan contracts/Token.sol --output findings/report.md  # Save report
+```
+
+Set `TARGET` to the contract file or directory the user passed (default `$ARGUMENTS`),
+then reuse it throughout the steps below:
+
+```bash
+TARGET="${ARGUMENTS:-.}"   # contract file or source directory to scan
 ```
 
 ## Step 0: Quick Kill Signals
@@ -33,13 +42,13 @@ If ANY answer is NO → flag and proceed with extreme caution.
 
 ```bash
 # EVM
-python3 tools/token_scanner.py <contract_path>
+python3 tools/token_scanner.py "$TARGET"
 
 # Solana
-python3 tools/token_scanner.py <program_dir> --chain solana --recursive
+python3 tools/token_scanner.py "$TARGET" --chain solana --recursive
 
 # JSON output for piping
-python3 tools/token_scanner.py <path> --json
+python3 tools/token_scanner.py "$TARGET" --json
 ```
 
 The scanner checks all 8 bug classes via regex and returns a risk score + verdict.
@@ -47,10 +56,10 @@ The scanner checks all 8 bug classes via regex and returns a risk score + verdic
 ## Step 2: Hidden Mint Check
 
 ```bash
-grep -rn "function mint\|_mint(\|_balances\[.*\] +=" src/ --include="*.sol" | grep -v "test\|lib"
-grep -rn "delegatecall" src/ --include="*.sol"
+grep -rn "function mint\|_mint(\|_balances\[.*\] +=" "$TARGET" --include="*.sol" | grep -v "test\|lib"
+grep -rn "delegatecall" "$TARGET" --include="*.sol"
 # Solana:
-grep -rn "MintTo\|mint_to\|mint_authority" src/ --include="*.rs"
+grep -rn "MintTo\|mint_to\|mint_authority" "$TARGET" --include="*.rs"
 ```
 
 Look for: mint without MAX_SUPPLY cap, direct balance manipulation, delegatecall to unknown targets.
@@ -58,9 +67,9 @@ Look for: mint without MAX_SUPPLY cap, direct balance manipulation, delegatecall
 ## Step 3: Honeypot Check
 
 ```bash
-grep -rn "blacklist\|isBlacklisted\|_bots\|maxTxAmount\|approve.*override" src/ --include="*.sol"
+grep -rn "blacklist\|isBlacklisted\|_bots\|maxTxAmount\|approve.*override" "$TARGET" --include="*.sol"
 # Solana:
-grep -rn "freeze_authority\|transfer_hook\|permanent_delegate" src/ --include="*.rs"
+grep -rn "freeze_authority\|transfer_hook\|permanent_delegate" "$TARGET" --include="*.rs"
 ```
 
 Look for: blacklist mappings, max tx setters without minimum bound, approve overrides that don't call super.
@@ -68,8 +77,8 @@ Look for: blacklist mappings, max tx setters without minimum bound, approve over
 ## Step 4: Fee Manipulation Check
 
 ```bash
-grep -rn "setFee\|setSellFee\|_taxFee\|_sellFee" src/ --include="*.sol"
-grep -rn "function set.*Fee" -A5 src/ --include="*.sol" | grep -v "require\|MAX"
+grep -rn "setFee\|setSellFee\|_taxFee\|_sellFee" "$TARGET" --include="*.sol"
+grep -rn "function set.*Fee" -A5 "$TARGET" --include="*.sol" | grep -v "require\|MAX"
 ```
 
 Look for: fee setters without upper bound, fee exclusion for owner.
@@ -77,8 +86,8 @@ Look for: fee setters without upper bound, fee exclusion for owner.
 ## Step 5: LP Drain Check
 
 ```bash
-grep -rn "migrateLP\|emergencyWithdraw\|\.sync()\|setPair\|setRouter" src/ --include="*.sol"
-grep -rn "addLiquidityETH" -A5 src/ --include="*.sol" | grep "owner\|msg.sender"
+grep -rn "migrateLP\|emergencyWithdraw\|\.sync()\|setPair\|setRouter" "$TARGET" --include="*.sol"
+grep -rn "addLiquidityETH" -A5 "$TARGET" --include="*.sol" | grep "owner\|msg.sender"
 ```
 
 Look for: LP migration functions, emergency withdraw, auto-LP to owner wallet.
@@ -86,7 +95,7 @@ Look for: LP migration functions, emergency withdraw, auto-LP to owner wallet.
 ## Step 6: Bonding Curve Check
 
 ```bash
-grep -rn "virtualReserve\|setCurve\|graduate\|bonding_curve" src/ --include="*.sol" --include="*.rs"
+grep -rn "virtualReserve\|setCurve\|graduate\|bonding_curve" "$TARGET" --include="*.sol" --include="*.rs"
 ```
 
 Look for: mutable curve parameters, manipulable graduation threshold.
@@ -94,9 +103,9 @@ Look for: mutable curve parameters, manipulable graduation threshold.
 ## Step 7: Authority Check (Solana)
 
 ```bash
-grep -rn "mint_authority\|freeze_authority\|update_authority\|close_authority" src/ --include="*.rs"
-grep -rn "set_authority.*None" src/ --include="*.rs"
-grep -rn "upgrade_authority" src/ --include="*.rs"
+grep -rn "mint_authority\|freeze_authority\|update_authority\|close_authority" "$TARGET" --include="*.rs"
+grep -rn "set_authority.*None" "$TARGET" --include="*.rs"
+grep -rn "upgrade_authority" "$TARGET" --include="*.rs"
 ```
 
 Look for: retained authorities that should be None, upgradeable programs.
@@ -104,8 +113,8 @@ Look for: retained authorities that should be None, upgradeable programs.
 ## Step 8: Fake Renounce Check
 
 ```bash
-grep -rn "renounceOwnership.*override" src/ --include="*.sol"
-grep -rn "_shadowAdmin\|_backupOwner" src/ --include="*.sol"
+grep -rn "renounceOwnership.*override" "$TARGET" --include="*.sol"
+grep -rn "_shadowAdmin\|_backupOwner" "$TARGET" --include="*.sol"
 ```
 
 Look for: overridden renounce without actual transfer, secondary admin roles.
@@ -113,8 +122,8 @@ Look for: overridden renounce without actual transfer, secondary admin roles.
 ## Step 9: Sandwich Amplification Check
 
 ```bash
-grep -rn "swapExactTokensForETH" -A5 src/ --include="*.sol" | grep "0,"
-grep -rn "swapThreshold\|_rebase\|reflect()" src/ --include="*.sol"
+grep -rn "swapExactTokensForETH" -A5 "$TARGET" --include="*.sol" | grep "0,"
+grep -rn "swapThreshold\|_rebase\|reflect()" "$TARGET" --include="*.sol"
 ```
 
 Look for: auto-swap with amountOutMin=0, rebase on every transfer.

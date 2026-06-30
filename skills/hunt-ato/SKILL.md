@@ -1,9 +1,10 @@
 ---
 name: hunt-ato
-description: "Hunt account takeover taxonomy — 9 distinct paths to ATO, plus chains. Paths: (1) password reset flaws (host-header injection redirects token, predictable/numeric token, Referer leak, no-expiry/reuse), (2) email change without re-auth, (3) OAuth account-link CSRF, (4) MFA bypass (per hunt-mfa-bypass), (5) session fixation, (6) JWT manipulation (alg:none, RS256→HS256 key confusion, weak HMAC secret, kid injection), (7) password change without step-up (chain with login timing/length oracle), (8) social-recovery / security-question brute-force, (9) SSO subdomain takeover at OAuth redirect_uri. Chains: cookie theft + password oracle + no step-up = persistent ATO; lax redirect_uri = auth-code theft; dangling-CNAME takeover at redirect_uri = ATO. Validate: demonstrate real takeover of test account B from attacker A's session; OOB/Collaborator confirm blind token-leak steps. Use when hunting ATO chains, testing password reset / email change / MFA / OAuth / session / JWT, or chaining primitives toward Critical."
+description: "Hunt account takeover — 9 paths plus chains. Paths: (1) password-reset flaws (host-header poisoning, predictable/numeric token, Referer leak, no-expiry/reuse), (2) email change without re-auth, (3) OAuth account-link CSRF, (4) MFA bypass, (5) session fixation, (6) JWT manipulation (alg:none, RS256→HS256 key confusion, weak HMAC, kid injection), (7) password change without step-up + login timing/length oracle, (8) social-recovery / security-question brute-force, (9) SSO subdomain takeover at OAuth redirect_uri. Chains: cookie theft + oracle + no step-up = persistent ATO; lax redirect_uri or dangling-CNAME = auth-code theft. Validate by taking over a test account B from attacker A's session; OOB-confirm blind token-leak steps. Use when testing reset / email-change / MFA / OAuth / session / JWT flows or chaining toward Critical."
 ---
 
-## 13. ATO — ACCOUNT TAKEOVER TAXONOMY
+# HUNT-ATO — Account Takeover Taxonomy
+
 > 9 distinct paths. ATO is a destination class, not a single bug — each path below is a primitive that becomes Critical only when you demonstrate takeover of a SECOND account (test account B) you do not control, from attacker A's session/IP/device. A path that only locks you out of your own account, or only works when you already hold the victim's password AND session, is not a standalone ATO.
 
 ### Path 1: Password Reset Poisoning (Host-Header)

@@ -1,10 +1,21 @@
 ---
-description: Gather employee names + email patterns for password spray prep. Pipeline theHarvester (search engines + CT logs) -> derive names from email local-parts -> username-anarchy expansion. LinkedIn search is opt-in via --with-linkedin. Output -> recon/<target>/osint/. Usage /osint-employees <target.com> [--with-linkedin] [--with-pydictor-social]
+description: Gather employee names + email patterns for password spray prep. Pipeline theHarvester (search engines + CT logs) -> derive names from email local-parts -> username-anarchy expansion. LinkedIn search is opt-in via --with-linkedin. Output -> recon/<target>/osint/.
+argument-hint: <target.com> [--with-linkedin] [--with-pydictor-social] [--company "<name>"]
+allowed-tools: Bash
 ---
 
 # /osint-employees
 
 Gather employee names and email patterns for the spray-prep phase. Read-only OSINT — no auth probing.
+
+## Run This
+
+Invoke `tools/osint_employees.sh` directly — do not re-implement the harvest
+pipeline:
+
+```bash
+bash tools/osint_employees.sh $ARGUMENTS
+```
 
 ## Usage
 

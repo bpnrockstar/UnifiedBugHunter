@@ -263,7 +263,7 @@ grep -rn "android:debuggable=\"true\"" AndroidManifest.xml 2>/dev/null
 
 ## Report Template
 
-```
+````markdown
 ## [SEVERITY] Finding Title
 
 **Location:** `file/path.ext:line_number`
@@ -291,8 +291,7 @@ fixed code snippet
 ```
 
 ### CVSS: X.X (vector string)
-```
-```
+````
 
 ## Tooling Reference
 
@@ -309,3 +308,10 @@ fixed code snippet
 | detect-secrets | All | Secret scanning for pre-commit |
 | jadx | Android | APK decompile → Java source |
 | objection | iOS/Android | Mobile runtime exploration |
+
+## Related Skills
+
+- `code-patch` — once this audit confirms a finding, hand the location and vuln class to `code-patch` to generate a minimal, tested fix.
+- `/code-audit` command — the slash entry point that drives this methodology over a path (`/code-audit [path] [--mode quick|full]`).
+- `hunt-sqli`, `hunt-xss`, `hunt-ssrf`, `hunt-idor`, `hunt-deserialization`, `hunt-rce` — class-specific hunt skills that deepen exploitation and PoC construction once a grep sink here flags a candidate.
+- `report-writing` — turn confirmed findings into submission-ready reports with CVSS and remediation.

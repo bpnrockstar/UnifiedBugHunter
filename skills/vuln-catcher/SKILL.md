@@ -135,3 +135,12 @@ python3 tools/ai_training_data.py --format chat --min-severity high
 | GET /api/findings | JSON findings (filterable) |
 | GET /api/knowledge-base | JSON knowledge base |
 | GET /api/recon | JSON recon data |
+
+## Related Skills & Chains
+
+- **`web2-recon`** — Seeds the monitor. Run a full subdomain/URL/JS sweep first, store it as the baseline in `recon_data`, then hand off to `vuln-catcher` to watch that surface for deltas over time.
+- **`hunt-subdomain`** — When `vuln-catcher` flags a new subdomain (crt.sh/subfinder delta), pivot into focused subdomain takeover and enumeration checks on the newly-surfaced host.
+- **`hunt-source-leak`** — When the `js` check detects changed JavaScript bundles, chain into source-leak hunting (new endpoints, hardcoded secrets, API keys in the diff).
+- **`dast-scanner`** — On a confirmed new host or port, trigger the bundled `dast_scanner.sh` (nuclei/ZAP) and import results into the same `bughunter.db`.
+- **`knowledge-base`** — Findings and recon deltas land in the shared SQLite DB; the searchable knowledge base reuses that store for disclosed-report and payload lookups.
+- **`auto-hunt`** — The autonomous hunter can consume `vuln-catcher` monitoring deltas as fresh attack-surface input to kick off a recon-to-report loop without manual prompting.

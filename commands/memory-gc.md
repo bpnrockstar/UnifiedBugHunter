@@ -1,5 +1,7 @@
 ---
 description: Inspect or rotate hunt-memory JSONL files (audit.jsonl, patterns.jsonl, journal.jsonl). Caps file size and keeps N rotated backups so memory does not grow unbounded.
+argument-hint: "[--rotate] [--max-mb N] [--purge-backups] [--dir <path>]"
+allowed-tools: Bash
 ---
 
 # /memory-gc
@@ -37,7 +39,7 @@ This command surfaces that growth and gives you a one-shot fix.
 The agent shells out to:
 
 ```bash
-python -m tools.memory_gc [args]
+python3 -m tools.memory_gc [args]
 ```
 
 from the repo root.

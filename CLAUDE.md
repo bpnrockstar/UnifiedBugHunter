@@ -4,7 +4,7 @@ This repo is a Claude Code plugin for professional bug bounty hunting across Hac
 
 ## What's Here
 
-### Skills (16 domains — load with `/bug-bounty`, `/web2-recon`, `/token-scan`, etc.)
+### Skills (89 total — load with `/bug-bounty`, `/web2-recon`, `/token-scan`, etc.; includes 48 `hunt-*` per-class skills)
 
 | Skill | Domain |
 |---|---|
@@ -12,7 +12,7 @@ This repo is a Claude Code plugin for professional bug bounty hunting across Hac
 | `skills/auto-hunt/` | **Autonomous full-spectrum hunter** — given any target, runs all phases from recon to report with closed-loop verification (hunt→verify→repeat until 100% confidence). Covers 30+ classes. No prompts needed. |
 | `skills/bb-methodology/` | **Hunting mindset + 5-phase non-linear workflow + tool routing + session discipline** |
 | `skills/web2-recon/` | Subdomain enum, live host discovery, URL crawling, nuclei |
-| `skills/web2-vuln-classes/` | 21 bug classes with bypass tables (SSRF, open redirect, file upload, Agentic AI) |
+| `skills/web2-vuln-classes/` | 24 bug classes with bypass tables (SSRF, open redirect, file upload, Agentic AI) |
 | `skills/security-arsenal/` | Payloads, bypass tables, gf patterns, always-rejected list |
 | `skills/web3-audit/` | 10 smart contract bug classes, Foundry PoC template, pre-dive kill signals |
 | `skills/meme-coin-audit/` | Meme coin rug pull detection, token authority checks, bonding curve exploits, LP attacks |
@@ -33,9 +33,9 @@ This repo is a Claude Code plugin for professional bug bounty hunting across Hac
 | `skills/vuln-catcher/` | Continuous recon monitor — subdomains, JS changes, ports, tech changes |
 | `skills/dast-scanner/` | Automated DAST scanning (OWASP ZAP + nuclei) with DB import |
 | `skills/knowledge-base/` | Searchable vulnerability KB with disclosed reports, payloads, techniques |
-| `skills/llm-redteam/` | **Advanced LLM red teaming** — 15+ techniques (token smuggling, adversarial poetry, ArtPrompt, CipherChat, emoji smuggling, Best-of-N, Crescendo/GOAT/JBFuzz), 200+ payloads, MCP security testing, automated CLI tool |
+| `skills/llm-redteam/` | **Advanced LLM red teaming** — 15+ techniques (token smuggling, adversarial poetry, ArtPrompt, CipherChat, emoji smuggling, Best-of-N, Crescendo/GOAT/JBFuzz), 180+ payloads, MCP security testing, automated CLI tool |
 
-### Commands (22 slash commands)
+### Commands (35 slash commands)
 
 > **Note:** All commands are prefixed to avoid conflicts with Claude Code's built-in commands.
 > `/resume` is a reserved Claude Code command — use `/pickup` to continue a previous hunt.
@@ -76,9 +76,9 @@ This repo is a Claude Code plugin for professional bug bounty hunting across Hac
 | `/dast-scan` | `/dast-scan nuclei|zap <url>` — automated DAST scanning with result import |
 | `/search-findings` | `/search-findings <query> [--findings|--kb|--recon]` — search all database tables |
 | `/dashboard` | `/dashboard` — launch the web GUI |
-| `/llm-redteam` | `/llm-redteam <endpoint> [--category] [--model]` — automated LLM red teaming (200+ payloads, 6 categories) |
+| `/llm-redteam` | `/llm-redteam <endpoint> [--category] [--model]` — automated LLM red teaming (180+ payloads, 6 categories) |
 
-### Agents (26 specialized agents)
+### Agents (28 specialized agents)
 
 #### Bug Bounty Pipeline (9)
 - `recon-agent` — subdomain enum + live host discovery
@@ -91,7 +91,7 @@ This repo is a Claude Code plugin for professional bug bounty hunting across Hac
 - `token-auditor` — fast meme coin/token rug pull and security analysis
 - `credential-hunter` — wordlist-gen + osint-employees + breach-check; HARD STOPS at spray
 
-#### Offensive Security (15)
+#### Offensive Security (19)
 - `binary-exploit` — memory corruption, ROP, shellcode, format string exploitation
 - `crypto-analyst` — cryptographic implementation audit (weak keys, nonce reuse, padding oracle)
 - `forensics-analyst` — DFIR, timeline analysis, file carving, memory forensics (Volatility 3)
@@ -110,7 +110,7 @@ This repo is a Claude Code plugin for professional bug bounty hunting across Hac
 - `code-reviewer` — white-box source code audit, SAST-driven, 10-phase methodology
 - `code-patcher` — automated security patch generation with before/after diff and verification
 - `vuln-catcher` — continuous recon monitor for subdomains, JS changes, ports, tech
-- `llm-redteamer` — advanced LLM red teaming (200+ payloads, 6 categories, automated scanning)
+- `llm-redteamer` — advanced LLM red teaming (180+ payloads, 6 categories, automated scanning)
 
 ### Rules (always active)
 
@@ -141,7 +141,7 @@ This repo is a Claude Code plugin for professional bug bounty hunting across Hac
 - `tools/breach_checker.py` — HIBP k-anonymity wordlist enrichment; ranks passwords by breach count (no API key, free)
 - `tools/spray_orchestrator.sh` — password spray with typed-hostname guard + lockout warning + audit log; modes: http-form / oauth / o365 / okta (TREVOR); requires `--with-credential-attack` for TREVOR modes
 - `tools/graphql_audit.sh` — 7-phase GraphQL audit: introspection + schema dump, graphw00f fingerprint, clairvoyance field discovery, batching DoS, alias bomb, gqlmap injection, graphql-cop checklist
-- `tools/llm_redteam.py` — **Advanced LLM red teaming**: 200+ payloads across 6 categories, OOB callback detection, confidence scoring, HTML reports, DB import
+- `tools/llm_redteam.py` — **Advanced LLM red teaming**: 180+ payloads across 6 categories, OOB callback detection, confidence scoring, HTML reports, DB import
 - `tools/llm_payloads/` — Organized payload library: injection/, jailbreak/, exfil/, encoding/, agentic/, multi-turn/
 
 ### External tool references

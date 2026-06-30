@@ -2,7 +2,6 @@
 name: hunt-k8s
 description: "Hunt Kubernetes & Docker — API anonymous access, kubelet 10250 exec (SPDY/WebSocket, NOT plain POST) and the simpler /run primitive, etcd 2379 unauth, dashboard skip-login, RBAC misconfig, secret/SA-token abuse, docker.sock host escape, runc/container-escape (Leaky Vessels CVE-2024-21626), API-server-mediated nodes/proxy RCE, EphemeralContainers node-shell, bound/projected SA-token audience+expiry abuse, admission-controller bypass, Helm/Tiller remnants. Use when target runs containerized infra, exposes K8s ports (6443/10250/10255/2379/8443), or cloud metadata reveals K8s service accounts."
 sources: hackerone_public, cve_database, kubernetes_security_research, portswigger_research
-report_count: 13
 ---
 
 # HUNT-K8S — Kubernetes & Docker Security
@@ -288,3 +287,14 @@ curl -sk "$SRV/apis/admissionregistration.k8s.io/v1/validatingwebhookconfigurati
 - API anon→secret read, kubelet/nodes-proxy RCE, etcd dump, docker.sock/runc escape, CVE-2018-1002105: **Critical**
 - Dashboard token-less data access, exposed Tiller: **High**
 - Read-only kubelet 10255, anon `/version`/`/pods` info disclosure: **Medium**
+
+---
+
+## Related Skills
+
+- **`hunt-ssrf`** — IMDS/metadata is the usual bridge into a cluster. Chain primitive: SSRF → IMDSv1 node/SA creds → reach `:6443`/`:10250` from inside the VPC → cluster foothold.
+- **`hunt-cloud-misconfig`** — EKS/AKS/GKE node roles and Cognito/IMDS exposure feed K8s SA discovery; cloud metadata reveals the cluster's identity surface.
+- **`hunt-grpc`** — Many in-cluster microservices speak gRPC with edge-only auth; a kubelet/nodes-proxy RCE lands you east-west where `hunt-grpc` metadata-spoofing applies.
+- **`cloud-iam-deep`** — A recovered SA/cloud token from etcd or a pod is half the bug; enumerate its real grants and `iam:PassRole` escalation paths there.
+- **`container-security`** — Runtime CVE detail (runc/Leaky Vessels, cgroup `release_agent`, docker.sock escape) is expanded with exploitation walkthroughs.
+- **`triage-validation`** — Apply the state-change-over-status-code gate: an anon `200` or a bare 302 from `/exec` is not impact; require a decoded Secret, literal `id` output, or the node's host file.

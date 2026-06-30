@@ -1,9 +1,11 @@
 ---
 name: m365-entra-attack
-description: Microsoft 365 / Entra ID red-team attack chain — current 2026 reality. AADSTS code reference, user enumeration vectors (with hardening status), Smart Lockout math, Conditional Access bypass options, ROPC + SAML SSO browser flow, Burp/Playwright templates. Built from authorized red-team work where ROPC spray surfaced pre-existing lockouts and CA-blocked credentials, plus real-time external attacker activity correlation. Use for any M365/Entra credential attack, password spray, user enumeration, CA-bypass exploration, or active-attacker-detection scenario.
+description: "Microsoft 365 / Entra ID red-team attack chain — current 2026 reality. AADSTS code reference, user enumeration vectors (with hardening status), Smart Lockout math, Conditional Access bypass options, ROPC + SAML SSO browser flow, Burp/Playwright templates. Built from authorized red-team work where ROPC spray surfaced pre-existing lockouts and CA-blocked credentials, plus real-time external attacker activity correlation. Use for any M365/Entra credential attack, password spray, user enumeration, CA-bypass exploration, or active-attacker-detection scenario."
 sources: authorized-engagement, microsoft-docs, AADInternals
 report_count: 1
 ---
+
+# Microsoft 365 / Entra ID Attack Chain
 
 ## When to use this skill
 
@@ -18,8 +20,6 @@ DO NOT use for:
 - On-prem-only Active Directory (use a separate AD-attack skill)
 - Service-to-service token attacks (different threat model)
 - Phishing-required attack chains (covered by phishing skills) — but you can prep for the credential-validation step here
-
----
 
 ## Tenant discovery (msftrecon)
 
@@ -39,8 +39,6 @@ Key fields in output:
 
 **Red flag:** if the org has multiple Entra tenants for sister domains, each is a separate attack surface with its own user list, lockout policy, and CA configuration. Don't assume one spray covers all.
 
----
-
 ## AADSTS code reference (memorize)
 
 | AADSTS | Meaning | Lockout impact | What to do |
@@ -59,8 +57,6 @@ Key fields in output:
 
 **Critical insight:** any code in {53003, 50076, 50079, 50158, 530003} means **the password is correct** — Microsoft only returns these AFTER successful credential validation. Document as a confirmed-valid finding even if you can't get a token.
 
----
-
 ## Smart Lockout math (the cap discipline)
 
 **Microsoft default policy:**
@@ -74,8 +70,6 @@ Key fields in output:
 - Kill switch: stop run if more than N LOCKED responses observed (suggests pre-existing attacker activity OR you miscounted; either way pause)
 
 **Mathematical guarantee:** with 1 attempt per user, **you cannot cause Smart Lockout** (1 < 10). Any AADSTS50053 you see is therefore pre-existing → use this for active-attacker detection (see `mid-engagement-ir-detection` skill).
-
----
 
 ## User enumeration — vectors + hardening status (May 2026)
 
@@ -133,8 +127,6 @@ The OneDrive-404 + ROPC-50126 combination is **the signal for "functional accoun
 - AADSTS50126 (wrong password) DOES increment
 - So a 1-attempt-per-user spray can be used as a coarse user-existence enumerator (each AADSTS50034 = miss, each AADSTS50126 = hit + 1 attempt burned)
 
----
-
 ## Conditional Access bypass options (most blocked, document anyway)
 
 | Vector | Status (2026) | Notes |
@@ -151,8 +143,6 @@ The OneDrive-404 + ROPC-50126 combination is **the signal for "functional accoun
 | Geo-bypass via VPN | Sometimes | If "trusted location" CA policy includes corp HQ IPs, use a VPN exit there |
 
 **Key insight from this engagement:** in a tenant with universal CA policy (compliant device + MFA), all the above paths return AADSTS53003 with the same flow. The cred is valid, but unusable from external. **Phishing-completed cookie steal is the only realistic adversary path.** Document this clearly so the client understands the threat model.
-
----
 
 ## ROPC password validation (the canonical test)
 
@@ -232,8 +222,6 @@ The `claims.access_token.capolids` values are tenant-internal Conditional Access
 - Per-user: hard cap from state file is the only thing that matters
 - Random jitter (1-5s between attempts) for less-machine-like signature
 
----
-
 ## SAML SSO browser flow (for definitive cred validation when CA blocks ROPC)
 
 When ROPC returns AADSTS53003, you've proven the password. To prove it across BOTH auth paths (and capture Microsoft's CA-block page as evidence), walk SAML SSO via Playwright:
@@ -284,8 +272,6 @@ async def saml_validate(target_sp_url, username, password, screenshot_dir):
 
 Microsoft's `ConvergedConditionalAccess` page (PageID in source) is the definitive evidence of CA-block.
 
----
-
 ## Active-attacker detection via lockout differential
 
 If you see `AADSTS50053` (LOCKED) on multiple users despite your 1-attempt-per-user cap:
@@ -297,8 +283,6 @@ If you see `AADSTS50053` (LOCKED) on multiple users despite your 1-attempt-per-u
 
 This is the **highest-impact byproduct** of any M365 spray engagement. Always track and report.
 
----
-
 ## Common password patterns to spray (multi-brand enterprise targets)
 
 - `<BrandName>@<Year>` — `<Brand>@2026`, `Tata@2026`
@@ -309,8 +293,6 @@ This is the **highest-impact byproduct** of any M365 spray engagement. Always tr
 - `<BrandName>@<Y2-digits>` — `<Brand>@26`
 
 **Engagement caveat:** when client provides leaked-cred dumps (stealer logs), use those FIRST. Each leaked cred is 1 cap-attempt against the strongest known guess for that user.
-
----
 
 ## Engagement journaling (mandatory)
 
@@ -331,8 +313,6 @@ Every M365 attempt logs to JSONL:
 
 These three artifacts are deliverable evidence for the report. They survive into the next engagement as state.
 
----
-
 ## Real-world findings template (from authorized-engagement)
 
 For the report:
@@ -349,8 +329,6 @@ For the report:
 - Microsoft documentation excerpt: "AADSTS53003 returned only after password validation"
 - Recommendation: force password reset, audit org-wide for similar pattern
 
----
-
 ## Anti-patterns (don't do these)
 
 - **DON'T use the leaked cred for the user across multiple resources** — burns the cap with no marginal benefit when CA blocks all paths
@@ -358,8 +336,6 @@ For the report:
 - **DON'T spray more than ~30 attempts/sec to login.microsoftonline.com** — Microsoft can flag the IP for sustained credential-stuffing pattern
 - **DON'T forget to test ALL Entra tenants** — sister domains often have separate tenants with different password policies
 - **DON'T retract a CA-block finding** — AADSTS53003 means the password is correct; that's the whole point
-
----
 
 ## Tooling
 
@@ -370,8 +346,6 @@ go install -v github.com/projectdiscovery/...             # PD toolkit for gener
 ```
 
 Pre-built `m365_validator.py` template at engagement working directory `engagement_log/m365_validator.py`. Adapt the `attempt()` function to your engagement.
-
----
 
 ## Related Skills & Chains
 

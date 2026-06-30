@@ -1,6 +1,6 @@
 ---
 name: reverse-engineering
-description: Reverse engineering methodology for closed-source binaries and firmware. Covers static analysis (radare2/Ghidra/IDA), dynamic analysis (GDB/Lighthouse), decompilation, protocol reverse engineering, obfuscation deobfuscation, binary diffing, and firmware extraction/analysis. Use when you need to understand what a binary does without source code, find backdoors, extract algorithms, or patch binaries.
+description: "Reverse engineering methodology for closed-source binaries and firmware. Covers static analysis (radare2/Ghidra/IDA), dynamic analysis (GDB/Lighthouse), decompilation, protocol reverse engineering, obfuscation deobfuscation, binary diffing, and firmware extraction/analysis. Use when you need to understand what a binary does without source code, find backdoors, extract algorithms, or patch binaries."
 ---
 
 # Reverse Engineering Methodology
@@ -82,3 +82,9 @@ grep -rn "password\|admin\|root\|telnet\|ssh\|backdoor" extracted/
 | Anti-debug | IsDebuggerPresent, NtQueryInformationProcess, ptrace |
 | String encoding | XOR/Base64/Rot strings at runtime |
 | Opaque predicates | Always-true jump conditions (anti-analysis) |
+
+## Related Skills
+
+- `malware-analysis` — the consumer of this skill when the target binary is hostile; pair the decompiled algorithm with YARA/IOC output and ATT&CK mapping.
+- `forensics` — supplies the binaries/firmware images carved from disk or memory that this skill tears down.
+- `mobile-pentest` — for APK/IPA decompilation and native-library RE on mobile targets.

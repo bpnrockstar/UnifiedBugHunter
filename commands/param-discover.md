@@ -1,5 +1,7 @@
 ---
-description: Discover hidden HTTP parameters on a URL or list of URLs using Arjun (or x8 fallback). Hidden params are gold for IDOR, SSRF, LFI, redirect, and authorization bypass — often missed by automated scanners. Usage: /param-discover <url> | /param-discover -l <urls-file>
+description: Discover hidden HTTP parameters on a URL or list of URLs using Arjun (or x8 fallback). Hidden params are gold for IDOR, SSRF, LFI, redirect, and authorization bypass — often missed by automated scanners.
+argument-hint: <url> | -l <urls-file>
+allowed-tools: Bash
 ---
 
 # /param-discover
@@ -8,6 +10,15 @@ Find HTTP parameters the application accepts but doesn't link from any visible
 endpoint. Useful when an endpoint looks unreachable or returns a generic
 response — often a hidden `id`, `user`, `redirect`, `file`, or `debug` param
 unlocks the real surface.
+
+## Run This
+
+Invoke `tools/param_discovery.sh` directly — do not re-implement the diffing
+logic. It takes a positional URL or `-l <urls-file>`:
+
+```bash
+bash tools/param_discovery.sh $ARGUMENTS
+```
 
 ## Usage
 

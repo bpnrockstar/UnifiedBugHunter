@@ -4,6 +4,9 @@ This file contains extended content extracted from `SKILL.md` to keep the main d
 
 ---
 
+## REPORT TEMPLATE — CVSS & REMEDIATION (continued)
+
+```
 - IDOR cross-user: CVSS 7.5-8.5 (High)
 - Batching ATO chain: CVSS 9.0+ (Critical)
 - Unauthenticated mutation: CVSS 9.8 (Critical)

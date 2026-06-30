@@ -13,7 +13,7 @@ PRs and issues welcome.
 
 ## What's NOT in scope
 
-- Substantive modifications to vendored upstream skills — submit those upstream (e.g. to [UnifiedBugHunter](https://github.com/UnifiedBugHunter)) and we'll pull them in on the next refresh. Path-consistency tweaks are fine.
+- Substantive modifications to vendored upstream skills — submit those upstream (e.g. to [UnifiedBugHunter](https://github.com/bpnrockstar/UnifiedBugHunter)) and we'll pull them in on the next refresh. Path-consistency tweaks are fine.
 - Skills that include actual exploitation payloads against specific targets — keep things abstract / class-based
 - Personally-identifiable bug-hunting engagement data — anonymize all examples (target names, account UIDs, endpoint names, bounty amounts)
 - Anything that requires non-MIT-licensed dependencies
@@ -46,7 +46,13 @@ PRs and issues welcome.
 
 ## Testing changes
 
-There's no automated test suite. Manual smoke tests:
+Run the automated test suite before opening a PR:
+
+```bash
+pytest tests/
+```
+
+Then run manual smoke tests for any skill you changed:
 
 1. Install the skill locally (copy to `~/.claude/skills/`)
 2. Open a fresh `claude` session

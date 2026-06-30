@@ -108,8 +108,8 @@ whatweb target.com -a 3 2>/dev/null | tee recon/whatweb.txt
 ```bash
 cat recon/all-urls.txt | grep "\.js$" > recon/js-files.txt
 for js in $(cat recon/js-files.txt); do
-  python3 tools/LinkFinder/linkfinder.py -i "$js" -o cli >> recon/js-endpoints.txt 2>/dev/null
-  python3 tools/SecretFinder/SecretFinder.py -i "$js" -o cli >> recon/js-secrets.txt 2>/dev/null
+  python3 ~/tools/LinkFinder/linkfinder.py -i "$js" -o cli >> recon/js-endpoints.txt 2>/dev/null
+  python3 ~/tools/SecretFinder/SecretFinder.py -i "$js" -o cli >> recon/js-secrets.txt 2>/dev/null
 done
 ```
 

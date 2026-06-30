@@ -58,8 +58,9 @@ Key metrics:
 - **AT:** N=None (no prerequisites), P=Present (specific config required)
 - **PR:** N=None, L=Low (user account), H=High (admin)
 - **UI:** N=None, P=Passive (victim visits URL), A=Active (victim clicks/downloads)
-- **VC/VI/VA:** H=High, L=Low, N=None (vulnerable system)
-- **SC/SI/SA:** S=Safety, H=High, L=Low, N=None (subsequent system)
+- **VC/VI/VA:** Vulnerable-system Confidentiality / Integrity / Availability — H=High, L=Low, N=None
+- **SC/SI/SA:** Subsequent-system Confidentiality / Integrity / Availability — H=High, L=Low, N=None
+- **S (Safety):** separate modifier (in the Supplemental/Environmental metrics), not a value of SC/SI/SA — S=Safety impact present, N=Negligible
 
 Common patterns (CVSS 4.0):
 ```

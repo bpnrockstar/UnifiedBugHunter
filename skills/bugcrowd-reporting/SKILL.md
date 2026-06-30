@@ -9,8 +9,6 @@ description: "Bugcrowd-specific reporting tactics complementing report-writing: 
 
 This skill encodes patterns that apply specifically to Bugcrowd's submission flow. For the generic per-platform templates (HackerOne / Bugcrowd / Intigriti / Immunefi report bodies), use the `report-writing` skill. For the 7-Question Gate before deciding to report at all, use `triage-validation`.
 
----
-
 ## 1. VRT Category Selection — Search & Fallback Strategy
 
 Bugcrowd's submission form requires a single VRT (Vulnerability Rating Taxonomy) selection. The dropdown's default severity is bound to the chosen node — pick wrong and the form auto-suggests a lower priority (often P4) when the actual impact is P3 or P2.
@@ -47,8 +45,6 @@ Never select a VRT that misrepresents the bug just to get a higher default sever
 
 Pick `Server Security Misconfiguration → Other` or `Broken Access Control → Other` and **lead the description body with a "VRT mapping note"** explaining why the chosen node is the closest available match and what the bug actually is.
 
----
-
 ## 2. Manual Severity Override
 
 Bugcrowd's form lets you manually set Technical Severity *separate from the VRT default*. The form text itself states: *"A severity rating suggested by the VRT is not guaranteed to be the severity rating applied to your submission."*
@@ -71,8 +67,6 @@ Override the VRT default when:
 ### 2.3 Don't over-claim
 
 P1 inflation is the fastest way to lose triager trust. Reserve P1 for ATO without interaction, RCE, mass PII exfiltration, fund theft, and similar Critical-bucket impacts. If the chain to P1 requires a separate stolen-cookie premise, file the standalone primitive at P3 and discuss the chain explicitly with cross-references (per §4).
-
----
 
 ## 3. Severity-Request Paragraph — Always First in the Body
 
@@ -113,8 +107,6 @@ The "P4 = No Rate Limiting on Login Form" default applies to ordinary login page
 - Never use "could potentially" or "may allow" — these are downgrade-bait.
 - Cite the program's own Focus Areas / accepted-impact list by exact name.
 - Cross-reference linked submissions by full submission ID (UUID format).
-
----
 
 ## 4. OOS-Clause Rebuttals — Templates
 
@@ -164,8 +156,6 @@ This finding is exploitable end-to-end as demonstrated in the PoC: [one-sentence
 
 If you only have an "API behavior" observation without a fully demonstrated exploitation path, the finding is theoretical. Don't file it. Capture the missing evidence (delivery confirmation, token-format inspection, cross-account victim data in response, etc.) and re-evaluate. Filing theoretical findings damages researcher reputation on the platform.
 
----
-
 ## 5. Chained Findings — Cross-Reference Strategy
 
 Many high-impact findings are chains of two or more standalone primitives (oracle + missing step-up = ATO). Bugcrowd's program rule: *"Submit one vulnerability per report. If multiple vulnerabilities must be chained to demonstrate impact, you may include them together, but please clearly explain the chain."*
@@ -204,8 +194,6 @@ This finding is the [N]th of [M] independent primitives that together produce [i
 - Don't claim each primitive is independently P1 — overclaiming damages credibility for all linked reports.
 - Don't ask for a single combined bounty for the chain. The program's "one fix = one bounty" rule means each independent fix surface is a separate bounty. Frame the chain as a severity-amplifier, not a merge request.
 
----
-
 ## 6. Target Selection — QA vs. Production
 
 Programs that scope both production and QA assets (e.g., `app.target.com` vs. `app-qa.target.com`) require careful target selection.
@@ -229,8 +217,6 @@ Programs that scope both production and QA assets (e.g., `app.target.com` vs. `a
 - All testing limited to my own QA test account; no other accounts were interacted with.
 - Selected target: `[chosen-target]`. Selected VRT: `[chosen-VRT]`. Both selected as closest available matches; please reassign if more appropriate options exist.
 ```
-
----
 
 ## 7. Researcher-Side Hygiene (Bugcrowd-specific)
 
@@ -267,8 +253,6 @@ After submitting any report that includes session-cookie-derived evidence:
 2. Email the program-specific contact (if provided) with your Bugcrowd username and the report ID
 3. Wait for the program team to unblock you; testing during the lock period damages credibility
 
----
-
 ## 8. Submission-Order Strategy for Multi-Finding Engagements
 
 When you have multiple findings from a single engagement, the order matters.
@@ -290,8 +274,6 @@ Maintain a simple text file with each submission's UUID, severity, and one-line 
 - Don't file an OOS-risky finding before a clean P3 from the same engagement. The clean one establishes credibility; the risky one benefits from being read in that context.
 - Don't disclose any findings publicly until the program explicitly says it's OK. Bugcrowd's confidentiality applies to both unresolved AND resolved issues.
 
----
-
 ## 9. Pairing with Other Skills
 
 | For this question / task | Use this skill |
@@ -305,13 +287,9 @@ Maintain a simple text file with each submission's UUID, severity, and one-line 
 | "Where do I find the payload for this exploitation step?" | `security-arsenal` |
 | "Where do I find recon probes for this asset class?" | `offensive-osint` |
 
----
-
 ## Notes on usage
 
 This skill is small and focused. It does NOT duplicate content from `report-writing` (per-platform templates, CVSS scoring, downgrade counters, 60-second pre-submit checklist) — load both skills together when filing a Bugcrowd report. The two skills' content composes naturally because their boundaries are clean: `report-writing` is the body templates, `bugcrowd-reporting` is the program-specific tactics layered on top.
-
----
 
 ## Related Skills & Chains
 

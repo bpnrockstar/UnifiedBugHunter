@@ -1,5 +1,7 @@
 ---
 description: Probe a 403/401 endpoint with the most-paid bypass tricks (header injection, path encoding, method swap, WAF fingerprint, vendor-specific). Wraps byp4xx when installed; otherwise runs a built-in matrix of 38+ techniques. Usage: /bypass-403 <url> | /bypass-403 -l <urls-file>
+argument-hint: "<url> | -l <urls-file>"
+allowed-tools: Bash
 ---
 
 # /bypass-403
@@ -13,6 +15,16 @@ and method tampering — the standard battery from disclosed reports.
 /bypass-403 https://target.com/admin
 /bypass-403 -l recon/target.com/live/status_403.txt
 ```
+
+## Run This
+
+```bash
+bash tools/bypass_403.sh $ARGUMENTS
+```
+
+Invoke the script directly; do not re-implement it inline. (`tools/waf_encoder.py`
+and `tools/multipart_mutator.py` below are separate helpers for payload-level
+bypass, not part of the main 403 probe.)
 
 ## What it tries
 

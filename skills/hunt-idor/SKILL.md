@@ -1,9 +1,11 @@
 ---
 name: hunt-idor
-description: Hunting skill for idor vulnerabilities. Built from 26 public bug bounty reports. Use when hunting idor on any target.
+description: "Hunt IDOR / broken object-level authorization — when endpoints expose object references (sequential integer IDs, UUIDs, hashed or base64 GIDs, GraphQL node IDs) and you can substitute another user's reference to read or modify their data. Triggers: missing ownership/scoping checks in ORM queries, route-level auth without object-level checks, client-supplied org_id/tenant_id trusted in request bodies, mass-assignment of role/owner fields, cross-tenant boundary gaps. Validate with two same-privilege accounts; test all verbs (GET/POST/PUT/PATCH/DELETE) and GraphQL mutations. Built from 26 public bug bounty reports."
 sources: github, hackerone_public
 report_count: 26
 ---
+
+# HUNT-IDOR — Broken Object-Level Authorization
 
 ## Crown Jewel Targets
 

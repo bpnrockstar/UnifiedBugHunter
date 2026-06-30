@@ -4,6 +4,11 @@ This file contains extended content extracted from `SKILL.md` to keep the main d
 
 ---
 
+## Full Foundry PoC Template
+
+```solidity
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
 
 import "forge-std/Test.sol";
 import "../src/VulnerableContract.sol";

@@ -1,6 +1,6 @@
 ---
 name: graphql-audit
-description: GraphQL security hunting — introspection abuse, field suggestion enumeration (clairvoyance), batching DoS, IDOR via aliasing, auth bypass, injection via arguments, subscription abuse, depth/complexity bombs, and WAF bypass. Covers graphw00f fingerprinting, gqlmap, graphql-cop, and inql. Use when a target exposes a /graphql, /api/graphql, or GQL-over-HTTP endpoint.
+description: "GraphQL security hunting — introspection abuse, field suggestion enumeration (clairvoyance), batching DoS, IDOR via aliasing, auth bypass, injection via arguments, subscription abuse, depth/complexity bombs, and WAF bypass. Covers graphw00f fingerprinting, gqlmap, graphql-cop, and inql. Use when a target exposes a /graphql, /api/graphql, or GQL-over-HTTP endpoint."
 ---
 
 # GRAPHQL SECURITY AUDIT
@@ -482,6 +482,10 @@ Steps to Reproduce:
 
 CVSS (approximate):
 - Introspection only: CVSS 5.3 (Medium) — info disclosure
+- IDOR / auth bypass exposing PII: CVSS 7.5+ (High)
+- Batching-enabled OTP brute force → account takeover: CVSS 8.1+ (High/Critical)
+- Unauthenticated admin mutation: CVSS 9.1+ (Critical)
+```
 
 ## Extended Content
 

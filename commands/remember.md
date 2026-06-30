@@ -6,6 +6,13 @@ description: Log current finding or successful pattern to hunt memory. Auto-fill
 
 Save a finding or successful pattern to persistent hunt memory.
 
+> **Model-driven workflow — no backing script.** There is no `tools/remember.py`
+> or equivalent CLI. You (the model) carry out the steps below directly: gather
+> the fields from session context, confirm with the user, then append the
+> records to the hunt-memory JSONL files (`journal.jsonl`, `patterns.jsonl`)
+> and update the target profile. The "pipeline" framing
+> below describes what you do, not a command you run.
+
 ## What This Does
 
 1. Auto-populates fields from session context (target, endpoint, vuln_class, technique)

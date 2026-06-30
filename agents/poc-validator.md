@@ -4,7 +4,6 @@ description: Proof-of-Concept validator. Takes a described vulnerability and ind
 tools:
   bash: true
   read: true
-  write: true
   grep: true
   webfetch: true
 model: claude-sonnet-4-6

@@ -1,5 +1,7 @@
 ---
-description: Active vulnerability hunt against a target by invoking tools/hunt.py (which calls vuln_scanner.sh against recon/<target>/). Auto-runs recon first if no recon dir exists. Usage: /hunt target.com
+description: Active vulnerability hunt against a target by invoking tools/hunt.py (which calls vuln_scanner.sh against recon/<target>/). Auto-runs recon first if no recon dir exists.
+argument-hint: <target.com> [--scan-only] [--quick]
+allowed-tools: Bash
 ---
 
 # /hunt
@@ -82,7 +84,7 @@ python3 tools/hunt.py --target target.com --scan-only
 
 If `tools/vuln_scanner.sh` reports missing tools, install them first:
 ```bash
-bash tools/install_tools.sh
+bash install_tools.sh
 ```
 
 If you're on a free OpenRouter model and the agent keeps narrating instead of executing, add this to your prompt:

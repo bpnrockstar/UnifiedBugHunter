@@ -1,17 +1,30 @@
 ---
-command: dast-scan
-description: "Run automated DAST scanning (ZAP/nuclei) against a target"
-usage: |
-  /dast-scan nuclei <url>           — Fast nuclei scan (cves, exposures, misconfig)
-  /dast-scan nuclei-deep <url>      — All nuclei templates
-  /dast-scan zap <url>             — OWASP ZAP active scan (requires ZAP daemon)
-  /dast-scan import <file>         — Import external scan results
+description: "Run automated DAST scanning against a target and import results into the bug hunter DB. Subcommands: nuclei <url> (fast: cves/exposures/misconfig), nuclei-deep <url> (all templates), zap <url> (OWASP ZAP active scan, requires ZAP daemon), import <file> (external scan results)."
+argument-hint: "nuclei|nuclei-deep|zap <url> | import <file>"
+allowed-tools: Bash
 ---
 
 # /dast-scan — DAST Scanner
 
 Runs automated vulnerability scanners and imports results
 into the bug hunter database.
+
+## Usage
+
+```
+/dast-scan nuclei <url>          # Fast nuclei scan (cves, exposures, misconfig)
+/dast-scan nuclei-deep <url>     # All nuclei templates (slow)
+/dast-scan zap <url>             # OWASP ZAP active scan (requires ZAP daemon)
+/dast-scan import <file>         # Import external scan results (JSON)
+```
+
+## Run This
+
+```bash
+bash tools/dast_scanner.sh "$ARGUMENTS"
+```
+
+Invoke the script directly; do not re-implement it inline.
 
 ## Examples
 

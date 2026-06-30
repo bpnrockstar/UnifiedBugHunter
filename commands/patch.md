@@ -1,5 +1,6 @@
 ---
-description: "Generate a security patch for a vulnerable code finding. Takes the finding from code-reviewer and produces a minimal, correct, framework-appropriate fix with before/after diff, verification steps, and regression risk assessment. Supports all OWASP Top 10 classes. Usage: /patch [path-to-vulnerable-file] [--lang py|js|java|go|rb|php|rs]"
+description: "Generate a security patch for a vulnerable code finding. Takes the finding from /code-audit (or the code-reviewer agent) and produces a minimal, correct, framework-appropriate fix with before/after diff, verification steps, and regression risk assessment. Supports all OWASP Top 10 classes."
+argument-hint: "[file:line] [--lang py|js|java|go|rb|php|rs]"
 ---
 
 # /patch
@@ -8,7 +9,7 @@ Generate a tested security patch for a confirmed vulnerability.
 
 ## When to Use This
 
-After `/code-audit` or `/code-reviewer` identifies a vulnerability. Before submitting a bug bounty report (include fix recommendation in report).
+After `/code-audit` (or the `code-reviewer` agent) identifies a vulnerability. Before submitting a bug bounty report (include fix recommendation in report).
 
 ## Usage
 

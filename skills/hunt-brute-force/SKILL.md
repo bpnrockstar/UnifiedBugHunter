@@ -2,16 +2,15 @@
 name: hunt-brute-force
 description: "Hunt Missing/Weak Rate Limiting — login brute force, OTP/2FA brute force (10^6 keyspace), password-reset-token brute, credential stuffing, username/email enumeration via error-string / status-code / timing differences, weak password policy, missing CAPTCHA, IP-based rate-limit bypass via X-Forwarded-For and friends, ReDoS. Distinguishes hard lockout vs soft IP-throttle vs CAPTCHA-injection vs silent shadow-throttling (avoids false-negative 'no rate limit' conclusions). Medium to Critical depending on what the brute reaches (OTP→ATO = Critical)."
 sources: public_research
-report_count: 0
 ---
 
 # HUNT-BRUTE-FORCE — Rate Limiting / Brute Force / Enumeration
 
 > Grounding note: this skill is built from published technique classes, not from a
-> curated set of named HackerOne reports. `report_count` is intentionally `0` — do
-> not cite an exact payout or report ID you cannot verify. Where a public case is
-> well-documented (e.g. Laxman Muthiyah's Instagram password-reset OTP race/rotation
-> research, 2019–2021), it is named below as a *technique reference*, not a payout claim.
+> curated set of named HackerOne reports — so do not cite an exact payout or report
+> ID you cannot verify. Where a public case is well-documented (e.g. Laxman Muthiyah's
+> Instagram password-reset OTP race/rotation research, 2019–2021), it is named below
+> as a *technique reference*, not a payout claim.
 
 ## Crown Jewel Targets
 

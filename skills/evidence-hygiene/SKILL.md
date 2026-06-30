@@ -9,8 +9,6 @@ description: "Evidence-capture and PoC-redaction discipline for bug-bounty submi
 
 The core principle: **Bug-bounty evidence is meant to convince a triager. Anything beyond that — live cookies, real-user PII, internal trace IDs that aren't useful — should not be in the evidence.**
 
----
-
 ## 1. Two Categories of Sensitive Data
 
 Every PoC artifact (screenshot, HAR, raw HTTP request, terminal transcript) potentially contains data that needs different treatment.
@@ -21,8 +19,6 @@ Every PoC artifact (screenshot, HAR, raw HTTP request, terminal transcript) pote
 | **Other users' PII** | Real names, emails, phone numbers, addresses, profile photos, account IDs | Redact unless explicitly demonstrating cross-account impact. Even then, mask faces and minimize the data you display. |
 | **Triager-useful metadata** | Trace IDs (`x-datadog-trace-id`), request IDs, server timestamps, your test account UID/email, GraphQL operation names, response shapes | **Leave visible** — these help the triager correlate to logs and reproduce. |
 | **Test-account passwords (limited use)** | Throwaway passwords on a test account (e.g., `Testing@5678`) | Acceptable in screenshots if you rotate immediately after submission so the value shown is dead. Don't leave real-use passwords in evidence. |
-
----
 
 ## 2. Cookie Redaction Protocol
 
@@ -79,8 +75,6 @@ After capturing:
 [ ] Compare to the previous PoC screenshot in the same engagement — same redaction discipline
 ```
 
----
-
 ## 3. PII Black-Bar Protocol
 
 When a PoC necessarily exposes another user's data (e.g., demonstrating IDOR by showing the victim's email in an attacker-session response), redact the actual PII even in private attachments.
@@ -129,8 +123,6 @@ The screenshot below demonstrates the IDOR. The attacker session (uid 12345678) 
 ```
 
 This signals the triager that you're disciplined and gives them a clear path to the unredacted version if they need it for verification.
-
----
 
 ## 4. HAR File Sanitization
 
@@ -196,8 +188,6 @@ If the HAR captured cross-account data (e.g., during an IDOR demo), additionally
 
 Customize the gsub patterns to your specific captured data.
 
----
-
 ## 5. Burp Suite Screenshot Hygiene
 
 ### 5.1 Repeater (single request demo)
@@ -221,8 +211,6 @@ Almost never the right screenshot — it shows entire request/response pairs wit
 ### 5.4 Scanner findings (if applicable)
 
 The Scanner tab's Issues panel is generally safe to screenshot — it shows finding summaries without the underlying request bodies. Click into a specific finding before screenshotting only if you've redacted its evidence first.
-
----
 
 ## 6. Chrome DevTools Console PoC Patterns
 
@@ -269,8 +257,6 @@ fetch('/api/endpoint', { /* ... */ })
 
 Chrome blocks paste into DevTools Console as anti-self-XSS protection. Type `allow pasting` (literal phrase) once at the start of each session. Do this BEFORE you take any "running PoC" screenshot — otherwise the warning text appears in the screenshot.
 
----
-
 ## 7. Screenshot Capture Order Discipline
 
 ### 7.1 The 5-step PoC pattern (for state-change findings)
@@ -313,8 +299,6 @@ In the report body, reference each by filename:
 - Take all screenshots in one sitting, not across multiple sessions. Mid-session inconsistencies (different browser sizes, different cookie values) are confusing for the triager.
 - Don't reload pages between screenshots if avoidable. Reloads regenerate cookies and may invalidate prior captures.
 
----
-
 ## 8. Post-Submission Hygiene
 
 After clicking Submit on the bug-bounty platform:
@@ -339,8 +323,6 @@ Most platforms' confidentiality applies to BOTH unresolved and resolved issues. 
 
 Quarterly, sweep your `~/security-research/` and `~/Downloads/` for stale HARs / screenshots from old engagements. Either move them to a properly-encrypted archive or delete them. Bug-bounty engagement artifacts are sensitive — they accumulate fast and become a liability.
 
----
-
 ## 9. Pairing with Other Skills
 
 | For this question / task | Use this skill |
@@ -352,8 +334,6 @@ Quarterly, sweep your `~/security-research/` and `~/Downloads/` for stale HARs /
 | "How do I demonstrate the bug actually fires?" | `security-arsenal` |
 | "Where are the recon probes for this asset class?" | `offensive-osint` |
 
----
-
 ## Notes on usage
 
 This skill is meant to be loaded together with `report-writing` and (for Bugcrowd) `bugcrowd-reporting` when preparing a submission. It does NOT cover:
@@ -363,8 +343,6 @@ This skill is meant to be loaded together with `report-writing` and (for Bugcrow
 - **Where** to find the assets (that's `offensive-osint`'s job — recon)
 
 This skill covers ONLY the redaction / sanitization / hygiene layer that sits between "I have evidence" and "I'm attaching it to the platform."
-
----
 
 ## Related Skills & Chains
 

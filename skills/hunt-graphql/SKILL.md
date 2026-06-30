@@ -1,9 +1,10 @@
 ---
 name: hunt-graphql
-description: Hunting skill for graphql vulnerabilities. Built from 12 public bug bounty reports across IDOR via node() / GID, mutation IDOR including AI/LLM features, cross-tenant IDOR, SSRF via argument, batching-DoS, query-cost-bypass, SQLi via argument, broken-object-level-authz, auth-bypass via unscoped mutations, and PII exposure from missing field-level authz. Use when hunting graphql on any target.
+description: "Hunt GraphQL endpoints — introspection leaks (full __schema dump, field-suggestion bypass when introspection is off), IDOR via aliasing and global node() / relay GID resolvers, cross-tenant BOLA on queries and mutations, mass-assignment via mutation input objects, SSRF through URL-typed arguments, SQLi via filter arguments, array/operation batching for rate-limit bypass and enumeration amplification, alias-bomb and deep-nesting DoS, query-cost-calculator abuse (negative cost), and auth bypass via unscoped or unauthenticated mutations. Use when a target exposes /graphql, /api/graphql, /query, an Apollo/Relay/graphql-ruby/gqlgen/Lighthouse stack, or any POST endpoint taking a {query} body."
 sources: hackerone_public, github, gitlab_security
-report_count: 12
 ---
+
+# HUNT-GRAPHQL — GraphQL Security
 
 ## Crown Jewel Targets
 

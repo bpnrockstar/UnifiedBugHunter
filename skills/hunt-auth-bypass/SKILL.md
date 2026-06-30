@@ -148,7 +148,7 @@ When a target has a custom, branded login UI (e.g. `customlogin.aspx`, `/auth/si
 5. Verify there is no rate limit, no lockout, no CAPTCHA — burst 10 requests at the same user, confirm uniform timing.
 6. Report as **Critical / High** depending on chain to ATO: an anonymous + unlimited credential brute-force endpoint is consistently Critical on bug-bounty programs.
 
-**Lesson from a authorized engagement:** A an enterprise dealer portal on SharePoint 2013 had a custom branded `customlogin.aspx`. The hunt-auth-bypass skill was loaded but the matrix above did not exist in this document — and the WordPress XMLRPC pattern was not connected to the SharePoint equivalent. `/_vti_bin/Authentication.asmx` was reachable anonymously, accepted unlimited credential attempts with no rate limit and no lockout, and was the highest-impact finding in the engagement. Walking this matrix on the first pass would have surfaced it immediately.
+**Lesson from an authorized engagement:** An enterprise dealer portal on SharePoint 2013 had a custom branded `customlogin.aspx`. The hunt-auth-bypass skill was loaded but the matrix above did not exist in this document — and the WordPress XMLRPC pattern was not connected to the SharePoint equivalent. `/_vti_bin/Authentication.asmx` was reachable anonymously, accepted unlimited credential attempts with no rate limit and no lockout, and was the highest-impact finding in the engagement. Walking this matrix on the first pass would have surfaced it immediately.
 
 ---
 
@@ -353,7 +353,7 @@ The following real, verified bug-bounty / coordinated-disclosure cases extend th
 
 10. **HackerOne — SAML signup domain enforcement bypass via control characters** ([H1 #2101076](https://hackerone.com/reports/2101076))
     - Subclass: partner-portal / SAML domain-binding bypass via unicode control characters
-    - Payload: new user sign-up at SAML-enforced org; append trailing control character (e.g., `\r`, ` `) to email → domain comparison normalises away, signup proceeds → unauthorised access to the org
+    - Payload: new user sign-up at SAML-enforced org; append trailing control character (e.g., `\r`, `\x00`) to email → domain comparison normalises away, signup proceeds → unauthorised access to the org
     - Root cause: inconsistent unicode/control-char normalisation between domain check and identity write
     - Year: 2024 — bounty awarded (amount undisclosed)
 
@@ -381,7 +381,7 @@ Duende BFF deployments expose two distinct auth-bypass families beyond the CSRF 
 
 **Payload shape:** identify a BFF route marked `TokenType.UserOrClient` (visible via 401-vs-200 differential when no session, or via leaked OpenAPI/NSwag spec). Hit it with no cookies → BFF forwards with M2M token granting admin-scope downstream. ([docs.duendesoftware.com/bff/fundamentals/apis/yarp](https://docs.duendesoftware.com/bff/fundamentals/apis/yarp/))
 
-**Adjacent confirmed CVE:** **CVE-2024-51987** in `Duende.AccessTokenManagement.OpenIdConnect` — *"HTTP client uses incorrect token after refresh"* — materially the same family of token-confusion at the proxy layer. Moderate severity, fixed 2024. ([GHSA-...51987](https://github.com/advisories?query=duende))
+**Adjacent confirmed CVE:** **CVE-2024-51987** in `Duende.AccessTokenManagement.OpenIdConnect` — *"HTTP client uses incorrect token after refresh"* — materially the same family of token-confusion at the proxy layer. Moderate severity, fixed 2024. ([NVD CVE-2024-51987](https://nvd.nist.gov/vuln/detail/CVE-2024-51987) · see Duende IdentityServer advisories)
 
 ### Attack class 2 — Cookie-domain wildcard + sliding expiration = persistent ATO
 
@@ -399,11 +399,11 @@ If `SlidingExpiration=true` (default) and `ExpireTimeSpan` is large (e.g. 8h), a
 
 ### Evidence strength + reporting tip
 
-No Duende.BFF-direct CVE exists. The three classes are exploitable via real-world misconfigurations; CVE-2024-51987 and CVE-2025-26620 in the adjacent `Duende.AccessTokenManagement` packages make token-confusion a confirmed family. **Report by chain impact** (e.g., "low-priv session reaches admin-scope downstream API via UserOrClient route" → Critical) rather than by CVE citation, since the issue is design-level.
+No Duende.BFF-direct CVE exists. The three classes are exploitable via real-world misconfigurations; CVE-2024-51987 in the adjacent `Duende.AccessTokenManagement` package (plus related token-handling fixes — see Duende IdentityServer advisories) makes token-confusion a confirmed family. **Report by chain impact** (e.g., "low-priv session reaches admin-scope downstream API via UserOrClient route" → Critical) rather than by CVE citation, since the issue is design-level.
 
 Cross-references for the chain:
 - `hunt-csrf` — the role-partitioned antiforgery class (the CSRF angle on the same BFF surface).
-- `hunt-subdomain-takeover` / `hunt-subdomain` — required primitive for the cookie-domain attack.
+- `hunt-subdomain` — required primitive for the cookie-domain attack.
 
 ---
 

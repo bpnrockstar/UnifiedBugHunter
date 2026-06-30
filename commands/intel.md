@@ -1,22 +1,47 @@
 ---
-description: On-demand intelligence fetch for a target — CVEs, disclosed reports, new features. Wraps learn.py + hunt memory context. Usage: /intel target.com
+description: On-demand intelligence fetch for a target — CVEs, disclosed reports, new features. Wraps tools/intel_engine.py (which imports learn.py) + hunt memory context.
+argument-hint: <target.com> [--tech <stack>] [--memory-dir <path>]
+allowed-tools: Bash
 ---
 
 # /intel
 
 Fetch actionable intelligence for a target.
 
+## Run This
+
+Invoke `tools/intel_engine.py` directly — do not re-implement the intel logic.
+It imports `learn.py` internally for the CVE/advisory feeds and adds the
+hunt-memory cross-reference:
+
+```bash
+python3 tools/intel_engine.py --target $ARGUMENTS
+```
+
+**Pass `--memory-dir` to get the memory cross-reference.** It defaults to empty,
+and when empty the "untested CVEs / last hunted / tested endpoints" memory
+context is silently skipped — the headline feature does nothing without it:
+
+```bash
+python3 tools/intel_engine.py --target target.com \
+  --tech "nextjs,graphql" \
+  --memory-dir ~/.claude/projects/<proj>/hunt-memory
+```
+
 ## What This Does
 
-1. Runs `learn.py` for CVEs and advisories matching the target's tech stack
+1. Runs `tools/intel_engine.py` (imports `learn.py`) for CVEs and advisories
+   matching the target's tech stack
 2. Fetches HackerOne Hacktivity for the target (via HackerOne MCP if available)
-3. Cross-references with hunt memory — flags untested CVEs and new endpoints
+3. Cross-references with hunt memory (when `--memory-dir` is set) — flags
+   untested CVEs and new endpoints
 4. Outputs prioritized intel with hunt recommendations
 
 ## Usage
 
 ```
 /intel target.com
+/intel target.com --tech "nextjs,graphql" --memory-dir <hunt-memory-path>
 ```
 
 ## Output

@@ -1,0 +1,16 @@
+# scripts/.identifier-denylist.sha256
+#
+# One sha256 hex digest per line. Each digest is the hash of a normalized
+# (lowercased, single-spaced) client/engagement identifier shingle that must
+# NEVER appear in the public tree. lint_skills.py hashes every 1- and 2-word
+# shingle of each linted file and fails the build on any match.
+#
+# Plaintext names are NEVER stored here — only their hashes. To add a name,
+# either append its sha256 digest below, or (maintainer convenience) drop the
+# plaintext into the gitignored scripts/.identifier-denylist.local, which the
+# linter hashes on the fly.
+#
+#   printf '%s' "acme corp" | shasum -a 256   # -> paste the digest here
+#
+# This file ships empty by default; the linter prints a NOTE when no digests
+# are loaded. Add digests as engagements require.

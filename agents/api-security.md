@@ -6,7 +6,6 @@ tools:
   read: true
   write: true
   grep: true
-  webfetch: true
 model: claude-sonnet-4-6
 ---
 

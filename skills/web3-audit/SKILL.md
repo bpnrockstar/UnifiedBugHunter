@@ -1,6 +1,6 @@
 ---
 name: web3-audit
-description: Smart contract security audit — 10 DeFi bug classes (accounting desync, access control, incomplete path, off-by-one, oracle, ERC4626, reentrancy, flash loan, signature replay, proxy), pre-dive kill signals (TVL < $500K etc), Foundry PoC template, grep patterns for each class, and real Immunefi paid examples. Use for any Solidity/Rust contract audit or when deciding whether a DeFi target is worth hunting.
+description: "Smart contract security audit — 10 DeFi bug classes (accounting desync, access control, incomplete path, off-by-one, oracle, ERC4626, reentrancy, flash loan, signature replay, proxy), pre-dive kill signals (TVL < $500K etc), Foundry PoC template, grep patterns for each class, and real Immunefi paid examples. Use for any Solidity/Rust contract audit or when deciding whether a DeFi target is worth hunting."
 ---
 
 # WEB3 SMART CONTRACT AUDIT
@@ -479,9 +479,42 @@ grep -rn "0x360894\|EIP1967\|_IMPLEMENTATION_SLOT" contracts/
 
 ## FOUNDRY POC TEMPLATE
 
+Minimal forge-std test that forks/deploys the target, sets up the attacker, and
+proves the issue in `testExploit()`. Run with `forge test --match-test testExploit -vvvv`.
+
 ```solidity
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
+
+import "forge-std/Test.sol";
+
+// import {Target} from "../src/Target.sol";
+
+contract ExploitTest is Test {
+    Target target;
+    address attacker = makeAddr("attacker");
+
+    function setUp() public {
+        // Deploy or fork the target. For a fork:
+        //   vm.createSelectFork(vm.envString("RPC_URL"), BLOCK);
+        target = new Target();
+        vm.deal(attacker, 10 ether);
+    }
+
+    function testExploit() public {
+        uint256 before = address(attacker).balance;
+
+        vm.startPrank(attacker);
+        // 1. trigger the vulnerable path (e.g. reentrancy, accounting desync,
+        //    oracle manipulation, signature replay).
+        target.vulnerableFunction();
+        vm.stopPrank();
+
+        // 2. assert the attacker profited / invariant broke.
+        assertGt(address(attacker).balance, before, "exploit yielded no profit");
+    }
+}
+```
 
 ## Extended Content
 

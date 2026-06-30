@@ -1,13 +1,11 @@
 ---
 name: report-writing
-description: Bug bounty report writing for H1/Bugcrowd/Intigriti/Immunefi — report templates, human tone guidelines, impact-first writing, CVSS 3.1 scoring, title formula, impact statement formula, severity decision guide, downgrade counters, pre-submit checklist. Use after validating a finding and before submitting. Never use "could potentially" — prove it or don't report.
+description: 'Bug bounty report writing for H1/Bugcrowd/Intigriti/Immunefi — report templates, human tone guidelines, impact-first writing, CVSS 3.1 scoring, title formula, severity decision guide, downgrade counters, pre-submit checklist. Use after validating a finding and before submitting. Never use "could potentially" — prove it or do not report.'
 ---
 
 # REPORT WRITING
 
 Impact-first. Human tone. No theoretical language. Triagers are people.
-
----
 
 ## THE MOST IMPORTANT RULE
 
@@ -41,8 +39,6 @@ findings/<target-or-program>-<bug-class>/
 If `tools/validate.py` already wrote `submission-notes.md`, append/update it
 instead of creating a duplicate.
 
----
-
 ## TITLE FORMULA
 
 ```
@@ -67,11 +63,9 @@ Security issue in API
 Unauthorized access to user data
 ```
 
----
-
 ## HACKERONE REPORT TEMPLATE
 
-```markdown
+````markdown
 ## Summary
 
 [One paragraph: what the bug is, where it is, what an attacker can do. Be specific.
@@ -141,13 +135,11 @@ if order.user_id != current_user.id:
 
 [Screenshot showing attacker's session returning victim's order data]
 [Video walkthrough if available]
-```
-
----
+````
 
 ## BUGCROWD REPORT TEMPLATE
 
-```markdown
+````markdown
 # [IDOR] User order history accessible without authorization via /api/users/{id}/orders
 
 **VRT Category:** Broken Access Control > IDOR > P2
@@ -178,13 +170,11 @@ Automated enumeration could exfil all [N] user records in minutes.
 ## Remediation
 
 Add ownership verification: `if order.user_id != current_user.id: raise 403`
-```
-
----
+````
 
 ## INTIGRITI REPORT TEMPLATE
 
-```markdown
+````markdown
 # [Bug Class]: [Exact Impact] in [Endpoint/Feature]
 
 ## Description
@@ -205,20 +195,20 @@ Include: endpoint, method, parameter, data exposed, required privileges.]
 
 2. Send the following HTTP request:
 
-\```http
+```http
 METHOD /endpoint HTTP/1.1
 Host: target.com
 Authorization: Bearer ATTACKER_TOKEN
 Content-Type: application/json
 
 {"param": "victim_id_here"}
-\```
+```
 
 3. Observe response contains victim's private data:
 
-\```json
+```json
 {"email": "victim@test.com", "address": "123 Main St", ...}
-\```
+```
 
 ## Impact
 
@@ -233,7 +223,7 @@ CVSS 3.1 Score: X.X ([Severity]) — AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:N/A:N
 ## Attachments
 
 [Screenshot or Loom video showing the impact — Intigriti triagers prefer video for complex bugs]
-```
+````
 
 **Intigriti-specific notes:**
 - Title format: `[Bug Class]: [One-line impact]` (no formula required, but keep it specific)
@@ -242,11 +232,9 @@ CVSS 3.1 Score: X.X ([Severity]) — AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:N/A:N
 - PoC video is valued much more than screenshot alone — record with Loom
 - Safe harbor: Intigriti enforces it, be comfortable going slightly aggressive with testing
 
----
-
 ## IMMUNEFI REPORT TEMPLATE
 
-```markdown
+````markdown
 # [Bug Class] — [Protocol Name] — [Severity]
 
 ## Summary
@@ -285,9 +273,7 @@ Requires $Z gas. Attack is repeatable."]
 ## Recommended Fix
 
 [Specific code change with before/after]
-```
-
----
+````
 
 ## CVSS 3.1 QUICK SCORING
 
@@ -330,8 +316,6 @@ CVSS = f(AV, AC, PR, UI, S, C, I, A)
 | GraphQL auth bypass | 8.7 | High |
 | JWT none algorithm | 9.1 | Critical |
 
----
-
 ## SEVERITY DECISION GUIDE
 
 ### Critical (P1)
@@ -359,8 +343,6 @@ CVSS = f(AV, AC, PR, UI, S, C, I, A)
 - Clickjacking on sensitive action WITH working PoC
 - CORS on limited data
 
----
-
 ## SEVERITY SELF-ASSESSMENT
 
 Each YES raises severity:
@@ -372,8 +354,6 @@ Each YES raises severity:
 5. Remotely exploitable with no internal network access?        → baseline for High+
 ```
 
----
-
 ## DOWNGRADE COUNTERS
 
 | Program Says | Counter With |
@@ -384,8 +364,6 @@ Each YES raises severity:
 | "By design" | "Show me the documentation stating this is intended behavior" |
 | "Low CVSS" | "CVSS doesn't capture business impact — attacker can extract [X] in [Y] minutes" |
 | "Not exploitable" | "Here is the exact response showing victim's data returned to attacker session" |
-
----
 
 ## THE 60-SECOND PRE-SUBMIT CHECKLIST
 
@@ -403,8 +381,6 @@ Each YES raises severity:
 [ ] Never used "could potentially" or "may allow"
 [ ] PoC is reproducible by triager from a fresh state
 ```
-
----
 
 ## CVSS 4.0 QUICK REFERENCE (newer programs)
 
@@ -443,8 +419,6 @@ Key fields:
 
 **Practical rule**: If program uses CVSS 4.0 and you don't know the vector, use the calculator and include the full string starting with `CVSS:4.0/AV:...`. Programs cannot dispute a valid vector string.
 
----
-
 ## HUMAN TONE GUIDELINES
 
 **Write to a person, not a system:**
@@ -469,11 +443,9 @@ Key fields:
 - Passive voice ("it was observed that...")
 - Qualifying language ("seems to," "appears to")
 
----
-
 ## STEPS TO REPRODUCE FORMAT (triager-optimized)
 
-```markdown
+````markdown
 **Setup:**
 - Account A (attacker): email=attacker@test.com, ID=111
 - Account B (victim): email=victim@test.com, ID=222
@@ -484,18 +456,26 @@ Key fields:
 1. Log in as Account A
 2. Send this request (replace `111` with victim ID `222`):
 
-\```
+```
 GET /api/v2/resource/222 HTTP/1.1
 Host: target.com
 Authorization: Bearer ACCOUNT_A_TOKEN
-\```
+```
 
 3. Response contains Account B's private data:
 
-\```json
+```json
 {"id": 222, "email": "victim@test.com", "name": "Victim User", "address": "..."}
-\```
+```
 
 **Expected:** 403 Forbidden
 **Actual:** 200 OK with victim's private data
-```
+````
+
+## Related Skills
+
+- `triage-validation` — run the 7-Question Gate before you ever open this skill; only write reports for findings that pass.
+- `redteam-report-template` — for engagement-style (non-bounty) deliverables; this skill is bounty-platform-shaped, that one is assessment-report-shaped.
+- `bugcrowd-reporting` — Bugcrowd-specific VRT mapping and submission mechanics that complement the Bugcrowd template here.
+- `evidence-hygiene` — produce clean, redacted screenshots and request/response captures for the Supporting Materials section.
+- `code-patch` — generate the concrete "Recommended Fix" snippet referenced in each template.

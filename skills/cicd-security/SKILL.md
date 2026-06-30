@@ -1,6 +1,6 @@
 ---
 name: cicd-security
-description: CI/CD pipeline security hunting — GitHub Actions workflow injection, secret exfiltration, self-hosted runner poisoning, dependency confusion, OIDC token theft, and supply chain attacks. Covers sisakulint scanning, manual workflow analysis, and chaining CI/CD bugs into critical findings. Use when a target has public repos, GitHub Actions, CircleCI, Jenkins, or GitLab CI.
+description: "CI/CD pipeline security hunting — GitHub Actions workflow injection, secret exfiltration, self-hosted runner poisoning, dependency confusion, OIDC token theft, and supply chain attacks. Covers sisakulint scanning, manual workflow analysis, and chaining CI/CD bugs into critical findings. Use when a target has public repos, GitHub Actions, CircleCI, Jenkins, or GitLab CI."
 ---
 
 # CI/CD SECURITY — Pipeline Attack Surface
@@ -365,8 +365,8 @@ CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H (Critical, 10.0)
 | Tool | Purpose | Install |
 |------|---------|---------|
 | `sisakulint` | Lint GitHub Actions workflows for security issues | `bash install_tools.sh` |
-| `trufflehog` | Find secrets leaked in git history / workflow logs | `bash install_tools.sh` |
-| `gitleaks` | Scan repos for hardcoded secrets | `bash install_tools.sh` |
+| `trufflehog` | Find secrets leaked in git history / workflow logs | `brew install trufflehog` (installed separately) |
+| `gitleaks` | Scan repos for hardcoded secrets | `brew install gitleaks` (installed separately) |
 | `gh` CLI | Download workflow logs, list secrets, trigger runs | `brew install gh` |
 | `nuclei` | CI/CD-specific templates | `-tags cicd` |
 | `secrets_hunter.sh` | Wrapper for all three secret scanners | `bash tools/secrets_hunter.sh` |

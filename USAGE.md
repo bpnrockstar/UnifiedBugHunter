@@ -1,6 +1,6 @@
 # Unified-Bug-Hunter — Usage Guide
 
-A practical guide to using the 51-skill Unified-Bug-Hunter bundle for bug hunting (bounty programs, authorized pentesting, CTFs, vuln research) **and external red-team engagements** against enterprise targets. This document covers what's in the bundle, how it composes, and how to use it on a real engagement from intake through paid bounty (or final client deliverable).
+A practical guide to using the 89-skill Unified-Bug-Hunter bundle for bug hunting (bounty programs, authorized pentesting, CTFs, vuln research) **and external red-team engagements** against enterprise targets. This document covers what's in the bundle, how it composes, and how to use it on a real engagement from intake through paid bounty (or final client deliverable).
 
 > Built and validated through authorized red-team and bug-bounty engagements — exposed four bug-bounty capability gaps and five additional gaps around platform attack chains, mid-engagement IR detection, and client-facing reporting. The final stack documented here addresses both modes.
 
@@ -12,7 +12,7 @@ This section is for people who have **never used the bundle before, never used C
 
 ### What is this bundle, in plain English?
 
-It's a collection of 51 markdown files (called **skills**) that turn Claude Code into a methodical bug-hunting assistant.
+It's a collection of 89 markdown files (called **skills**) that turn Claude Code into a methodical bug-hunting assistant.
 
 Without the bundle, asking Claude *"is this XSS?"* gets you a generic answer. With the bundle installed, the same question loads the `hunt-xss` skill — which contains specific detection patterns from 574+ disclosed reports, the exact payloads that have worked, and a validation gate that prevents you from filing a false-positive bug report.
 
@@ -31,7 +31,7 @@ You don't "learn" the bundle. You install it once, then describe what you're tes
 - ❌ You don't need to know how to write exploits. The skills include working payloads.
 - ❌ You don't need to know Burp Suite. It's optional. Skills work with curl + browser.
 - ❌ You don't need a bug bounty account yet. You can practice on OWASP Juice Shop first.
-- ❌ You don't need to read all 51 skills. They auto-load when relevant.
+- ❌ You don't need to read all 89 skills. They auto-load when relevant.
 - ❌ You don't need Python beyond `python3 --version` working.
 
 ### Your first 30 minutes
@@ -41,10 +41,10 @@ Open your terminal. Copy-paste this entire block:
 ```bash
 # 1. Get the bundle
 mkdir -p ~/security-research && cd ~/security-research
-git clone https://github.com/UnifiedBugHunter.git
-cd Unified-Bug-Hunter
+git clone https://github.com/bpnrockstar/UnifiedBugHunter.git
+cd UnifiedBugHunter
 
-# 2. Install (copies 51 skills + 15 commands into Claude Code)
+# 2. Install (copies 89 skills + 35 commands into Claude Code)
 ./scripts/install.sh
 
 # 3. Reload your shell so the 'hunt' command becomes available
@@ -110,7 +110,7 @@ For example, when you find Juice Shop's `/api/users` endpoint with an `id` param
 
 ### Where to ask for help
 
-- The bundle author: [GitHub Issues](https://github.com/UnifiedBugHunter/issues)
+- The bundle author: [GitHub Issues](https://github.com/bpnrockstar/UnifiedBugHunter/issues)
 - HackerOne's bug-bounty Hacker Slack
 - Bugcrowd's Discord
 - Reddit r/bugbounty (read first, search second, ask last)
@@ -140,7 +140,7 @@ The stack maps to a 6-phase bug-bounty workflow. Each phase has its own skill se
 |---|---|---|
 | **1. Scope** | Reading program rules, deciding what's in/out, scaffolding the engagement folder | `bug-bounty`, `bb-methodology`, `osint-methodology` + `hunt <target>` shell command |
 | **2. Recon** | Asset discovery, subdomain enum, endpoint mapping, secret hunting | `offensive-osint`, `web2-recon`, `bb-local-toolkit` |
-| **3. Hunt** | Active testing for bugs in specific vuln classes | 24 `hunt-*` skills + 7 enterprise-platform skills (M365/Okta/cloud-IAM/vCenter/VPN/SharePoint/APK) + `security-arsenal` |
+| **3. Hunt** | Active testing for bugs in specific vuln classes | 48 `hunt-*` skills + 7 enterprise-platform skills (M365/Okta/cloud-IAM/vCenter/VPN/SharePoint/APK) + `security-arsenal` |
 | **4. Validate** | Decide whether a lead is actually a reportable bug | `triage-validation` (7-Question Gate) via `/triage` or `/validate` |
 | **5. Capture** | PoC screenshots, HAR files, evidence redaction | `evidence-hygiene` |
 | **6. Report** | Draft and submit | `report-writing`, `bugcrowd-reporting` |
@@ -149,7 +149,7 @@ See [docs/architecture.md](docs/architecture.md) for a more detailed breakdown.
 
 ---
 
-## 2. Skill inventory (51 skills total)
+## 2. Skill inventory (89 skills total)
 
 ### Workflow skills — the spine of any engagement
 
@@ -167,9 +167,9 @@ See [docs/architecture.md](docs/architecture.md) for a more detailed breakdown.
 | `web2-recon` | Subdomain enumeration, host discovery, URL crawling | "find all subdomains of X" |
 | `bb-local-toolkit` | Router for local cloned bug-bounty repos | "which tool for X", refers to local stack |
 
-### Hunt — 24 per-class web skills
+### Hunt — 48 per-class web skills
 
-Each focuses on one vulnerability class with detection patterns, payloads, bypass tables, and chain opportunities drawn from disclosed bug-bounty reports.
+Each focuses on one vulnerability class with detection patterns, payloads, bypass tables, and chain opportunities drawn from disclosed bug-bounty reports. The table below lists a representative subset; the full set is 48 `hunt-*` skills.
 
 | Skill | Class |
 |---|---|
@@ -378,7 +378,7 @@ Cross-reference this UUID in any chained submissions you file later.
 If another pentester wants to replicate this stack, the install steps are in [INSTALL.md](INSTALL.md). The short version:
 
 1. Clone this repo
-2. Run `./scripts/install.sh` (installs all 51 skills, 15 commands, and hunt scaffold in one step)
+2. Run `./scripts/install.sh` (installs all 89 skills, 35 commands, and hunt scaffold in one step)
 3. Set up Burp MCP (BApp Store extension + `claude mcp add burp ...`)
 4. (Optional) Refresh upstream snapshots via `./scripts/install-community-skills.sh`
 5. (Optional) Set up the skill regenerator with Anthropic + H1 API keys
@@ -406,7 +406,7 @@ The validation engagement that produced this stack illustrated all three: the or
 - **`offensive-osint` is large**, even after refactor. The 15 reference files load on demand, but the SKILL.md still consumes context on every trigger. Future work: split into smaller sub-skills if context becomes a bottleneck.
 - **Per-class `hunt-*` skills overlap on borderline classes.** A finding that's both IDOR and business-logic may trigger two skills. Manageable, but worth knowing.
 - **`public-skills-builder` is rough.** The script needs Python 3.10+, has hardcoded `master` branch references, and requires `--program` for H1 queries. Patches documented in INSTALL.md.
-- **No HackerOne MCP yet.** Burp MCP works; H1 MCP is in YOUR_USER's repo but not configured here. Worth adding when you start hunting H1 programs.
+- **No HackerOne MCP yet.** Burp MCP works; H1 MCP is in bpnrockstar's repo but not configured here. Worth adding when you start hunting H1 programs.
 - **No engagement-coordinator skill.** Cross-finding tracking and submission ID management is currently manual via `submissions.txt`. Future skill candidate.
 
 ---
@@ -416,7 +416,7 @@ The validation engagement that produced this stack illustrated all three: the or
 If you keep using this and want to extend it:
 
 1. **Per-engagement memory** — extend `bb-methodology` to record patterns you've seen pay off across engagements. After 5+ engagements, your personal patterns will outperform the disclosed-report patterns.
-2. **HackerOne MCP integration** — wire up the H1 MCP in YOUR_USER's repo for live duplicate-search and program intel during reports.
+2. **HackerOne MCP integration** — wire up the H1 MCP in bpnrockstar's repo for live duplicate-search and program intel during reports.
 3. **Specialized `hunt-*` skills** for high-payout niches you focus on (e.g., `hunt-fintech-graphql`, `hunt-healthcare-fhir`).
 4. **A `program-rules-parser` skill** that takes program text and produces a structured `scope.md` automatically.
 5. **Engagement-coordinator skill** that auto-updates `submissions.txt` and surfaces chain candidates.

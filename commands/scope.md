@@ -1,5 +1,7 @@
 ---
 description: Check if a target asset is in scope for the program before hunting or submitting. Reads program scope page, checks asset against in-scope and out-of-scope lists, verifies the asset is owned by the target organization. Usage: /scope <asset>
+argument-hint: <asset> (e.g. api.target.com | https://target.com/api/v2 | *.target.com)
+allowed-tools: Bash
 ---
 
 # /scope

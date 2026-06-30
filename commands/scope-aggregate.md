@@ -1,11 +1,26 @@
 ---
 description: Pull every in-scope asset for a bug bounty program across HackerOne, Bugcrowd, Intigriti, YesWeHack, and Immunefi in one shot. Uses bbscope when authenticated, otherwise the public bounty-targets-data dump. Output is one host per line, ready to feed into /recon. Usage: /scope-aggregate <program-handle> [--platform h1|bc|it|ywh|imf|all]
+argument-hint: <program-handle> [--platform h1|bc|it|ywh|imf|all] [--out <file>] [--include-oos]
+allowed-tools: Bash
 ---
 
 # /scope-aggregate
 
 Aggregate the full in-scope asset list for a public program without copy-pasting
 from the program page.
+
+## Run This
+
+Invoke the backing script directly — do not re-implement the scope pull:
+
+```bash
+bash tools/scope_aggregator.sh "$ARGUMENTS"
+```
+
+The first positional argument is the program handle; flags `--platform`,
+`--out`, `--include-oos`, `--no-cache`, and `--list-programs` are passed through.
+By default the host list is written to `~/.cache/bbhunt/scope/<program>.scope.txt`
+(override with `--out <file>`).
 
 ## Usage
 

@@ -1,10 +1,21 @@
 ---
-description: Generate a company-specific password wordlist for spray attacks. Crawls the target website with cewler, dedups + length-filters, then applies hashcat rules to produce a ranked candidate list. Output -> recon/<target>/wordlists/. Usage /wordlist-gen <target> [--depth N] [--mode minimal|balanced|aggressive]
+description: Generate a company-specific password wordlist for spray attacks. Crawls the target website with cewler, dedups + length-filters, then applies hashcat rules to produce a ranked candidate list. Output -> recon/<target>/wordlists/.
+argument-hint: <target> [--depth N] [--mode minimal|balanced|aggressive] [--filter strict|loose] [--min-len N] [--rate N]
+allowed-tools: Bash
 ---
 
 # /wordlist-gen
 
 Generate a company-specific password wordlist by crawling the target website and applying hashcat mutation rules.
+
+## Run This
+
+Invoke the backing script directly with the user's arguments; do NOT re-implement
+the crawl/dedup/mutation pipeline inline:
+
+```bash
+bash tools/wordlist_engine.sh $ARGUMENTS
+```
 
 ## Usage
 
@@ -69,11 +80,19 @@ Install once: `./install_tools.sh --with-credential-attack`
 
 The script checks for `cewler` and `hashcat` and exits with a helpful hint if missing.
 
-## What this does NOT do
+## What this does NOT do (use the companion commands)
 
-- **No HIBP filtering** — PR #4 will add `tools/breach_checker.py` to rank by leak prevalence.
-- **No OSINT input** — PR #3 will feed employee names, birthdays, and project codes via pydictor.
-- **No spray execution** — PR #5 will add `/spray` (with mandatory scope check and lockout warning).
+This command only crawls + mutates. The rest of the credential-attack pipeline
+ships as separate commands — chain them after this one:
+
+- **No HIBP ranking** — pipe the output through `/breach-check <wordlist>`
+  (`tools/breach_checker.py`) to rank candidates by real-world breach count via
+  HIBP k-anonymity (no API key needed).
+- **No OSINT input** — run `/osint-employees <target>` first to harvest employee
+  names + email patterns (theHarvester + username-anarchy), then feed those into
+  your spray user list.
+- **No spray execution** — run `/spray <url> --users <f> --passes <f>` to actually
+  spray (it enforces a typed-host confirm, lockout warning, and audit log).
 
 ## Underlying tool
 

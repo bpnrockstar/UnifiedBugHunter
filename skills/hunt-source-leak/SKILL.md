@@ -1,8 +1,7 @@
 ---
 name: hunt-source-leak
-description: Hunt source code and build artifact leakage — JavaScript source maps (.js.map) reconstructing TypeScript/ES6 source, Swagger/OpenAPI JSON endpoint discovery, .env/.git exposure, webpack chunks with hardcoded secrets, robots.txt/security.txt recon, build-info files, asset-manifest.json API route discovery, .DS_Store file listing. Use at the START of every recon session — these findings often unlock the entire attack surface.
+description: "Hunt source code and build artifact leakage — JavaScript source maps (.js.map) reconstructing TypeScript/ES6 source, Swagger/OpenAPI JSON endpoint discovery, .env/.git exposure, webpack chunks with hardcoded secrets, robots.txt/security.txt recon, build-info files, asset-manifest.json API route discovery, .DS_Store file listing. Use at the START of every recon session — these findings often unlock the entire attack surface."
 sources: hackerone_public, offensive_research
-report_count: 31
 ---
 
 # HUNT-SOURCE-LEAK — Source Code & Build Artifact Leakage
@@ -137,9 +136,9 @@ pip3 install git-dumper
 git-dumper "https://$TARGET/.git/" /tmp/dumped-repo/
 
 # Grep for secrets in all git history
-cd /tmp/dumped-repo && \
-  git log --all --oneline 2>/dev/null | head -20
-  git grep -i "password\|secret\|api_key\|token" $(git rev-list --all) 2>/dev/null | head -30
+cd /tmp/dumped-repo
+git log --all --oneline 2>/dev/null | head -20
+git grep -i "password\|secret\|api_key\|token" $(git rev-list --all) 2>/dev/null | head -30
 
 # trufflehog on git history
 trufflehog git file:///tmp/dumped-repo/ 2>/dev/null | head -50

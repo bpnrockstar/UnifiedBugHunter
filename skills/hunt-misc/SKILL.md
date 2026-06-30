@@ -1,9 +1,10 @@
 ---
 name: hunt-misc
-description: Hunting skill for misc vulnerabilities. Built from 225 public bug bounty reports. Use when hunting misc on any target.
+description: "Hunt the long-tail access-control and logic bugs that don't fit a single named class — post-removal session/token persistence (soft-delete without revocation), invitation-flow acceptance without email verification, token-scope checked at issuance but not at use, cross-tenant resource access, SAML signature stripping / XSW assertion wrapping, CRLF / HTTP header injection in Ruby Net::HTTP and Rack/pitchfork, SSRF and token exfil via admin config URL fields (Sentry DSN, webhook URLs), ReDoS in Ruby URI/IPAddr parsers, package-registry dependency confusion, and dangling-DNS / SPF-DMARC hygiene. Use when hunting on SaaS role hierarchies, multi-tenant systems, invitation/SSO flows, internal APIs, and PAT/OAuth scope enforcement."
 sources: github, hackerone_public
-report_count: 225
 ---
+
+# HUNT-MISC — Access-Control, Auth-Logic & Misconfiguration Long-Tail
 
 ## Crown Jewel Targets
 

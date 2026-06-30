@@ -2,9 +2,7 @@
 name: payload-crafter
 description: Custom payload generator for web application security testing. Generates context-aware payloads for XSS (13 contexts), SQLi (7 variants), SSTI (8 engines), command injection (6 bypasses), SSRF (10 IP bypasses), NoSQLi, LDAP injection, XXE (OOB/exfil), and template injection. Filters by WAF, charset, length, and filter constraints. Use when standard payloads are blocked and you need a custom bypass.
 tools:
-  bash: true
   read: true
-  write: true
   grep: true
 model: claude-sonnet-4-6
 ---

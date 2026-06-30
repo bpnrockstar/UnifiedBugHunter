@@ -225,7 +225,7 @@ python3 -m pytest tests/test_endpoint.py -v
 
 ## Output Format
 
-```markdown
+````markdown
 ## [HIGH] SQL Injection in /api/users/search
 
 **Location:** app/routes/users.py:142
@@ -265,7 +265,7 @@ curl -s http://target.com/api/users?q=admin | grep -c '"users"'
 
 ### Regression Risk
 Low. Parameterized query is the standard ORM pattern; behavior identical for legitimate inputs.
-```
+````
 
 ## Language-Specific Quick Reference
 
@@ -277,4 +277,11 @@ Low. Parameterized query is the standard ORM pattern; behavior identical for leg
 | Go | `$1` in `db.QueryRow()` | `html/template` (not `text/template`) | `exec.Command()` list form | `net.URL` Hostname validation |
 | Ruby | `?` in `ActiveRecord` | `h()` or `sanitize()` helper | `system()` with array args | `URI.parse` hostname allowlist |
 | PHP | `PDO::prepare()` + `?` | `htmlspecialchars()` | `escapeshellarg()` + `exec()` | `parse_url()` hostname check |
-| Rust | `sqlx::query!()` macro | `askama` auto-escape or ` ammonia` | `Command::new("arg")` | URL crate + allowlist |
+| Rust | `sqlx::query!()` macro | `askama` auto-escape or `ammonia` | `Command::new("arg")` | URL crate + allowlist |
+
+## Related Skills
+
+- `code-review` — the upstream audit that locates the vulnerable sink and vuln class this skill then patches.
+- `/patch` command — the slash entry point that drives this methodology (`/patch [file:line] [--lang py|js|java|go|rb|php|rs]`).
+- `hunt-sqli`, `hunt-xss`, `hunt-ssrf`, `hunt-rce`, `hunt-idor`, `hunt-deserialization` — class-specific exploitation skills; confirm impact there before patching to avoid over- or under-fixing.
+- `report-writing` — pair the patch with a finding report so the fix and its before/after diff land in the submission.

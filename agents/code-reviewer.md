@@ -3,7 +3,6 @@ name: code-reviewer
 description: White-box source code audit specialist. Performs deep static analysis to find SQLi, XSS, SSRF, command injection, hardcoded secrets, auth bypass, IDOR, deserialization, prototype pollution, path traversal, and business logic flaws. SAST-aware, language-agnostic, with grep-driven methodology and zero false-positive curation. Use when you have access to the target's source code (public repo, JS bundle, leaked APK decompile, or client-provided codebase).
 tools:
   read: true
-  write: true
   grep: true
   glob: true
   bash: true

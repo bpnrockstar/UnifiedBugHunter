@@ -77,3 +77,18 @@ KB entries should include:
 - Payloads (JSON array)
 - Techniques (JSON array)
 - Tags (comma-separated keywords for search)
+
+## When to Use During a Hunt
+
+- **Before hunting a class** — search the KB for the target's bug class to pull proven payloads and prior bypasses instead of starting cold.
+- **After a confirmed finding** — add it back so the next hunt benefits (close the learning loop). The `/remember` command and the `report-writing` skill both produce material worth capturing here.
+- **Triage reference** — check whether a similar pattern has already been disclosed/duplicated before investing time.
+
+Entries are stored in the same SQLite DB the dashboard uses (`search_knowledge_base` / `add_to_knowledge_base` in `dashboard/database.py`), so CLI, API, and dashboard all read the same data.
+
+## Related Skills
+
+- `security-arsenal` — the curated payload/bypass tables; the KB is the *searchable, growing* counterpart you add disclosed reports and findings to.
+- `report-writing` — finished reports are prime KB source material; capture them after submission.
+- `triage-validation` — query the KB during triage to check for known duplicates and prior art.
+- `hunt-*` class skills (e.g. `hunt-ssrf`, `hunt-xss`, `hunt-idor`) — pull class-specific payloads from the KB before diving into each.

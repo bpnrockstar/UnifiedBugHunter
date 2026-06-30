@@ -1,5 +1,7 @@
 ---
-description: Run autonomous hunt loop on a target — scope check → recon → rank surface → hunt → validate → report with configurable checkpoints. Usage: /autopilot target.com [--paranoid|--normal|--yolo]
+description: Run autonomous hunt loop on a target — scope check → recon → rank surface → hunt → validate → report with configurable checkpoints. Usage: /autopilot target.com [--paranoid|--normal|--yolo|--quick]
+argument-hint: "<target.com|targets.txt> [--paranoid|--normal|--yolo|--quick]"
+allowed-tools: Bash, Read, Write
 ---
 
 # /autopilot

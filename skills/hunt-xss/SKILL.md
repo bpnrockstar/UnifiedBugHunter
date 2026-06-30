@@ -1,9 +1,11 @@
 ---
 name: hunt-xss
-description: Hunting skill for xss vulnerabilities. Built from 174 public bug bounty reports. Use when hunting xss on any target.
+description: "Hunt Cross-Site Scripting — reflected, stored, and DOM-based. Built from 174 public bug bounty reports. Trigger on user input reaching HTML/attribute/JS/URL sinks (innerHTML, document.write, eval, location.hash/search, jQuery .html()), reflected URL params (utm_source, redirect, return_url, callback), markdown/diagram renderers (Banzai, Kroki, PlantUML, RDoc), SVG and file-upload contexts, and Rails html_safe/raw/translate helpers. Covers CSP bypass (SVG mime, JSONP gadgets, base-tag, unsafe-inline style), mXSS sanitizer bypass (math+style, svg+style), cache-poisoning-to-stored, postMessage XSS, and OAuth-fragment token theft. Use when hunting XSS on any target."
 sources: github, hackerone_public
 report_count: 174
 ---
+
+# HUNT-XSS — Cross-Site Scripting
 
 ## Crown Jewel Targets
 
@@ -51,7 +53,7 @@ Any field whose value might be viewed in an admin UI / log viewer / email / repo
 
 **Always sub-tag the Collaborator subdomain by sink** so callbacks identify which field fired.
 
-**Lesson from a authorized engagement:** 10 blind-XSS Collaborator beacons planted across `ErrorMessage`, `Source`, the Authentication.asmx username field, User-Agent header, Referer header, and request paths. Zero callbacks over a 10-minute polling window. Conclusion: the SharePoint SOC views logs / errors in tooling that does not render HTML, AND the ASP.NET request validator blocks `<` in query strings before the payload reaches storage. Stored-XSS claim correctly retracted.
+**Lesson from an authorized engagement:** 10 blind-XSS Collaborator beacons planted across `ErrorMessage`, `Source`, the Authentication.asmx username field, User-Agent header, Referer header, and request paths. Zero callbacks over a 10-minute polling window. Conclusion: the SharePoint SOC views logs / errors in tooling that does not render HTML, AND the ASP.NET request validator blocks `<` in query strings before the payload reaches storage. Stored-XSS claim correctly retracted.
 
 ---
 
@@ -181,15 +183,15 @@ aaa"bbb'ccc<ddd>eee`fff
 [Click me](javascript:alert(document.domain))
 ```
 
-**Kroki/diagram injection:**
-```
+**Kroki/diagram injection** (the payload is itself a fenced `kroki` block submitted to a markdown renderer):
+````markdown
 ```kroki
 plantuml
 @startuml
 :<script>alert(1)</script>;
 @enduml
 ```
-```
+````
 
 **DOM XSS via hash/search:**
 ```javascript

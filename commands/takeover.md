@@ -1,5 +1,7 @@
 ---
-description: Scan subdomains for takeover candidates (dangling CNAMEs to GitHub Pages, S3, Heroku, Shopify, etc.). Wraps dnsReaper (best signal) and subjack (fast Go fallback). With no scanner installed, runs a built-in fingerprint grep over a curated set of providers. Usage: /takeover <subdomains-file> | /takeover --recon <recon-dir>
+description: Scan subdomains for takeover candidates (dangling CNAMEs to GitHub Pages, S3, Heroku, Shopify, etc.). Wraps dnsReaper (best signal) and subjack (fast Go fallback). With no scanner installed, runs a built-in fingerprint grep over a curated set of providers.
+argument-hint: <subdomains-file> | --recon <recon-dir>
+allowed-tools: Bash
 ---
 
 # /takeover
@@ -10,7 +12,16 @@ Find subdomains pointing at services you can claim and serve content from.
 
 ```
 /takeover recon/target.com/subdomains/all.txt
-/takeover --recon recon/target.com           # equivalent
+/takeover --recon recon/target.com           # uses recon/<target>/subdomains/all.txt
+```
+
+## Run This
+
+Invoke the backing script directly with the user's arguments; do NOT re-implement
+the scanner detection or fingerprint matching inline:
+
+```bash
+bash tools/takeover_scanner.sh $ARGUMENTS
 ```
 
 ## How it works

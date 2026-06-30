@@ -1,6 +1,6 @@
 ---
 name: web3-auditor
-description: Smart contract security auditor. Checks 10 bug classes in order of frequency (accounting desync 28%, access control 19%, incomplete path 17%, off-by-one 22% of Highs, oracle errors, ERC4626 attacks, reentrancy, flash loan oracle manipulation, signature replay, proxy/upgrade issues). Applies pre-dive kill signals first. Use for any Solidity/Rust contract audit or to check if a DeFi target is worth hunting.
+description: Smart contract security auditor. Checks 10 bug classes in order of frequency — top Critical classes are accounting desync (28% of Criticals), access control (19%), incomplete code path (17%); off-by-one leads the Highs (22% of Highs); followed by oracle errors, ERC4626 attacks, reentrancy, flash loan oracle manipulation, signature replay, and proxy/upgrade issues. Applies pre-dive kill signals first. Use for any Solidity/Rust contract audit or to check if a DeFi target is worth hunting.
 tools:
   read: true
   bash: true

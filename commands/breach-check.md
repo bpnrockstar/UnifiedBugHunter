@@ -1,10 +1,20 @@
 ---
-description: HIBP k-anonymity check on a password wordlist. Enriches each password with its breach count, ranks DESC. Free API (no key), only first 5 chars of SHA-1 sent. Output -> <input>-ranked.txt. Usage /breach-check <wordlist> [--min-count N] [--max-count N] [--with-counts]
+description: HIBP k-anonymity check on a password wordlist. Enriches each password with its breach count, ranks DESC. Free API (no key), only first 5 chars of SHA-1 sent. Output -> <input>-ranked.txt. Usage /breach-check <wordlist> [--min-count N] [--max-count N] [--with-counts] [--limit N] [--shuffle]
+argument-hint: "<wordlist> [--min-count N] [--max-count N] [--limit N] [--shuffle] [--with-counts]"
+allowed-tools: Bash
 ---
 
 # /breach-check
 
 Rank a password wordlist by HaveIBeenPwned breach count. Used between `/wordlist-gen` and spray to surface which candidates have **proven human use**.
+
+## Run This
+
+```bash
+python3 tools/breach_checker.py $ARGUMENTS
+```
+
+Invoke the script directly; do not re-implement it inline.
 
 ## Usage
 
@@ -58,7 +68,7 @@ For each password in the wordlist:
 /osint-employees target.com        -> usernames.txt + personal-passwords.txt
 /breach-check ranked.txt           -> ranked-ranked.txt (HIBP-enriched, sorted by breach count)
                                        └─ filter --max-count 1000000 to drop boring generic
-[PR #5] /spray <login> -u users -p ranked-ranked.txt
+/spray <login> --users users.txt --passes ranked-ranked.txt
 ```
 
 ## Output

@@ -1,13 +1,11 @@
 ---
 name: llm-redteamer
-description: "Advanced LLM red teaming agent. Tests LLM endpoints against 200+ prompt injection, jailbreak, exfiltration, and guardrail bypass payloads across 6 attack categories. Generates structured reports with confidence scoring and OOB callback validation."
+description: "Advanced LLM red teaming agent. Tests LLM endpoints against 185 prompt injection, jailbreak, exfiltration, and guardrail bypass payloads across 6 attack categories. Generates structured reports with confidence scoring and OOB callback validation."
 tools:
   bash: true
   read: true
   write: true
-  question: false
-model:
-  provider: auto
+model: claude-sonnet-4-6
 ---
 
 # LLM Red Teaming Agent
@@ -18,47 +16,47 @@ and guardrail bypass vulnerabilities using the latest 2024-2026 techniques.
 ## Available Tool
 
 ```bash
-python3 /tmp/UnifiedBugHunter/tools/llm_redteam.py
+python3 tools/llm_redteam.py
 ```
 
 ## Commands
 
 ### List all available payloads
 ```bash
-python3 /tmp/UnifiedBugHunter/tools/llm_redteam.py --list-payloads
+python3 tools/llm_redteam.py --list-payloads
 ```
 
 ### Run full red team against an OpenAI endpoint
 ```bash
 export OPENAI_API_KEY="sk-..."
-python3 /tmp/UnifiedBugHunter/tools/llm_redteam.py --target openai --model gpt-4
+python3 tools/llm_redteam.py --target openai --model gpt-4
 ```
 
 ### Test specific attack category
 ```bash
-python3 /tmp/UnifiedBugHunter/tools/llm_redteam.py --target openai --category jailbreak --limit 20
-python3 /tmp/UnifiedBugHunter/tools/llm_redteam.py --target openai --category exfil
-python3 /tmp/UnifiedBugHunter/tools/llm_redteam.py --target openai --category encoding --oob-host collide.oastify.com
+python3 tools/llm_redteam.py --target openai --category jailbreak --limit 20
+python3 tools/llm_redteam.py --target openai --category exfil
+python3 tools/llm_redteam.py --target openai --category encoding --oob-host collide.oastify.com
 ```
 
 ### Test multi-turn escalation chains
 ```bash
-python3 /tmp/UnifiedBugHunter/tools/llm_redteam.py --target openai --category multi-turn
+python3 tools/llm_redteam.py --target openai --category multi-turn
 ```
 
 ### Test custom endpoint
 ```bash
-python3 /tmp/UnifiedBugHunter/tools/llm_redteam.py --target http://localhost:8080/chat --type custom
+python3 tools/llm_redteam.py --target http://localhost:8080/chat --type custom
 ```
 
 ### Generate HTML report
 ```bash
-python3 /tmp/UnifiedBugHunter/tools/llm_redteam.py --target openai --html attack_report.html
+python3 tools/llm_redteam.py --target openai --html attack_report.html
 ```
 
 ### Import findings to database
 ```bash
-python3 /tmp/UnifiedBugHunter/tools/llm_redteam.py --target openai --import-db
+python3 tools/llm_redteam.py --target openai --import-db
 ```
 
 ## Attack Categories

@@ -1,10 +1,18 @@
 ---
 description: "Run a white-box source code audit on a repository or directory. Performs static analysis for SQLi, XSS, SSRF, command injection, hardcoded secrets, auth bypass, IDOR, deserialization flaws, path traversal, prototype pollution, crypto weaknesses, and business logic issues. Outputs prioritized findings with code snippets, curl PoCs, and fix recommendations. Usage: /code-audit [path] [--mode quick|full] [--language py|js|all]"
+argument-hint: "[path] [--mode quick|full] [--language py|js|all]"
 ---
 
 # /code-audit
 
 Run a white-box source code audit on a target codebase.
+
+> **Model-driven — no backing script.** This command is a model-driven audit:
+> Claude reads the source and applies the methodology below; there is no tool in
+> `tools/` to invoke. How the pieces relate:
+> **command `/code-audit` = the entrypoint**, **skill `code-review` = the
+> methodology** (SAST patterns + 10-phase process it follows), and **agent
+> `code-reviewer` = the autonomous reviewer** for hands-off, multi-file audits.
 
 ## When to Use This
 

@@ -1,6 +1,6 @@
 ---
 name: forensics
-description: Digital forensics methodology for disk, memory, and network analysis. Covers timeline analysis (plaso/log2timeline), file carving (foremost/photorec), memory forensics (Volatility 3), network forensics (tshark/Wireshark), registry analysis, and IOC extraction. Use when investigating a compromised system, analyzing forensic artifacts, or performing incident response.
+description: "Digital forensics methodology for disk, memory, and network analysis. Covers timeline analysis (plaso/log2timeline), file carving (foremost/photorec), memory forensics (Volatility 3), network forensics (tshark/Wireshark), registry analysis, and IOC extraction. Use when investigating a compromised system, analyzing forensic artifacts, or performing incident response."
 ---
 
 # Digital Forensics Methodology
@@ -85,3 +85,9 @@ grep -ohE "[a-fA-F0-9]{64}" evidence.dd | sort -u > ioc_sha256.txt
     "tlp": "AMBER"
 }
 ```
+
+## Related Skills
+
+- `malware-analysis` — when carving or memory analysis recovers a suspicious binary; hand it off for static/dynamic capability analysis and YARA generation.
+- `reverse-engineering` — to understand a custom dropper, packer, or protocol found in memory/network artifacts.
+- `active-directory` — when host artifacts point at Kerberos/NTLM/DCSync activity that needs an AD-attack lens to interpret.

@@ -1,10 +1,26 @@
 ---
 description: Password spray with hard guards — typed-hostname confirmation, lockout warning, audit log. Modes: http-form (custom login page), oauth (password grant), o365 + okta (via TREVORspray). Default delay 30min/round + 60s jitter. Usage /spray <url> --mode <mode> --users <file> --passes <file>
+argument-hint: <url> --mode http-form|oauth|o365|okta --users <file> --passes <file> [--dry-run]
+allowed-tools: Bash
 ---
 
 # /spray
 
 Live credential spray against an authentication endpoint. **The most dangerous tool in this plugin.** Read the guards section before using.
+
+## Run This
+
+Invoke the backing script directly — do not re-implement the spray. The script
+enforces the hard guards (typed-hostname confirm, lockout warning, audit log)
+that must not be bypassed:
+
+```bash
+bash tools/spray_orchestrator.sh "$ARGUMENTS"
+```
+
+The first positional argument is the target URL; `--mode`, `--users`, `--passes`
+and the mode-specific flags below are passed through. Always do a `--dry-run`
+first and confirm explicit program sign-off before a live run.
 
 ## Modes
 
@@ -139,6 +155,4 @@ Type 'yes' to proceed (anything else aborts): _
 - TREVOR modes (o365, okta): `trevorspray` from `./install_tools.sh --with-credential-attack`
 - `tools/scope_checker.py` for typed-confirmation logic (Python 3.9 compat)
 
-## Underlying tool
-
-`tools/spray_orchestrator.sh <url> --mode ... --users ... --passes ...`
+The backing script is `tools/spray_orchestrator.sh` — see **## Run This** above for the invocation.

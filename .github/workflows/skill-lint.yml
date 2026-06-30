@@ -1,30 +1,77 @@
 name: skill-lint
 
-# Quality + safety gate for every skill change.
-# - Validates SKILL.md structure against CONTRIBUTING.md rules
-# - Scans for client/engagement identifiers (hashed denylist) and leaked secrets
-# Runs on PRs and pushes to main. No external dependencies — stdlib Python only.
+# Quality + safety gate for every skill / command / agent change, plus the test
+# suites. Two jobs, each gated to its own path set via dorny/paths-filter:
+#   lint  — validates SKILL.md / command / agent structure against CONTRIBUTING.md
+#           rules and scans for client/engagement identifiers + leaked secrets
+#           (stdlib Python only, no pip install).
+#           Triggers: skills/**, commands/**, agents/**, the linter + denylist,
+#           and this workflow file.
+#   tests — runs the pytest suite and the CI/CD scanner shell test.
+#           Triggers: tools/**, memory/**, agents/**, tests/**, scripts/**, skills/**.
+# The workflow-level paths: filter below is the UNION of both job filters.
 
 on:
   pull_request:
     paths:
       - "skills/**"
-      - "scripts/lint_skills.py"
-      - "scripts/.identifier-denylist.sha256"
+      - "commands/**"
+      - "agents/**"
+      - "tools/**"
+      - "memory/**"
+      - "tests/**"
+      - "scripts/**"
       - ".github/workflows/skill-lint.yml"
   push:
     branches: [main]
     paths:
       - "skills/**"
-      - "scripts/lint_skills.py"
+      - "commands/**"
+      - "agents/**"
+      - "tools/**"
+      - "memory/**"
+      - "tests/**"
+      - "scripts/**"
+      - ".github/workflows/skill-lint.yml"
   workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
+  # Decide which jobs need to run based on the changed paths.
+  changes:
+    name: Detect changed paths
+    runs-on: ubuntu-latest
+    outputs:
+      lint: ${{ steps.filter.outputs.lint }}
+      tests: ${{ steps.filter.outputs.tests }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            lint:
+              - "skills/**"
+              - "commands/**"
+              - "agents/**"
+              - "scripts/lint_skills.py"
+              - "scripts/.identifier-denylist.sha256"
+              - ".github/workflows/skill-lint.yml"
+            tests:
+              - "tools/**"
+              - "memory/**"
+              - "agents/**"
+              - "tests/**"
+              - "scripts/**"
+              - "skills/**"
+              - ".github/workflows/skill-lint.yml"
+
   lint:
-    name: Lint skills
+    name: Lint skills + commands + agents
+    needs: changes
+    if: ${{ needs.changes.outputs.lint == 'true' || github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -33,9 +80,40 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Validate skills (structure + identifier/secret scan)
+      # No arguments => lints skills/**, commands/**, and agents/** in one pass.
+      - name: Validate skills/commands/agents (structure + identifier/secret scan)
         run: python3 scripts/lint_skills.py
 
       - name: Summary
         if: always()
         run: echo "Skill lint finished — see annotations above for any errors/warnings."
+
+  tests:
+    name: Tests (pytest + shell)
+    needs: changes
+    if: ${{ needs.changes.outputs.tests == 'true' || github.event_name == 'workflow_dispatch' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install pytest
+        run: pip install pytest
+
+      - name: Install Python requirements (if present)
+        run: |
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+
+      - name: Run pytest suite
+        run: pytest tests/ -q
+
+      - name: Run CI/CD scanner shell test (if present)
+        run: |
+          if [ -f tests/test_cicd_scanner.sh ]; then
+            bash tests/test_cicd_scanner.sh
+          else
+            echo "tests/test_cicd_scanner.sh not present — skipping."
+          fi

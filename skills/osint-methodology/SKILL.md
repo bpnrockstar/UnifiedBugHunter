@@ -290,10 +290,10 @@ Establish the ground truth of who/what the target is.
 Discover everything that might belong to the target.
 
 - Subdomain enumeration (passive sources first: crt.sh, VirusTotal, AlienVault OTX, Shodan, then permutations and bruteforce).
-- Cloud bucket enumeration (S3/GCS/Azure permutations from company name + subdomain stems — see §15).
+- Cloud bucket enumeration (S3/GCS/Azure permutations from company name + subdomain stems — see `references/osint-methodology-reference.md` §15).
 - Typosquat domain generation (dnstwist variants → resolve → WHOIS) — for both phishing risk and adjacent corp assets.
 - Wayback CDX archive endpoints for forgotten paths.
-- Mobile app discovery (Android via google-play-scraper, iOS via iTunes Search API — see §14).
+- Mobile app discovery (Android via google-play-scraper, iOS via iTunes Search API — see `references/osint-methodology-reference.md` §14).
 - DNS deep walking (NSEC walk on misconfigured zones, AXFR opportunism).
 - LinkedIn employee enumeration → email-pattern derivation.
 
@@ -304,14 +304,14 @@ Add depth to the discovered assets.
 - Live TLS handshakes (cert chain, JARM, favicon mmh3 hash).
 - Web tech detection (Wappalyzer-style ~600 signatures via httpx).
 - WAF/CDN inference (header markers).
-- Origin discovery if behind CDN (see §27).
+- Origin discovery if behind CDN (see `references/osint-methodology-reference.md` §27).
 - Security header audit.
 - Bulk screenshots (triage 1000s of hosts visually).
 - Email harvesting (6 parallel sources).
 - Email security audit (SPF/DMARC/DKIM/BIMI/MTA-STS).
 - GitHub code-search dorking (13 dork templates × 29+ secret regexes).
 - JavaScript deep analysis (sourcemaps, secrets, endpoints, internal-host leakage).
-- SSO/IdP tenant fingerprinting (Entra, Okta, ADFS, Google, SAML, M365 Teams/SharePoint/OAuth — see §11).
+- SSO/IdP tenant fingerprinting (Entra, Okta, ADFS, Google, SAML, M365 Teams/SharePoint/OAuth — see `references/osint-methodology-reference.md` §11).
 - API & auth-map discovery (Swagger/OpenAPI, GraphQL, Postman).
 - Secrets-beyond-GitHub sweep (Postman public workspaces, Stack Exchange, Trello/Notion/Atlassian dorks).
 - Vendor product fingerprinting (Citrix/F5/PaloAlto/Pulse/Fortinet/Cisco/VMware/Exchange).
@@ -325,16 +325,16 @@ Convert assets into findings.
 - TLS deep audit (sslyze / testssl.sh).
 - Breach × identity correlation (HudsonRock Cavalier, HIBP, DeHashed, IntelX, local corpus → SSO_EXPOSURE findings).
 - Targeted misconfiguration probes (`.git/config`, `.env`, `phpinfo.php`, `/actuator/env`, `/actuator/heapdump`, `_cat/indices`, `/console`, `/manager/html`).
-- Vulnerability prioritization (CVE × EPSS × CISA KEV × public-POC availability — see §28).
+- Vulnerability prioritization (CVE × EPSS × CISA KEV × public-POC availability — see `references/osint-methodology-reference.md` §28).
 
 ### Stage 5 — Reporting
 Make the work usable.
 
 - Risk scoring per finding (CVSS + program-specific weights).
 - Asset graph export (D3-friendly nodes/links, GraphML, JSON).
-- Client-facing report (executive summary + technical detail + remediation — see §31).
+- Client-facing report (executive summary + technical detail + remediation — see `references/osint-methodology-reference.md` §31).
 - Reproduction package (run_id, tool versions, raw evidence, JSONL log).
-- Bug bounty submission (if applicable — see §30).
+- Bug bounty submission (if applicable — see `references/osint-methodology-reference.md` §30).
 
 ### 7.5 Pipeline Priority Order (highest signal density first)
 
@@ -422,7 +422,7 @@ Relationships are typed edges, not text:
 - **Dedup by key, not by value.** Same value, different type ≠ same asset (`sub:api.example.com` and `webapp:https://api.example.com/` are different assets with a `BELONGS_TO_HOST` edge).
 - **Provenance is non-negotiable.** `sources[]` must list every source. If two sources confirmed it, both go in.
 - **Confidence is per-source, then aggregated.** A subdomain returned by 3 passive sources is FIRM; one returned by snippet-only Bing is TENTATIVE.
-- **Late binding via sidecars.** When module A produces output that module B needs, write a JSON sidecar (`mobile_endpoints.json`, `secrets_sidecar.json`) — don't block module B on module A. See §24.
+- **Late binding via sidecars.** When module A produces output that module B needs, write a JSON sidecar (`mobile_endpoints.json`, `secrets_sidecar.json`) — don't block module B on module A. See `references/osint-methodology-reference.md` §24.
 
 ### 8.5 Asset-Level Triage Rules
 

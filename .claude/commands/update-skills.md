@@ -38,10 +38,10 @@ Filter by skill name if provided.
 
 ```bash
 # Single skill
-cat .claude/skills/find-<name>/SKILL.md
+cat skills/hunt-<name>/SKILL.md
 
 # Or all skills
-for dir in .claude/skills/find-*/; do
+for dir in skills/*/; do
     echo "=== $(basename $dir) ==="
     head -5 "$dir/SKILL.md"
 done
@@ -86,9 +86,9 @@ Report what was updated:
 ═══════════════════════════════════════════════
  SKILL UPDATE RESULTS
 ═══════════════════════════════════════════════
- ✅ find-idor    +3 patterns, +2 false positives
- ✅ find-xss     +1 pattern
- ⏭️  find-ssrf    no new patterns
+ ✅ hunt-idor    +3 patterns, +2 false positives
+ ✅ hunt-xss     +1 pattern
+ ⏭️  hunt-ssrf    no new patterns
  ═══════════════════════════════════════════════
  Total: 4 skills updated with 6 new patterns
 ```

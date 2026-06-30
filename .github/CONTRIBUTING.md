@@ -23,8 +23,8 @@ Bug hunters welcome. Every improvement here makes real hunts more effective.
 
 ```bash
 # 1. Fork and clone
-git clone https://github.com/YOUR_USERNAME/unified-bug-hunter.git
-cd unified-bug-hunter
+git clone https://github.com/bpnrockstar/UnifiedBugHunter.git
+cd UnifiedBugHunter
 
 # 2. Create a branch
 git checkout -b feat/your-contribution
@@ -58,4 +58,4 @@ chore: maintenance (deps, CI, cleanup)
 
 ## Questions?
 
-Open a [GitHub Discussion](https://github.com/UnifiedBugHunter/discussions) or reach out at [YOUR_USER@gmail.com](mailto:YOUR_USER@gmail.com).
+Open a [GitHub Discussion](https://github.com/bpnrockstar/UnifiedBugHunter/discussions) or reach out via the repo's issue tracker.

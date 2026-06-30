@@ -5,8 +5,7 @@ tools:
   bash: true
   read: true
   write: true
-model:
-  provider: auto
+model: claude-haiku-4-5-20251001
 ---
 
 # Vulnerability Catcher Agent
@@ -25,27 +24,27 @@ for changes that indicate new attack surface and alert the user.
 
 ### Start monitoring a target
 ```bash
-python3 /tmp/UnifiedBugHunter/tools/vuln_catcher.py --target {domain} --once
+python3 tools/vuln_catcher.py --target {domain} --once
 ```
 
 ### Monitor all targets
 ```bash
-python3 /tmp/UnifiedBugHunter/tools/vuln_catcher.py --all-targets --once
+python3 tools/vuln_catcher.py --all-targets --once
 ```
 
 ### Continuous monitoring (background)
 ```bash
-nohup python3 /tmp/UnifiedBugHunter/tools/vuln_catcher.py --all-targets --interval 3600 > /tmp/vuln_catcher.log 2>&1 &
+nohup python3 tools/vuln_catcher.py --all-targets --interval 3600 > /tmp/vuln_catcher.log 2>&1 &
 ```
 
 ### Check subdomains only
 ```bash
-python3 /tmp/UnifiedBugHunter/tools/vuln_catcher.py --target {domain} --check subdomains --once
+python3 tools/vuln_catcher.py --target {domain} --check subdomains --once
 ```
 
 ### Start the dashboard
 ```bash
-cd /tmp/UnifiedBugHunter && python3 dashboard/app.py
+python3 dashboard/app.py
 ```
 
 ## Queries

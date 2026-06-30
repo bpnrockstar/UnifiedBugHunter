@@ -1,8 +1,7 @@
 ---
 name: hunt-laravel
-description: Hunt Laravel specific vulnerabilities — Debug mode leakage (APP_DEBUG=true exposes full stack trace + env vars), Laravel Telescope/Horizon dashboard unauthorized access, Ignition RCE (CVE-2021-3129), Signed URL manipulation, Queue Worker abuse, mass assignment via Eloquent, deserialization via cookies, .env file exposure. Use when target runs Laravel (PHP) — detected via X-Powered-By, Laravel session cookies, or /storage/ paths.
+description: "Hunt Laravel specific vulnerabilities — Debug mode leakage (APP_DEBUG=true exposes full stack trace + env vars), Laravel Telescope/Horizon dashboard unauthorized access, Ignition RCE (CVE-2021-3129), Signed URL manipulation, Queue Worker abuse, mass assignment via Eloquent, deserialization via cookies, .env file exposure. Use when target runs Laravel (PHP) — detected via X-Powered-By, Laravel session cookies, or /storage/ paths."
 sources: hackerone_public, cve_database
-report_count: 14
 ---
 
 # HUNT-LARAVEL — Laravel Specific Vulnerabilities
@@ -201,3 +200,14 @@ php phpggc Laravel/RCE5 system 'id' | base64
 - Telescope/Horizon with sensitive data: High
 - .env with APP_KEY: Critical
 - Mass assignment to admin: Critical
+
+---
+
+## Related Skills
+
+- **`hunt-rce`** — Ignition (CVE-2021-3129) and Laravel cookie deserialization both terminate in remote code execution. Chain primitive: debug mode ON + Laravel < 8.4.2 → `hunt-rce` log-poisoning gadget via `/_ignition/execute-solution`.
+- **`hunt-deserialization`** — A leaked `APP_KEY` lets you forge signed serialized cookies. Chain primitive: `.env`/Telescope leaks `APP_KEY` → `hunt-deserialization` phpggc gadget chain (`Laravel/RCE*`) → signed cookie → RCE.
+- **`hunt-ato`** — `APP_KEY` recovery decrypts and forges any session cookie. Chain primitive: leaked `APP_KEY` → forge `laravel_session` for an arbitrary user → account takeover.
+- **`hunt-source-leak`** — `.env`, `storage/logs/laravel.log`, and exposed `vendor/` are the primary key/credential leak surfaces. Chain primitive: `hunt-source-leak` recon surfaces `.env` → `APP_KEY`/DB creds → pivot to the deserialization and ATO chains above.
+- **`hunt-idor`** — Mass assignment on Eloquent models is the Laravel-specific arm of broken object-level authorization. Chain primitive: mass-assign `is_admin`/`role` on a profile/registration endpoint → privilege escalation.
+- **`triage-validation`** — Telescope/Horizon disclosure is only Critical when it leaks live secrets. Chain primitive: run every finding through the 7-Question Gate before reporting.

@@ -1,6 +1,6 @@
 ---
 name: social-engineering
-description: Social engineering methodology for authorized security assessments. Covers pretext development, phishing campaigns (GoPhish/SET/SMTP), vishing scripts, physical social engineering (USB drops, tailgating), OSINT for pretext personalization, evasion techniques (SPF/DKIM/DMARC configuration, landing page design), and reporting metrics. Use when planning authorized phishing simulations, pretext-driven assessments, or social engineering exercises. Only use with explicit written authorization.
+description: "Social engineering methodology for authorized security assessments. Covers pretext development, phishing campaigns (GoPhish/SET/SMTP), vishing scripts, physical social engineering (USB drops, tailgating), OSINT for pretext personalization, evasion techniques (SPF/DKIM/DMARC configuration, landing page design), and reporting metrics. Use when planning authorized phishing simulations, pretext-driven assessments, or social engineering exercises. Only use with explicit written authorization."
 ---
 
 # Social Engineering Methodology
@@ -39,7 +39,7 @@ _dmarc.yourdomain.com.  TXT  "v=DMARC1; p=none; rua=mailto:dmarc@yourdomain.com"
 | Tool | Use | Install |
 |------|-----|---------|
 | GoPhish | Full campaign management | `wget https://github.com/gophish/gophish/releases/...` |
-| SET (Social Engineering Toolkit) | Cloning, payloads, phishing | `apt install set` |
+| SET (Social-Engineer Toolkit) | Cloning, payloads, phishing | `git clone https://github.com/trustedsec/social-engineer-toolkit.git && cd social-engineer-toolkit && pip3 install -r requirements.txt && python3 setup.py install` then run `setoolkit` |
 | Evilginx2 | Reverse proxy (MFA bypass) | `git clone https://github.com/kgretzky/evilginx2` |
 | Modlishka | Reverse proxy (MFA bypass) | `git clone https://github.com/drk1wi/Modlishka` |
 

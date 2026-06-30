@@ -1,24 +1,24 @@
 {
-  "name": "YOUR_USER",
+  "name": "bpnrockstar",
   "owner": {
-    "name": "Author",
-    "url": "https://github.com/YOUR_USER"
+    "name": "bpnrockstar",
+    "url": "https://github.com/bpnrockstar"
   },
   "metadata": {
     "description": "Offensive-security skill bundles for Claude Code.",
-    "version": "2.1.0"
+    "version": "4.3.2"
   },
   "plugins": [
     {
       "name": "unified-bug-hunter",
       "source": "./",
-      "description": "71-skill bug-hunting & external red-team bundle — 48 hunt-* web/vuln-class + framework skills, enterprise platform attack chains (M365/Entra, Okta, SharePoint, vCenter, SSL-VPN, APK), recon/OSINT, reporting & validation gates, Burp MCP integration. Skills auto-load by topic; 15 slash commands.",
-      "version": "2.1.0",
+      "description": "89-skill bug-hunting & external red-team bundle — 48 hunt-* web/vuln-class + framework skills, enterprise platform attack chains (M365/Entra, Okta, SharePoint, vCenter, SSL-VPN, APK), recon/OSINT, reporting & validation gates, Burp MCP integration. Skills auto-load by topic; 35 slash commands.",
+      "version": "4.3.2",
       "author": {
-        "name": "Author",
-        "url": "https://github.com/YOUR_USER"
+        "name": "bpnrockstar",
+        "url": "https://github.com/bpnrockstar"
       },
-      "homepage": "https://YOUR_USER.github.io/Unified-Bug-Hunter",
+      "homepage": "https://bpnrockstar.github.io/UnifiedBugHunter",
       "category": "security",
       "tags": [
         "security",

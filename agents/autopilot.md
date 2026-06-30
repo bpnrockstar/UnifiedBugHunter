@@ -7,6 +7,7 @@ tools:
   write: true
   glob: true
   grep: true
+  question: true
 model: claude-sonnet-4-6
 ---
 
@@ -94,10 +95,16 @@ SURFACE EXHAUSTED — 47 endpoints tested, 2 findings validated.
 Actions: [r]eport | [e]xpand surface | [s]top
 ```
 
+### `--quick` (fast surface scan, lower token use)
+Fast, lower-cost pass over the main attack surface: skips deep fuzzing and
+extended nuclei templates. Checkpoints behave like `--normal` (stop after the
+VALIDATE step). The non-negotiable safety rails — scope check, report-submission
+approval, safe-methods-only — still apply.
+
 ## Step 1: Scope Loading
 
 ```python
-from scope_checker import ScopeChecker
+from tools.scope_checker import ScopeChecker
 
 # Load from target profile or manual input
 scope = ScopeChecker(

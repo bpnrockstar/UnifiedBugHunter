@@ -1,6 +1,6 @@
 ---
 name: bb-local-toolkit
-description: Complete bug bounty workflow — recon (subdomain enumeration, asset discovery, fingerprinting, HackerOne scope, source code audit), pre-hunt learning (disclosed reports, tech stack research, threat modeling), vulnerability hunting (IDOR, SSRF, XSS, auth bypass, CSRF, race conditions, SQLi, XXE, file upload, business logic, GraphQL, HTTP smuggling, cache poisoning, OAuth, SSTI, subdomain takeover, cloud misconfig, ATO chains, AI), LLM/AI security testing (prompt injection, ASCII smuggling, exfil channels, system prompt extraction, ASI01-ASI10), A-to-B bug chaining (IDOR→auth bypass, SSRF→cloud metadata, XSS→ATO, open redirect→OAuth theft, S3→bundle→secret→OAuth), bypass tables (SSRF IP bypass, open redirect bypass, file upload bypass), language-specific grep, and reporting (7-Question Gate, CVSS 3.1, PoC generation, always-rejected list). Use for ANY bug bounty task — recon, hunting, source code audit, AI testing, validation, or writing reports. 中文触发词：漏洞赏金、安全测试、渗透测试、漏洞挖掘、信息收集、子域名枚举、XSS测试、SQL注入、SSRF、安全审计、漏洞报告
+description: "Complete bug bounty workflow — recon (subdomain enumeration, asset discovery, fingerprinting, HackerOne scope, source code audit), pre-hunt learning (disclosed reports, tech stack research, threat modeling), vulnerability hunting (IDOR, SSRF, XSS, auth bypass, CSRF, race conditions, SQLi, XXE, file upload, business logic, GraphQL, HTTP smuggling, cache poisoning, OAuth, SSTI, subdomain takeover, cloud misconfig, ATO chains, AI), LLM/AI security testing (prompt injection, ASCII smuggling, exfil channels, system prompt extraction, ASI01-ASI10), A-to-B bug chaining (IDOR→auth bypass, SSRF→cloud metadata, XSS→ATO, open redirect→OAuth theft, S3→bundle→secret→OAuth), bypass tables (SSRF IP bypass, open redirect bypass, file upload bypass), language-specific grep, and reporting (7-Question Gate, CVSS 3.1, PoC generation, always-rejected list). Use for ANY bug bounty task — recon, hunting, source code audit, AI testing, validation, or writing reports. 中文触发词：漏洞赏金、安全测试、渗透测试、漏洞挖掘、信息收集、子域名枚举、XSS测试、SQL注入、SSRF、安全审计、漏洞报告"
 ---
 
 # Bug Bounty Master Workflow
@@ -482,6 +482,7 @@ HIGHEST PRIORITY (crown jewel x easiest entry):
 ```bash
 # Rust dangerous patterns (network-facing)
 grep -rn "\.unwrap()\|\.expect(" --include="*.rs" | grep -v "test\|encode\|to_bytes\|serialize"
+```
 
 ## Extended Content
 

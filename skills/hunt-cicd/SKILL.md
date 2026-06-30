@@ -262,3 +262,15 @@ trufflehog docker --image ORG/IMAGE:latest --only-verified
 - Trufflehog "unverified" hits that are example/expired keys.
 
 **Severity:** Jenkins console / CVE-2024-23897 / Actions secret exfil / runner poisoning / OIDC role assumption / Terraform live creds = **Critical**. Image/log/artifact secret = **High/Critical** by credential scope.
+
+---
+
+## Related Skills
+
+- **`hunt-rce`** — Jenkins script console, CVE-2024-23897 → key recovery, and self-hosted runner poisoning all terminate in code execution. Chain primitive: `scriptText` POST returns `uid=…(jenkins)` → Groovy credential-store dump → lateral.
+- **`cloud-iam-deep`** — OIDC trust-policy abuse and IMDS theft from a poisoned runner pivot into cloud IAM. Chain primitive: over-broad `sub` wildcard or runner IMDS creds → `AssumeRole` privileged cloud role → `cloud-iam-deep` enumeration.
+- **`supply-chain-attack-recon`** — the public GitHub/GitLab org enumeration that seeds `pull_request_target`/`workflow_run` candidate discovery. Chain primitive: org recon surfaces dangerous-trigger workflows → static-analyze with zizmor/actionlint before opening a PR.
+- **`hunt-source-leak`** — Terraform state, build artifacts, and run logs are the credential-leak surfaces. Chain primitive: `*.tfstate` 200 / `env` artifact → `jq`/trufflehog `--only-verified` → live credential.
+- **`hunt-cloud-misconfig`** — public `*.tfstate` in S3/GCS/Blob is a bucket-exposure finding as well as a CI/CD one. Chain primitive: public-bucket probe → state file → infra creds.
+- **`hunt-ssrf`** — a poisoned runner reaching `169.254.169.254` is an SSRF-class primitive with an elevated network position. Chain primitive: runner code-exec → IMDS request → role credentials.
+- **`triage-validation`** — a `/script` login page and a non-injectable `pull_request_target` are the dominant CI/CD false positives. Chain primitive: enforce the "It-Didn't-Happen-Without-Proof" gate (output-returning POST, confirmed data flow, OOB callback) before reporting.

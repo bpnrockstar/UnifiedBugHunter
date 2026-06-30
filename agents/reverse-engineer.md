@@ -72,7 +72,7 @@ objdump -d target -M intel | grep -A30 "<main>:"
 
 ```bash
 # Find crypto constants
-strings target | grep -iE "sbox\|pbox\|iv=\|key=\|salt=\|magic\|constant"
+strings target | grep -iE "sbox|pbox|iv=|key=|salt=|magic|constant"
 objdump -s -j .rodata target | head -200
 
 # Look for known magic constants:
@@ -92,15 +92,15 @@ objdump -d target | grep -B5 "jmp\|jne\|je" | grep "xor.*, eax\|mov eax, 1"
 
 ```bash
 # Look for network-related imports:
-nm target | grep -E "send\|recv\|socket\|connect\|listen\|bind"
+nm target | grep -E "send|recv|socket|connect|listen|bind"
 
 # Disassemble network functions:
 r2 -q -c 'aaaa; s sym.imp.send; pdc' target
 r2 -q -c 'aaaa; s sym.imp.recv; pdc' target
 
 # String analysis for protocol clues
-strings target | grep -E "GET\|POST\|HTTP\|SOAP\|REST\|Content-Type|User-Agent"
-strings target | grep -E "packet\|header\|payload\|cmd\|response\|request"
+strings target | grep -E "GET|POST|HTTP|SOAP|REST|Content-Type|User-Agent"
+strings target | grep -E "packet|header|payload|cmd|response|request"
 ```
 
 ## Phase 4: Patch Analysis

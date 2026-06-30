@@ -1,6 +1,6 @@
 ---
 name: hunt-springboot
-description: Hunt Spring Boot specific vulnerabilities — Actuator endpoints (heapdump, env, loggers, mappings, shutdown), Spring Expression Language (SpEL) injection → RCE, H2 console RCE, Jolokia JMX exposure, Spring4Shell (CVE-2022-22965), Spring Cloud Function SPEL (CVE-2022-22963), heap dump credential extraction. Use when target runs Spring Boot — detected via X-Application-Context header, /actuator, Whitelabel Error Page, or Java stack traces.
+description: "Hunt Spring Boot specific vulnerabilities — Actuator endpoints (heapdump, env, loggers, mappings, shutdown), Spring Expression Language (SpEL) injection → RCE, H2 console RCE, Jolokia JMX exposure, Spring4Shell (CVE-2022-22965), Spring Cloud Function SPEL (CVE-2022-22963), heap dump credential extraction. Use when target runs Spring Boot — detected via X-Application-Context header, /actuator, Whitelabel Error Page, or Java stack traces."
 sources: hackerone_public, cve_database, spring_security_advisories
 report_count: 16
 ---
@@ -220,3 +220,14 @@ curl -s "https://$TARGET/jolokia/exec/com.sun.management:type=DiagnosticCommand/
 - H2 console RCE: Critical
 - Actuator env (passwords exposed): High
 - Mappings disclosure only: Low-Medium
+
+---
+
+## Related Skills
+
+- **`hunt-rce`** — SpEL injection, H2 `CREATE ALIAS`, Spring4Shell, and Jolokia MLet all terminate in RCE. Chain primitive: confirmed SpEL/Spring4Shell sink → `T(Runtime).exec()` / class-loader webshell → OOB callback or `id` output.
+- **`hunt-source-leak`** — `/actuator/heapdump`, `/actuator/env`, and `/actuator/configprops` are the credential-leak surfaces unique to Spring. Chain primitive: download heapdump → `strings` extract DB/API/Bearer secrets → reuse credentials.
+- **`hunt-deserialization`** — Spring's Jackson/RMI/JMX paths are Java deserialization sinks adjacent to Jolokia. Chain primitive: Jolokia/JMX exposed → MBean operation → gadget chain.
+- **`hunt-ssrf`** — actuator `/gateway` routes and SpEL-driven fetches reach internal services. Chain primitive: SpEL `URL`/`exec(curl ...)` → IMDS / internal host.
+- **`hunt-api-misconfig`** — exposed actuator endpoints under a non-default base path (`/manage`, `/management`) are an API-surface misconfiguration. Chain primitive: enumerate base paths → actuator-shaped JSON confirms exposure.
+- **`triage-validation`** — a Whitelabel/login page returned with HTTP 200 is the dominant actuator false positive. Chain primitive: require actuator-shaped JSON (or a heapdump body) before calling an endpoint exposed.

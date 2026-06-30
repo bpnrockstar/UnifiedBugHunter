@@ -1,8 +1,7 @@
 ---
 name: hunt-nextjs
-description: Hunt Next.js specific vulnerabilities — Server Actions arbitrary function execution, Middleware auth bypass via static asset paths, ISR cache poisoning, Image Optimization SSRF (/_next/image), RSC payload leakage, getServerSideProps injection, source map exposure, debug endpoint leakage. Use when target runs Next.js 13/14/15 or any React SSR framework.
+description: "Hunt Next.js specific vulnerabilities — Server Actions arbitrary function execution, Middleware auth bypass via static asset paths, ISR cache poisoning, Image Optimization SSRF (/_next/image), RSC payload leakage, getServerSideProps injection, source map exposure, debug endpoint leakage. Use when target runs Next.js 13/14/15 or any React SSR framework."
 sources: "cve_database (CVE-2024-34351 / GHSA-fr5h-rqp8-mj6g), Next.js advisories"
-report_count: 0
 ---
 
 # HUNT-NEXTJS — Next.js / SSR Framework Vulnerabilities
@@ -244,3 +243,15 @@ if m:
 - Image SSRF → cloud metadata: Critical
 - Middleware bypass → admin panel: High
 - Source map exposure only: Low-Medium
+
+---
+
+## Related Skills
+
+- **`hunt-ssrf`** — `/_next/image` and the CVE-2024-34351 Server Actions relative-redirect are the Next.js SSRF surfaces. Chain primitive: confirm OOB callback from `/_next/image` → aim at cloud metadata (IMDS) → IAM credential theft.
+- **`hunt-nodejs`** — Next.js runs on Node; API routes inherit prototype-pollution, SSTI, and `child_process` sinks. Chain primitive: Next.js confirmed → also run the `hunt-nodejs` Express/Node sink probes against `/api/` routes.
+- **`hunt-idor`** — `/_next/data/<buildId>/...json` and `__NEXT_DATA__` expose server-side props with no object-level auth. Chain primitive: enumerate per-user prerendered JSON → verifiable cross-account artifact → IDOR.
+- **`hunt-auth-bypass`** — middleware that skips static-asset paths leaves protected routes reachable. Chain primitive: middleware matcher excludes `/_next/` → request the protected route directly → auth bypass.
+- **`hunt-source-leak`** — exposed `.js.map` source maps reconstruct TypeScript source and hardcoded secrets. Chain primitive: `hunt-source-leak` pulls maps → recover server logic / `NEXT_PUBLIC_*` and accidentally-bundled secrets.
+- **`hunt-cache-poison`** — ISR pages cached from user-influenced input are poisonable. Chain primitive: prove a unique marker persists in the cache key and is served to a fresh client.
+- **`triage-validation`** — status-code-only SSRF and reflected-not-cached markers are the dominant false positives here. Chain primitive: enforce the OOB / body-diff gate before reporting.

@@ -4,7 +4,6 @@ description: Cryptographic vulnerability analyst. Audits cryptographic implement
 tools:
   bash: true
   read: true
-  write: true
   grep: true
 model: claude-sonnet-4-6
 ---

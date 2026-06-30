@@ -1,6 +1,6 @@
 ---
 name: hunt-oauth
-description: Hunting skill for oauth vulnerabilities. Built from 19 public bug bounty reports. Use when hunting oauth on any target.
+description: "Hunt OAuth 2.0 / OIDC flaws — redirect_uri validation bypass (prefix/suffix match, host confusion legit.com@evil.com, subdomain extension, path traversal, encoded slashes, open-redirect chaining), missing or non-session-bound state (CSRF / account-link), absent or unenforced PKCE, nonce not validated post-exchange, implicit-flow (response_type=token) token leakage via Referer / postMessage, authorization-code interception, leaked client_secret in JS/APK, and mobile deep-link redirect hijack. Test /oauth/authorize, /oauth/token, and /auth/callback; headless-verify the final browser navigation before claiming an ATO chain. Built from 19 public bug bounty reports."
 sources: github, hackerone_public, salt_labs, descope, detectify_labs, harel_research
 report_count: 19
 ---

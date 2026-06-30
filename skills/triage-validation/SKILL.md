@@ -1,6 +1,6 @@
 ---
 name: triage-validation
-description: Finding validation before writing any report — 7-Question Gate (all 7 questions), 4 pre-submission gates, always-rejected list, conditionally valid with chain table, CVSS 3.1 quick reference, severity decision guide, report title formula, 60-second pre-submit checklist. Use BEFORE writing any report. One wrong answer = kill the finding and move on. Saves N/A ratio.
+description: "Finding validation before writing any report — 7-Question Gate (all 7 questions) plus a supplementary identity check, 4 pre-submission gates, never-submit list, conditionally-valid chain table, CVSS 3.1 quick reference, and kill-fast rules. Use BEFORE writing any report. One wrong answer = kill the finding and move on. Saves your N/A ratio."
 ---
 
 # TRIAGE & VALIDATION
@@ -9,13 +9,9 @@ One wrong answer = STOP. Kill it. Move on.
 
 > "N/A hurts your validity ratio. Informative is neutral. Only submit what passes all 7 questions."
 
----
-
 ## THE 7-QUESTION GATE
 
 Ask IN ORDER. One wrong answer = STOP immediately.
-
----
 
 ### Q1: Can an attacker use this RIGHT NOW, step by step?
 
@@ -30,8 +26,6 @@ Complete this template:
 
 **If you CANNOT write step 2 as a real HTTP request → KILL IT.**
 
----
-
 ### Q2: Is the impact on the program's accepted impact list?
 
 Go to the program page. Find "Vulnerability Types" or "Out of Scope."
@@ -44,8 +38,6 @@ Common tiers:
 
 **If your bug maps to a listed exclusion → KILL IT.**
 
----
-
 ### Q3: Is the root cause in an in-scope asset?
 
 Confirm:
@@ -55,16 +47,12 @@ Confirm:
 
 **If out-of-scope → KILL IT.**
 
----
-
 ### Q4: Does it require privileged access that an attacker can't realistically get?
 
 - "Admin can do X" = centralization risk = **KILL IT** (on 99% of programs)
 - "Non-admin can do X that only admin should do" = valid
 - "Requires physical access / MFA device" = usually invalid
 - "Requires compromised victim account to work" = questionable, low severity at best
-
----
 
 ### Q5: Is this already known or accepted behavior?
 
@@ -76,8 +64,6 @@ Search:
 
 **If acknowledged/design decision → KILL IT.**
 
----
-
 ### Q6: Can you prove impact beyond "technically possible"?
 
 - XSS → show actual cookie theft or session hijack, not just `alert(1)` or `alert(document.domain)`
@@ -87,17 +73,13 @@ Search:
 
 **If you can only show "technically possible" → DOWNGRADE severity, not kill.**
 
----
-
 ### Q7: Is this a known-invalid bug class?
 
 Check the NEVER SUBMIT list below. If it's on this list without a chain → **KILL IT.**
 
----
+## SUPPLEMENTARY: Identity Check (auth-related findings)
 
-### Q8: Identity check — which session found this, and does it survive?
-
-For any finding made under an authenticated hunt, record the answer to each:
+Run this after the 7-Question Gate for any finding made under an authenticated hunt. It is not a kill question on its own — it confirms the *bug class* you think you found is the one you actually found. Record the answer to each:
 
 ```
 1. Session ID:        [12-char BBHUNT_SESSION_ID hash from audit.jsonl]
@@ -124,10 +106,6 @@ This is the most common reason "confirmed IDOR" findings come back as N/A.
 
 If you cannot answer the identity questions, treat the finding as unproven.
 Blank answers auto-fail on auth-related findings.
-
----
-
----
 
 ## 4 PRE-SUBMISSION GATES
 
@@ -168,8 +146,6 @@ Run in sequence. ALL 4 must PASS.
 [ ] NEVER used "could potentially" or "may allow"
 ```
 
----
-
 ## NEVER SUBMIT LIST
 
 Submitting these destroys your validity ratio.
@@ -201,8 +177,6 @@ Autocomplete on password fields
 Pre-account takeover (usually — very specific conditions required)
 ```
 
----
-
 ## COMMON N/A CLASSES — KILL SIGNALS
 
 These pass basic gut-check but consistently come back N/A. Each row has a **specific signal** that tells you to kill it *before* writing the report.
@@ -224,8 +198,6 @@ These pass basic gut-check but consistently come back N/A. Each row has a **spec
 
 **Decision rule:** if your finding matches a kill signal → classify as `[INFORMATIONAL]`, do **not** run `/validate`, move on.
 
----
-
 ## CONDITIONALLY VALID — CHAIN REQUIRED
 
 Build the chain first, prove it works end to end, THEN report.
@@ -244,8 +216,6 @@ Build the chain first, prove it works end to end, THEN report.
 | Self-XSS | + CSRF to trigger it on victim without their knowledge | Medium |
 | Subdomain takeover | + OAuth redirect_uri registered at that subdomain | Critical |
 | GraphQL introspection | + auth bypass mutation or IDOR on node() | High |
-
----
 
 ## CVSS 3.1 QUICK REFERENCE
 
@@ -281,8 +251,6 @@ Build the chain first, prove it works end to end, THEN report.
 | Affects only app | S | Unchanged (U) |
 | Affects browser/OS/cloud | S | Changed (C) |
 
----
-
 ## KILL FAST RULES
 
 The goal is to QUICKLY disqualify bad leads so you hunt real bugs:
@@ -293,8 +261,6 @@ The goal is to QUICKLY disqualify bad leads so you hunt real bugs:
 4. **Admin bypass**: "Admin can do X" is NEVER a bug → kill it immediately
 5. **Design doc test**: If it's documented behavior → kill it immediately
 6. **Rabbit hole signal**: 30+ min on Q6 with no reproducible PoC → kill it
-
----
 
 ## ANTI-PATTERNS THAT LOSE MONEY
 
@@ -307,3 +273,11 @@ Reporting B saying "similar to A in my other report" — fresh Gate 0 for every 
 Overclaiming severity — triagers trust you less next time
 Under-describing impact — triager doesn't understand why it matters
 ```
+
+## Related Skills
+
+- `report-writing` — the next step after a finding passes all 7 questions; turns the validated finding into a platform report.
+- `bugcrowd-reporting` — Bugcrowd-specific VRT mapping and OOS-clause rebuttals once a finding clears this gate.
+- `redteam-report-template` — for engagement deliverables, this gate runs first and only validated findings are packaged.
+- `evidence-hygiene` — produce the screenshot/response evidence the gates (especially Gate 0 and Gate 3) require.
+- `security-arsenal` — chain-required findings here often need exact payloads to prove the chain end-to-end.

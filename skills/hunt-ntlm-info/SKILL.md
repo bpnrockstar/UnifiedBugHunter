@@ -184,7 +184,7 @@ if m:
 
 3. **Server never renamed from Windows-installer-generated hostname.** Microsoft's default `WIN-XXXXXXXXXXX` 11-character pattern is the immediate tell. Sometimes also `WORKGROUP\WIN-...` in older boxes.
 
-4. **Sub-domain joined to corporate forest without zone-isolation.** European-integrator case: a a European importer's SharePoint test environment is a child domain inside a corporate global AD, disclosed via NTLM DNS Tree Name. The customer probably intends `customer.parent-corp.example` to be operationally separate but the NTLM Type-2 reveals the forest membership to anyone who probes.
+4. **Sub-domain joined to corporate forest without zone-isolation.** European-integrator case: a European importer's SharePoint test environment is a child domain inside a corporate global AD, disclosed via NTLM DNS Tree Name. The customer probably intends `customer.parent-corp.example` to be operationally separate but the NTLM Type-2 reveals the forest membership to anyone who probes.
 
 5. **IIS Extended Protection NOT enabled.** When `<system.webServer><security><authentication><windowsAuthentication extendedProtection>` is `None` (the default), the NTLM challenge is sent to any anonymous client. When set to `Required`, NTLM is restricted to authenticated callers — and the AV-pair leak is mitigated.
 
@@ -231,7 +231,7 @@ Before writing the report, confirm:
 
 ### Scenario A — Enterprise SharePoint inside parent corporate AD
 
-Target: `https://target-portal.example/` — a enterprise dealer portal (test mirror) operated by a system integrator.
+Target: `https://target-portal.example/` — an enterprise dealer portal (test mirror) operated by a system integrator.
 
 Sending the anonymous Type-1 message to `/_api/web/CurrentUser` returned a Type-2 challenge whose AV_PAIRS decoded to:
 

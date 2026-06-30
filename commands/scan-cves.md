@@ -1,10 +1,26 @@
 ---
 description: Run a focused nuclei CVE sweep against a host or recon directory, optionally filtered by year. Runs log4j-scan in parallel when installed for legacy enterprise stacks. Usage: /scan-cves <host-or-file> [--year 2024] | /scan-cves --recon <recon-dir>
+argument-hint: <host-or-file> [--year 2024] | --recon <recon-dir>
+allowed-tools: Bash
 ---
 
 # /scan-cves
 
 Targeted nuclei scan of the `cve/` template directory plus optional log4j-scan.
+
+## Run This
+
+Invoke the backing script directly — do not re-implement the scan:
+
+```bash
+bash tools/cve_scan.sh "$ARGUMENTS"
+```
+
+The script accepts a positional host or `-l`-style file (a single URL → `-u`, a
+readable file → `-l`), `--recon <recon-dir>` (scans `<dir>/live/urls.txt`), and
+`--year <yyyy>` to narrow the CVE templates. Output lands in
+`findings/cve/<timestamp>/`. Set `NUCLEI_NO_UPDATE=1` to skip the template
+refresh when iterating.
 
 ## Usage
 

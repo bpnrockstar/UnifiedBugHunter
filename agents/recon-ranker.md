@@ -28,7 +28,7 @@ Also read from hunt memory (if available):
 - `hunt-memory/targets/<target>.json` — previous hunt data for this target
 
 Also read from the codebase:
-- `mindmap.py` — tech stack → vuln class priority mappings (reuse, don't duplicate)
+- `tools/mindmap.py` — tech stack → vuln class priority mappings (reuse, don't duplicate)
 
 ## Ranking Signals
 
@@ -86,7 +86,7 @@ If no age signal is available, omit from ranking (don't guess).
 
 ## Rules
 
-1. Read mindmap.py for tech → vuln class mappings. Don't duplicate that logic.
+1. Read tools/mindmap.py for tech → vuln class mappings. Don't duplicate that logic.
 2. If hunt memory shows this endpoint was tested before, deprioritize (unless the test was >30 days ago).
 3. If a pattern from another target matches this tech stack, boost priority and note the pattern.
 4. GraphQL endpoints are always P1. WebSocket endpoints are always P1.

@@ -71,6 +71,8 @@ If `usernames.txt` is empty AND `--with-linkedin` was not enabled, surface: "0 u
 ### Stage 3 — `/breach-check` on the ranked wordlist
 
 ```bash
+# Input is wordlist_engine.sh's output (ranked.txt). breach_checker.py appends
+# "-ranked" to the stem, so this writes recon/<target>/wordlists/ranked-ranked.txt
 tools/breach_checker.py recon/<target>/wordlists/ranked.txt \
     --limit <breach-limit> --shuffle --with-counts
 ```
@@ -78,7 +80,7 @@ tools/breach_checker.py recon/<target>/wordlists/ranked.txt \
 Wait. Capture stats:
 - Total checked
 - In-breach count + sweet-spot count (1-1000)
-- Output file path
+- Output file path (`recon/<target>/wordlists/ranked-ranked.txt`)
 
 ### Stage 4 — HARD STOP for spray decision
 

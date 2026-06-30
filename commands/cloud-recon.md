@@ -1,5 +1,7 @@
 ---
 description: Sweep cloud assets for a target — public S3/Azure/GCP buckets via S3Scanner and cloud_enum, plus CloudFlare-bypassed origin IPs via CloudFail (or built-in DNS-history fallback). Use --keyword for storage discovery and --cf-bypass to find an origin IP behind CloudFlare. Usage: /cloud-recon --keyword <name> | /cloud-recon --cf-bypass <domain>
+argument-hint: "--keyword <name> [--s3-only] | --cf-bypass <domain>"
+allowed-tools: Bash
 ---
 
 # /cloud-recon
@@ -13,6 +15,14 @@ Find cloud-storage misconfigurations and origin IPs that bypass CloudFlare.
 /cloud-recon --keyword acme --s3-only
 /cloud-recon --cf-bypass api.target.com
 ```
+
+## Run This
+
+```bash
+bash tools/cloud_recon.sh $ARGUMENTS
+```
+
+Invoke the script directly; do not re-implement it inline.
 
 ## What it runs
 

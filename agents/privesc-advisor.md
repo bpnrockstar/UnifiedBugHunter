@@ -4,7 +4,6 @@ description: Privilege escalation specialist for Linux and Windows systems. Prov
 tools:
   bash: true
   read: true
-  write: true
   grep: true
 model: claude-sonnet-4-6
 ---

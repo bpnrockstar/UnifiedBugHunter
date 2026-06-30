@@ -1,9 +1,11 @@
 ---
 name: okta-attack
-description: Okta-as-IdP red-team attack chain — tenant discovery, user enumeration (multiple vectors), authentication flow analysis (factors enumeration, push-notification fatigue, SMS bypass), password spray with lockout discipline, Okta-specific phishing primitives (kits, FastPass abuse, OIDC redirect_uri tampering), MFA enumeration, post-compromise admin API surface. Many enterprise orgs use Okta instead of (or alongside) Entra ID. Distinct endpoints, distinct rate-limiting, distinct factor flows. Use when recon shows `<tenant>.okta.com`, `<tenant>.okta-emea.com`, `<tenant>.oktapreview.com`, or autodiscover-style records pointing at Okta IdP.
+description: "Okta-as-IdP red-team attack chain — tenant discovery, user enumeration (multiple vectors), authentication flow analysis (factors enumeration, push-notification fatigue, SMS bypass), password spray with lockout discipline, Okta-specific phishing primitives (kits, FastPass abuse, OIDC redirect_uri tampering), MFA enumeration, post-compromise admin API surface. Many enterprise orgs use Okta instead of (or alongside) Entra ID. Distinct endpoints, distinct rate-limiting, distinct factor flows. Use when recon shows `<tenant>.okta.com`, `<tenant>.okta-emea.com`, `<tenant>.oktapreview.com`, or autodiscover-style records pointing at Okta IdP."
 sources: public-okta-docs, idp-redteam-knowledge, disclosed-incidents
 report_count: 8
 ---
+
+# Okta Attack Methodology
 
 ## When to use this skill
 
@@ -19,8 +21,6 @@ DO NOT use for:
 - Entra ID (use `m365-entra-attack` instead)
 - Google Workspace (use `google-workspace-attack` — not yet built)
 - ADFS (different protocol, on-prem)
-
----
 
 ## Tenant discovery
 
@@ -55,8 +55,6 @@ done
 curl -skL -o /dev/null -w "%{redirect_url}\n" "https://app.target.com/login"
 # If redirects to <something>.okta.com → confirmed Okta tenant
 ```
-
----
 
 ## User enumeration
 
@@ -104,8 +102,6 @@ curl -skI "https://<tenant>.okta.com/oauth2/v1/authorize?client_id=<id>&response
 # Different redirect → user exists vs doesn't
 ```
 
----
-
 ## Authentication flow analysis (always do this first)
 
 ```bash
@@ -143,8 +139,6 @@ Response structure reveals factor configuration:
 - `email` — phishing-able if attacker has email read access
 - `totp` — phishing-able via AiTM
 
----
-
 ## Password spray (with Okta-specific lockout discipline)
 
 ### Lockout policy
@@ -171,8 +165,6 @@ Discipline:
 | `401 E0000119` | User is locked |
 | `429` | Rate-limit hit |
 
----
-
 ## Push-notification fatigue (MFA bombing)
 
 If a valid password is obtained and `push` factor is available, the classic attack: hammer the push factor until the user accepts out of fatigue.
@@ -188,8 +180,6 @@ curl -sk -X POST "https://<tenant>.okta.com/api/v1/authn/factors/<factor_id>/ver
 
 # A real test would loop this — DON'T do that without explicit OK
 ```
-
----
 
 ## OIDC redirect_uri tampering
 
@@ -215,8 +205,6 @@ done
 # Any 302 with the attacker URL in Location header = open redirect → auth-code theft chain
 ```
 
----
-
 ## SAML SP misconfiguration check (per-app)
 
 Each Okta SAML app has its own SP metadata:
@@ -230,8 +218,6 @@ curl -sk "https://<tenant>.okta.com/app/<app_id>/sso/saml/metadata"
 #   WantAssertionsSigned="false" ← assertion-replay possible
 #   <NameIDFormat>...emailAddress</NameIDFormat>
 ```
-
----
 
 ## Okta Admin API (post-cred-compromise)
 
@@ -251,8 +237,6 @@ curl -sk -H "Authorization: SSWS <token>" "https://<tenant>.okta.com/api/v1/apps
 curl -sk -H "Authorization: SSWS <token>" "https://<tenant>.okta.com/api/v1/logs"      # audit log
 ```
 
----
-
 ## Okta-specific phishing kits (informational — OOS for non-phishing engagements)
 
 - **EvilProxy** — Okta-aware AiTM kit
@@ -261,16 +245,12 @@ curl -sk -H "Authorization: SSWS <token>" "https://<tenant>.okta.com/api/v1/logs
 
 Document existence; do not deploy without explicit phishing scope.
 
----
-
 ## FastPass / Okta Verify abuse
 
 Okta FastPass is push-based + device-bound. Bypasses:
 - Device trust spoofing (requires kit + endpoint compromise — internal-only)
 - Push fatigue (see above)
 - Phishing redirect to fake FastPass prompt
-
----
 
 ## Common Okta tenant configuration patterns
 
@@ -281,13 +261,9 @@ Okta FastPass is push-based + device-bound. Bypasses:
 | Multiple `*.okta.com` SAN certs | Multi-tenant org (less common) |
 | `oktapreview.com` subdomain | Preview/sandbox tenant — typically weaker security |
 
----
-
 ## Tooling
 
 - **`OktaTerrify`** (github.com/silverhack/OktaTerrify) — post-compromise Okta device-trust / FastPass enumeration. The only verifiable public Okta-specific offensive tool; no other named, maintained "okta-attacker"/"okta-toolkit" utility is verifiable — build engagement-specific scripts against `/api/v1/*` instead of citing unverified tool names.
-
----
 
 ## Anti-patterns
 
@@ -295,8 +271,6 @@ Okta FastPass is push-based + device-bound. Bypasses:
 - **DO NOT skip factor enumeration** — knowing the factor list before attempting spray informs the realistic threat model
 - **DO NOT assume MFA-fatigue is in scope** — it's social engineering; explicit OK required
 - **DO NOT confuse `*.oktapreview.com` with production** — preview is a non-prod tenant, findings have different severity
-
----
 
 ## Bridge to neighboring skills
 
@@ -306,8 +280,6 @@ Okta FastPass is push-based + device-bound. Bypasses:
 - `hunt-mfa-bypass` — push fatigue, OTP brute, replay
 - `mid-engagement-ir-detection` — Okta SOC dashboards are sensitive; expect mitigations during testing
 
----
-
 ## Anti-pattern: Okta user enumeration in 2024+
 
 Several techniques publicly documented through 2022 (e.g., `/api/v1/authn` differential errors) have been hardened. Don't rely on stale knowledge — confirm enumeration vector freshness on each engagement by:
@@ -316,8 +288,6 @@ Several techniques publicly documented through 2022 (e.g., `/api/v1/authn` diffe
 3. Comparing responses byte-by-byte and timing
 
 If responses are identical, the vector is hardened — pivot to OneDrive-equivalent or different approach.
-
----
 
 ## Disclosed cases / CVEs / coordinated-disclosure writeups
 
@@ -385,8 +355,6 @@ These are the canonical public references that justify the techniques in this sk
 - CVE-2024-0981 (bcrypt 72-byte truncation) is the rare pure-product Okta CVE — most disclosed Okta bugs are configuration or operational.
 - Push fatigue is not just social engineering — the Okta Verify iOS bug shows the platform itself can silently approve a denied push. Treat any Okta push factor as bypassable in 2024+.
 - For red-team scoping: HAR-file replay, inbound-federation IdP injection, and stealer-cookie replay are the three highest-yield post-recon primitives observed in the wild.
-
----
 
 ## Related Skills & Chains
 

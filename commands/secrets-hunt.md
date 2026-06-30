@@ -1,10 +1,25 @@
 ---
 description: Hunt leaked credentials in a filesystem path, git history, JS bundles from a recon run, or an entire GitHub org. Wraps trufflehog (verifies live keys against issuer APIs), noseyparker (fast on huge histories), and gitleaks (default rule pack). Falls back to a regex grep if no scanner is installed. Usage: /secrets-hunt --filesystem <dir> | --git <repo> | --js-bundle <recon-dir> | --github-org <org>
+argument-hint: --filesystem <dir> | --git <repo> | --js-bundle <recon-dir> | --github-org <org>
+allowed-tools: Bash
 ---
 
 # /secrets-hunt
 
 Find leaked API keys, tokens, and credentials — verified when possible.
+
+## Run This
+
+Invoke the backing script directly — do not re-implement the scan:
+
+```bash
+bash tools/secrets_hunter.sh "$ARGUMENTS"
+```
+
+Exactly one mode flag plus a target is required:
+`--filesystem <dir>`, `--git <repo-path-or-url>`, `--js-bundle <recon-dir>`
+(scans `<recon-dir>/urls/js_files.txt`), or `--github-org <org>` (needs
+`trufflehog` + `GITHUB_TOKEN`). Output lands in `findings/secrets/<timestamp>/`.
 
 ## Usage
 

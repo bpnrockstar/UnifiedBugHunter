@@ -110,27 +110,31 @@ task_4:
 python3 tools/hunt.py --target target.com --recon-only &
 
 # Task 2 — credential prep
+# Credential-attack tools are gated: only run when the engagement explicitly
+# authorizes credential attacks (install with ./install_tools.sh --with-credential-attack).
 bash tools/wordlist_engine.sh target.com --mode minimal &
 bash tools/osint_employees.sh target.com &
 
 # Wait for Group 1 completion
 wait
 
-# Process Group 1 outputs
-python3 tools/scope_checker.py --filter recon/target.com/live-hosts.txt
+# Process Group 1 outputs (scope_checker uses --input-file, not --filter)
+python3 tools/scope_checker.py --input-file recon/target.com/live-hosts.txt
 
 # Launch Group 2
-# Task 3 — rank
-python3 tools/validate.py --rank recon/target.com/ &
+# Task 3 — rank (invoke the recon-ranker agent on the recon output;
+# ranking is an agent task, not a validate.py subcommand)
 
 # Task 4 — chain candidates
 # (manual or automated chain assessment) &
 
 wait
 
-# Launch Group 3 — validate each finding
+# Launch Group 3 — validate each finding.
+# validate.py is the interactive 4-gate validator (no --finding flag); run it
+# once per finding and feed in the finding details interactively.
 for finding in findings/target/*; do
-  python3 tools/validate.py --finding "$finding" &
+  python3 tools/validate.py &
 done
 wait
 ```

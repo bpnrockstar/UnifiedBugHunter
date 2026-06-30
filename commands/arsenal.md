@@ -1,5 +1,7 @@
 ---
-description: Show which external bug-bounty tools are installed on this machine and print install hints for the missing ones. Curated from high-signal repos. Use to bootstrap a fresh box or audit which optional capabilities are wired in. Usage: /arsenal | /arsenal <tool-name>
+description: Show which external bug-bounty tools are installed on this machine and print install hints for the missing ones. Curated from high-signal repos. Use to bootstrap a fresh box or audit which optional capabilities are wired in. Usage: /arsenal | /arsenal --install-hint <tool-name>
+argument-hint: "[--install-hint <tool>]"
+allowed-tools: Bash
 ---
 
 # /arsenal
@@ -9,9 +11,12 @@ Inspect the external tool inventory used by this plugin.
 ## Usage
 
 ```
-/arsenal                       # full status table (installed vs missing)
-/arsenal nuclei                # show install hint for a single tool
+/arsenal                          # full status table (installed vs missing)
+/arsenal --install-hint nuclei    # show install hint for a single tool
 ```
+
+The backing script dispatches on `--install-hint <tool>`; a bare tool name (e.g.
+`/arsenal nuclei`) falls through and just prints the full status table.
 
 ## What it covers
 

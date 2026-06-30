@@ -1,9 +1,11 @@
 ---
 name: cloud-iam-deep
-description: Cloud IAM red-team attack chain across AWS, Azure, GCP — focused on EXTERNAL exploitation paths and post-credential-discovery privilege analysis. Covers IAM enumeration (aws iam, az role, gcloud iam), STS/AssumeRole chaining, Azure Managed Identity abuse (via SSRF/leak), GCP service account JSON abuse, IMDSv1/v2 attacks via SSRF, K8s ServiceAccount token privilege analysis once held (token discovery / cluster exposure is owned by hunt-k8s), role-trust-policy confused-deputy, cross-account assume-role enumeration, IAM privilege escalation patterns (24+ AWS, 8+ Azure, 6+ GCP), and AWS Cognito Identity Pool unauthenticated-role attack chain (GetId → GetCredentialsForIdentity → IAM role abuse). Built for the case where recon yields a credential (key, JSON, token) and you need to know what it grants and how to escalate. Use when an AWS key / Azure secret / GCP service account JSON / K8s SA token surfaces from a code repo, JS bundle, APK, breach corpus, or SSRF chain.
+description: "Cloud IAM red-team attack chain across AWS, Azure, GCP — focused on EXTERNAL exploitation paths and post-credential-discovery privilege analysis. Covers IAM enumeration (aws iam, az role, gcloud iam), STS/AssumeRole chaining, Azure Managed Identity abuse (via SSRF/leak), GCP service account JSON abuse, IMDSv1/v2 attacks via SSRF, K8s ServiceAccount token privilege analysis once held (token discovery / cluster exposure is owned by hunt-k8s), role-trust-policy confused-deputy, cross-account assume-role enumeration, IAM privilege escalation patterns (24+ AWS, 8+ Azure, 6+ GCP), and AWS Cognito Identity Pool unauthenticated-role attack chain (GetId to GetCredentialsForIdentity to IAM role abuse). Built for the case where recon yields a credential (key, JSON, token) and you need to know what it grants and how to escalate. Use when an AWS key / Azure secret / GCP service account JSON / K8s SA token surfaces from a code repo, JS bundle, APK, breach corpus, or SSRF chain."
 sources: aws-iam-docs, azure-rbac-docs, gcp-iam-docs, hackingthe.cloud, pacu, peirates, prowler, rhinosecuritylabs_research, hackerone_public
 report_count: 6
 ---
+
+# Cloud IAM Deep — AWS / Azure / GCP Attack Chain
 
 ## When to use
 
@@ -18,8 +20,6 @@ Trigger when:
 Do NOT use for:
 - On-prem-only environments (use AD attack skills — but those are out of scope per external-only boundary)
 - Web2 vulns that happen to be on AWS — use the relevant `hunt-*` skill
-
----
 
 ## Credential identification (first 60 seconds)
 
@@ -50,8 +50,6 @@ client_secret pattern + UUID    # Azure AD app credential
 # K8s SA token (JWT format — decode to confirm)
 eyJhbGciOiJSUzI1...     # decode kid claim to see issuer
 ```
-
----
 
 ## AWS — read-only validation (the safe first step)
 
@@ -89,8 +87,6 @@ aws ssm describe-parameters --max-results 5 2>&1 | head
 aws iam list-roles --query 'Roles[?contains(AssumeRolePolicyDocument.Statement[0].Principal.AWS, `arn:aws:iam::`)]' 2>&1 | head -20
 ```
 
----
-
 ## AWS privesc patterns (24+ documented — `iam_privesc` techniques)
 
 Quick lookup — if you have any of these IAM actions, escalate via the listed technique:
@@ -124,8 +120,6 @@ Quick lookup — if you have any of these IAM actions, escalate via the listed t
 
 Many of the destructive ones are out-of-scope for an external red-team; document the path, don't always execute.
 
----
-
 ## AWS — STS / cross-account / role chaining
 
 ```bash
@@ -149,8 +143,6 @@ aws sts get-caller-identity  # should now show OTHER_ACCT
 
 **Confused-deputy pattern:** look for `sts:ExternalId` missing or trust policies that allow `arn:aws:iam::*:role/*`. If `ExternalId` is not required, anyone can assume the role.
 
----
-
 ## AWS IMDSv1 / IMDSv2 abuse via SSRF
 
 ```bash
@@ -170,8 +162,6 @@ curl -H "X-aws-ec2-metadata-token: $TOKEN" http://169.254.169.254/latest/meta-da
 # Most server-side fetchers don't issue PUT requests → IMDSv2 blocks them.
 # Exception: SSRF in functions that themselves perform requests with custom headers.
 ```
-
----
 
 ## Azure — credential validation
 
@@ -198,8 +188,6 @@ az keyvault list --output table
 az vm list --output table
 ```
 
----
-
 ## Azure — Managed Identity abuse
 
 ```bash
@@ -222,8 +210,6 @@ curl -H "Metadata: true" \
 # → If Managed Identity has Graph permissions, read all M365 data
 ```
 
----
-
 ## Azure privesc patterns
 
 | You have | Escalate via |
@@ -236,8 +222,6 @@ curl -H "Metadata: true" \
 | `Microsoft.Web/sites/publishxml/action` | Get publish profile → RCE on app |
 | `Microsoft.Web/sites/host/listkeys/action` | Func app key → RCE via function trigger |
 | `Microsoft.AAD.Directory.* (App reg) + RoleManagement.ReadWrite.Directory` | Grant self Global Admin |
-
----
 
 ## GCP — service account JSON
 
@@ -265,8 +249,6 @@ gcloud sql instances list 2>&1 | head
 gcloud container clusters list 2>&1 | head
 ```
 
----
-
 ## GCP privesc patterns
 
 | You have | Escalate via |
@@ -284,8 +266,6 @@ gcloud container clusters list 2>&1 | head
 | `cloudbuild.builds.create` (build runs as project SA) | Build executes attacker code |
 | `deploymentmanager.deployments.create` | Resources created as DM SA |
 
----
-
 ## GCP IMDS attack (via SSRF or post-RCE)
 
 ```bash
@@ -298,8 +278,6 @@ TOKEN=...
 curl -H "Authorization: Bearer $TOKEN" \
   "https://cloudresourcemanager.googleapis.com/v1/projects"
 ```
-
----
 
 ## Kubernetes — exposed API / SA token
 
@@ -331,8 +309,6 @@ kubectl --token=$TOKEN --server=https://k8s.target.com:6443 --insecure-skip-tls-
 | `bind` verb on roles | Bind a role you don't have to a subject |
 | `impersonate` on users/groups/SAs | Operate as another principal |
 
----
-
 ## Tooling reference
 
 | Tool | Cloud | Purpose |
@@ -352,8 +328,6 @@ kubectl --token=$TOKEN --server=https://k8s.target.com:6443 --insecure-skip-tls-
 | **kube-hunter** | K8s | Auto-scan cluster from inside/outside |
 | **kubectl-trace** | K8s | Trace processes (post-foothold) |
 
----
-
 ## Anti-patterns
 
 - **DO NOT run write/delete operations without explicit OK** — IAM mutation is destructive and audit-visible
@@ -364,8 +338,6 @@ kubectl --token=$TOKEN --server=https://k8s.target.com:6443 --insecure-skip-tls-
 - **DO NOT skip CloudTrail/Activity Log awareness** — every API call is logged; pair with `mid-engagement-ir-detection`
 - **DO NOT pivot deeper than the SOW allows** — discovering admin creds doesn't mean using them; some engagements are read-only
 
----
-
 ## Bridge to neighboring skills
 
 - `hunt-cloud-misconfig` — finds the credentials in the first place (public buckets, IMDS via SSRF, leaked JSON)
@@ -374,8 +346,6 @@ kubectl --token=$TOKEN --server=https://k8s.target.com:6443 --insecure-skip-tls-
 - `supply-chain-attack-recon` — CI/CD pipelines store cloud creds; finding them is a separate workflow
 - `m365-entra-attack` — Azure cross-product; Managed Identity tokens cross over to Graph
 - `mid-engagement-ir-detection` — cloud control plane activity is monitored; expect mitigations
-
----
 
 ## Severity scoring guidance
 
@@ -390,8 +360,6 @@ kubectl --token=$TOKEN --server=https://k8s.target.com:6443 --insecure-skip-tls-
 | Anonymous public bucket — listing only | Low/Medium |
 | Anonymous bucket — write permission | High |
 
----
-
 ## Cleanup discipline (deliverable hygiene)
 
 If during the engagement you:
@@ -400,8 +368,6 @@ If during the engagement you:
 - Read sensitive data (Secrets Manager, KMS keys, Storage blob content) — note in deliverable that data was viewed but not exfiltrated outside the engagement systems
 
 Cloud activity is trivially auditable; the client WILL find it post-engagement. Documenting now > getting blindsided later.
-
----
 
 ## AWS Cognito Identity Pool — Unauthenticated-Role Attack Chain (2024-2026 surface)
 

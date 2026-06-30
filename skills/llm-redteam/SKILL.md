@@ -1,6 +1,6 @@
 ---
 name: llm-redteam
-description: "Comprehensive LLM red teaming methodology covering 15+ attack classes from 2024-2026 research — direct/indirect injection, token smuggling, adversarial poetry, ArtPrompt, CipherChat, encoding obfuscation, multi-turn escalation (Crescendo/GOAT/JBFuzz), MCP security testing, code interpreter escape, and automated scanning with 200+ payloads."
+description: "Comprehensive LLM red teaming methodology covering 15+ attack classes from 2024-2026 research — direct/indirect injection, token smuggling, adversarial poetry, ArtPrompt, CipherChat, encoding obfuscation, multi-turn escalation (Crescendo/GOAT/JBFuzz), MCP security testing, code interpreter escape, and automated scanning with 180+ payloads."
 ---
 
 # LLM Red Teaming — Advanced Prompt Injection & Jailbreak Testing
@@ -83,8 +83,10 @@ Multi-language blending (Franglish, Spanglish, Denglisch)
 ## Automated Testing
 
 ### Prerequisites
+No third-party packages required — `tools/llm_redteam.py` runs on the Python 3
+standard library alone. Just ensure `python3` is on PATH:
 ```bash
-pip install -r requirements.txt  # not needed — pure stdlib
+python3 --version
 ```
 
 ### Quick Start
@@ -123,7 +125,7 @@ nc -lvp 8000  # then use http://YOUR_IP:8000 as OOB_HOST
 
 ## Payload Library
 
-Located at `tools/llm_payloads/` — 200+ payloads across 6 categories:
+Located at `tools/llm_payloads/` — 180+ payloads across 6 categories (185 total, summed below):
 
 | Category | Count | Key Techniques |
 |----------|-------|----------------|
@@ -171,6 +173,6 @@ refusal ≠ vulnerability.
 - Best-of-N Jailbreaking (arXiv:2412.03556)
 - TokenBreak (HiddenLayer, arXiv:2506.07948)
 - JBFuzz (2025, ~99% ASR)
-- CVE-2025-61347/48/49 ASCII Smuggling
+- ASCII/Unicode tag-character smuggling research (Tags block U+E0000-U+E007F; see vendor advisories — specific CVE IDs not verified here)
 - PortSwigger Research: LLM attack surface
 - Microsoft AI Red Team: Evolving guardrail attacks
