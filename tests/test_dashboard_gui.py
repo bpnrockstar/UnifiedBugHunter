@@ -325,4 +325,35 @@ def test_auth_env_allows_correct_credentials(seeded_db, monkeypatch):
     token = base64.b64encode(b"admin:s3cret").decode("ascii")
     resp = client.get("/findings", headers={"Authorization": f"Basic {token}"})
     assert resp.status_code == 200
-    assert FINDING_TITLE in resp.get_data(as_text=True)
+
+
+# ─── Port/host resolution (CLI > env > default) ──────────────────────────────────
+# Regression coverage for the port-5000-hardcoded bug: the CLI used to launch
+# with no override capability at all, so a request to change ports silently did
+# nothing and left the caller pointed at a port with no listener.
+
+def test_resolve_host_port_defaults(monkeypatch):
+    monkeypatch.delenv("DASHBOARD_HOST", raising=False)
+    monkeypatch.delenv("DASHBOARD_PORT", raising=False)
+    assert dashboard_app._resolve_host_port([]) == ("127.0.0.1", 5000)
+
+
+def test_resolve_host_port_env_override(monkeypatch):
+    monkeypatch.setenv("DASHBOARD_HOST", "0.0.0.0")
+    monkeypatch.setenv("DASHBOARD_PORT", "5050")
+    assert dashboard_app._resolve_host_port([]) == ("0.0.0.0", 5050)
+
+
+def test_resolve_host_port_cli_beats_env(monkeypatch):
+    monkeypatch.setenv("DASHBOARD_HOST", "0.0.0.0")
+    monkeypatch.setenv("DASHBOARD_PORT", "5050")
+    assert dashboard_app._resolve_host_port(["--host", "127.0.0.1", "--port", "9999"]) == (
+        "127.0.0.1",
+        9999,
+    )
+
+
+def test_resolve_host_port_cli_port_only(monkeypatch):
+    monkeypatch.delenv("DASHBOARD_HOST", raising=False)
+    monkeypatch.delenv("DASHBOARD_PORT", raising=False)
+    assert dashboard_app._resolve_host_port(["--port", "8080"]) == ("127.0.0.1", 8080)

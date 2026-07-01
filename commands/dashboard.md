@@ -14,6 +14,7 @@ re-implement the server.
 
 ```
 /dashboard
+/dashboard --port 5050
 ```
 
 ## Run This
@@ -31,9 +32,31 @@ http://127.0.0.1:5000
 ```
 
 The server runs in the foreground until interrupted (Ctrl-C). It binds to
-`127.0.0.1:5000` (localhost only). All views read from the shared SQLite
-database, so any findings/recon already imported by other commands show up
-automatically.
+`127.0.0.1:5000` (localhost only) by default. All views read from the shared
+SQLite database, so any findings/recon already imported by other commands show
+up automatically.
+
+### Using a different port
+
+Port is configurable — CLI flag > env var > default (5000):
+
+```bash
+python3 dashboard/app.py --port 5050
+# or
+DASHBOARD_PORT=5050 python3 dashboard/app.py
+# host is overridable too: --host / DASHBOARD_HOST
+```
+
+If the chosen port is already bound, the app now **fails loudly with a clear
+error** instead of silently doing nothing — it never leaves you pointed at a
+port with nothing listening.
+
+> **macOS: seeing a bare `403 Forbidden` at `127.0.0.1:5000`?** That's almost
+> always **not** this app — macOS's Control Center **AirPlay Receiver** listens
+> on port 5000 by default and returns exactly that 403 to any plain HTTP
+> request. Either disable it (System Settings → General → AirDrop & Handoff →
+> AirPlay Receiver) or just launch on another port as above. The startup check
+> now detects this exact collision and tells you so directly.
 
 > Note: `tools/dashboard.py` is a separate live **TUI** used by `/recon` and
 > `/hunt` to render in-terminal phase progress — it is not the web GUI. For the

@@ -639,10 +639,61 @@ def _run_retest(fid):
 app = create_app()
 
 
+def _resolve_host_port(argv=None):
+    """Resolve (host, port) from CLI flags, then env vars, then the default.
+
+    Precedence: --host/--port > DASHBOARD_HOST/DASHBOARD_PORT > 127.0.0.1:5000.
+    Kept separate from create_app() so it's independently testable and never
+    touches Flask config.
+    """
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Unified Bug Hunter dashboard")
+    parser.add_argument("--host", default=None, help="Bind host (default 127.0.0.1)")
+    parser.add_argument("--port", type=int, default=None, help="Bind port (default 5000)")
+    args = parser.parse_args(argv)
+
+    host = args.host or os.environ.get("DASHBOARD_HOST") or "127.0.0.1"
+    port_str = os.environ.get("DASHBOARD_PORT")
+    port = args.port if args.port is not None else (int(port_str) if port_str else 5000)
+    return host, port
+
+
 if __name__ == "__main__":
+    import socket
+    import sys
+
     init_db()
     debug = os.environ.get("DASHBOARD_DEBUG", "").strip().lower() in _TRUTHY
-    print("Dashboard: http://127.0.0.1:5000")
+    host, port = _resolve_host_port()
+
+    # Fail loudly and helpfully instead of letting Werkzeug's OSError traceback
+    # be the only clue -- port 5000 is a very common collision on macOS, where
+    # Control Center's AirPlay Receiver listens there by default and returns a
+    # bare 403 to any plain HTTP request (it is not this app; nothing is wrong
+    # with the dashboard). Detect the collision up front and say so.
+    probe = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    probe.settimeout(0.5)
+    in_use = probe.connect_ex((host, port)) == 0
+    probe.close()
+    if in_use:
+        hint = (
+            " -- on macOS this is almost always Control Center's AirPlay Receiver, "
+            "which squats on port 5000 and returns 403 to any browser request. "
+            "Disable it in System Settings > General > AirDrop & Handoff > "
+            "AirPlay Receiver, or just use a different port below."
+            if port == 5000
+            else ""
+        )
+        print(
+            f"ERROR: {host}:{port} is already in use{hint}\n"
+            f"Pick a free port: DASHBOARD_PORT=5050 python3 dashboard/app.py "
+            f"(or: python3 dashboard/app.py --port 5050)",
+            file=sys.stderr,
+        )
+        raise SystemExit(1)
+
+    print(f"Dashboard: http://{host}:{port}")
     if auth_credentials():
         print("Basic auth: ENABLED (DASHBOARD_AUTH_USER/PASS set)")
-    app.run(debug=debug, host="127.0.0.1", port=5000)
+    app.run(debug=debug, host=host, port=port)
