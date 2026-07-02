@@ -41,19 +41,61 @@
 
 <div class="row g-3">
     <div class="col-md-8">
+        {# ── Vulnerability Details: description + impact + remediation + CVSS ── #}
         <div class="card mb-3">
-            <div class="card-header">Description</div>
-            <div class="card-body"><pre class="mb-0 text-light">{{ finding.description or 'No description.' }}</pre></div>
+            <div class="card-header"><i class="bi-info-circle me-1"></i>Vulnerability Details</div>
+            <div class="card-body">
+                <h6 class="text-secondary text-uppercase small">Description</h6>
+                <pre class="mb-3 text-light">{{ finding.description or 'No description.' }}</pre>
+
+                <h6 class="text-secondary text-uppercase small">Impact</h6>
+                <pre class="mb-3 text-light">{{ finding.impact or 'Not specified.' }}</pre>
+
+                <h6 class="text-secondary text-uppercase small">Remediation</h6>
+                <pre class="mb-3 text-light">{{ finding.remediation or 'Not specified.' }}</pre>
+
+                <h6 class="text-secondary text-uppercase small">CVSS</h6>
+                <p class="mb-0 text-light">
+                    {% if finding.cvss_score is not none %}
+                        <span class="badge severity-badge {{ sev_class.get(finding.severity, 'sev-info') }} me-2">{{ '%.1f'|format(finding.cvss_score) }}</span>
+                    {% else %}
+                        <span class="text-secondary">No CVSS score.</span>
+                    {% endif %}
+                    <code>{{ finding.cvss_vector or 'N/A' }}</code>
+                </p>
+            </div>
         </div>
-        {% if finding.poc %}
+
+        {# ── Proof of Concept: free-text PoC + structured poc_spec (pretty JSON) ── #}
         <div class="card mb-3">
-            <div class="card-header">Proof of Concept</div>
-            <div class="card-body"><pre class="mb-0 text-light">{{ finding.poc }}</pre></div>
-        </div>
-        {% endif %}
-        <div class="card mb-3">
-            <div class="card-header">Impact</div>
-            <div class="card-body"><pre class="mb-0 text-light">{{ finding.impact or 'Not specified.' }}</pre></div>
+            <div class="card-header"><i class="bi-braces me-1"></i>Proof of Concept</div>
+            <div class="card-body">
+                <h6 class="text-secondary text-uppercase small">PoC (evidence)</h6>
+                {% if finding.poc %}
+                <pre class="mb-3 text-light">{{ finding.poc }}</pre>
+                {% else %}
+                <p class="text-secondary mb-3"><em>No free-text PoC recorded.</em></p>
+                {% endif %}
+
+                <h6 class="text-secondary text-uppercase small">Structured PoC-Spec (replay config)</h6>
+                {% if poc_spec %}
+                {# Break out the common request fields for at-a-glance reading… #}
+                <dl class="row mb-2">
+                    {% if poc_spec.method %}<dt class="col-sm-3">Method</dt><dd class="col-sm-9"><code>{{ poc_spec.method }}</code></dd>{% endif %}
+                    {% if poc_spec.url %}<dt class="col-sm-3">URL</dt><dd class="col-sm-9"><code>{{ poc_spec.url }}</code></dd>{% endif %}
+                    {% if poc_spec.headers %}<dt class="col-sm-3">Headers</dt><dd class="col-sm-9"><code>{{ poc_spec.headers }}</code></dd>{% endif %}
+                    {% if poc_spec.body %}<dt class="col-sm-3">Body</dt><dd class="col-sm-9"><code>{{ poc_spec.body }}</code></dd>{% endif %}
+                    {% if poc_spec.match %}<dt class="col-sm-3">Match</dt><dd class="col-sm-9"><code>{{ poc_spec.match }}</code></dd>{% endif %}
+                </dl>
+                {# …and show the full pretty-printed spec in a code block. #}
+                <pre class="mb-0 text-light"><code>{{ poc_spec_pretty }}</code></pre>
+                {% elif finding.poc_spec %}
+                {# Stored but not decodable as a JSON object — show it verbatim. #}
+                <pre class="mb-0 text-light">{{ finding.poc_spec }}</pre>
+                {% else %}
+                <p class="text-secondary mb-0"><em>No replayable PoC-spec stored for this finding.</em></p>
+                {% endif %}
+            </div>
         </div>
     </div>
     <div class="col-md-4">
@@ -86,14 +128,9 @@
                 </p>
             </div>
         </div>
-        {% if finding.poc_spec %}
-        <div class="card mb-3">
-            <div class="card-header">PoC-Spec (replay config)</div>
-            <div class="card-body">
-                <pre class="mb-0 text-light">{{ finding.poc_spec }}</pre>
-            </div>
-        </div>
-        {% endif %}
+        {# The structured PoC-spec and remediation now live in the main-column
+           'Proof of Concept' and 'Vulnerability Details' panels, so the sidebar
+           keeps only the at-a-glance metadata. #}
         <div class="card mb-3">
             <div class="card-header">Details</div>
             <div class="card-body">
@@ -107,12 +144,6 @@
                 </dl>
             </div>
         </div>
-        {% if finding.remediation %}
-        <div class="card">
-            <div class="card-header">Remediation</div>
-            <div class="card-body"><pre class="mb-0 text-light">{{ finding.remediation }}</pre></div>
-        </div>
-        {% endif %}
     </div>
 </div>
 {% endblock %}

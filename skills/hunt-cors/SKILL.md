@@ -254,6 +254,20 @@ Every automated hit is a lead, not a finding. Reproduce 5a/5b in a browser.
 
 ---
 
+## Validation & False-Positives (Gate 0)
+
+Authorized-engagement kill gate — run BEFORE any browser PoC, because curl ignores CORS entirely and will hand you a reflected header a real browser would refuse to expose.
+
+- **Real High:** an attacker-controlled origin performs a **credentialed** cross-origin read of a **sensitive authenticated** body, proven in a browser (Phase 5a/5b/5c). `ACAO: <your-origin>` + `ACAC: true` + a readable body in the console.
+- **FP — `ACAO: *` with credentials:** browsers refuse to send/expose creds against a wildcard. Never a credentialed finding; only interesting if the data is sensitive *unauthenticated* (usually Low/Info).
+- **FP — `ACAC: true` alone:** meaningless unless `ACAO` reflects *your* registerable origin AND the cross-origin `fetch` returns a readable body.
+- **FP — in-scope reflection:** `evil.target.com` echoed back is by-design unless you actually control that host (then route to `hunt-subdomain` takeover).
+- **FP — regex mismatch:** `target.com.evil.com` against an end-anchored escaped-dot regex does not match — match the payload to the flaw class (Phase 3) or it is not a bug.
+- **FP — non-sensitive body:** a readable `/api/health` is not High; tie the read to PII/tokens/CSRF/financial data.
+- **Blind/headless:** confirm via OOB exfil (Collaborator/oastify) with a unique per-test marker so the interaction is unambiguously yours.
+
+Disclosed grounding: HackerOne #430249 — origin-reflection with `Access-Control-Allow-Credentials: true` let a malicious origin read authenticated API responses cross-origin, browser-confirmed, rewarded as a High.
+
 ## Validation discipline (read before submitting)
 
 - **Browser proof mandatory.** curl reflecting a header is NOT exploitation.

@@ -269,6 +269,25 @@ def build_trends():
     }
 
 
+# ─── Finding-detail helpers (importable; PoC-spec rendering) ─────────────────
+
+def _parse_poc_spec(raw):
+    """Decode a stored poc_spec JSON string into a dict, or return None.
+
+    poc_spec is persisted by database.add_finding as JSON text (or NULL). This
+    decodes it for the detail view's structured 'Proof of Concept' panel. Any
+    non-string, empty, malformed, or non-object value returns None so the caller
+    can fall back to the raw text without the page ever 500-ing.
+    """
+    if not raw or not isinstance(raw, str):
+        return None
+    try:
+        spec = json.loads(raw)
+    except (TypeError, ValueError):
+        return None
+    return spec if isinstance(spec, dict) else None
+
+
 # ─── App factory ──────────────────────────────────────────────────────────────
 
 def create_app(config=None):
@@ -458,7 +477,18 @@ def _register_routes(app):
         finding = get_finding(finding_id)
         if not finding:
             return "Finding not found", 404
-        return render_template("finding_detail.html", finding=finding)
+        # poc_spec is persisted as a JSON string. Decode + pretty-print it here so
+        # the template can render a clean structured PoC (method/url/headers/body/
+        # match) in a code block. Any malformed/absent value degrades to None so
+        # the panel simply falls back to the raw text — the page always renders.
+        poc_spec = _parse_poc_spec(finding.get("poc_spec"))
+        poc_spec_pretty = json.dumps(poc_spec, indent=2, sort_keys=True) if poc_spec is not None else None
+        return render_template(
+            "finding_detail.html",
+            finding=finding,
+            poc_spec=poc_spec,
+            poc_spec_pretty=poc_spec_pretty,
+        )
 
     @app.route("/findings/<int:fid>/status", methods=["POST"])
     def set_finding_status_route(fid):

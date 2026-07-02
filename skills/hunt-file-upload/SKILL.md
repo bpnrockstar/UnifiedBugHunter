@@ -190,6 +190,20 @@ Unlocks: **Arbitrary File Write** ("Overwrite the Legal Information file."). Sam
 
 ---
 
+## Validation & False-Positives (Gate 0)
+
+Authorized-engagement kill gate — run BEFORE claiming any upload finding. A file that lands on disk is not a finding; a file that *executes, renders, or gets parsed* is.
+
+- **RCE (webshell):** proves real only when you fetch the uploaded shell at its served URL and get command output back (`GET /uploads/x.phtml?c=id` → `uid=…`). A 200 on the upload POST alone is a write, not RCE. FP: upload dir returns the raw shell as `text/plain` / `Content-Disposition: attachment` (handler not mapped) — no execution.
+- **Stored XSS (SVG/HTML):** real only when the file is served **same-origin** with a renderable `Content-Type` (`image/svg+xml`, `text/html`) AND the JS fires in a victim browser. FP: served as `text/plain`, `application/octet-stream`, forced-download, or from a sandboxed/isolated CDN origin — no script context.
+- **SSRF/XXE via processor (ImageMagick/DOCX):** real only with an OOB callback (Collaborator/`nxc`-style listener) or reflected internal response tying the fetch to *your* unique marker. FP: 500/timeout with no callback.
+- **Zip-slip / path traversal:** real only when you then read/serve the escaped file and see your written content. FP: extractor rejected the `../` entry or wrote inside a jail.
+- Confirm the *served* path is directly reachable and the magic-byte/extension bypass survived server-side re-validation, not just the client `accept=` attribute.
+
+Disclosed grounding: HackerOne #921437 (Shopify) — `.svg` avatar upload served on an app origin yielded stored XSS; and the ImageTragick family (CVE-2016-3714) remains a live SVG/MVG-to-SSRF/RCE primitive on legacy ImageMagick delegate configs.
+
+---
+
 ## Related Skills & Chains
 
 - **`hunt-rce`** — File upload is the most common path to RCE on classic PHP/JSP/ASPX stacks once you find a directly-served upload directory or a deserializer-fed processor. Chain primitive: polyglot `GIF89a;<?php system($_GET['c']);?>` bypasses magic-byte check + `.phtml` extension bypasses allowlist → `GET /uploads/shell.phtml?c=id` → RCE; or PHP `phar://` upload to a sink calling `file_exists()` on the attacker-controlled path → PHP object deserialization → RCE.

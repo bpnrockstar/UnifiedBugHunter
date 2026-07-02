@@ -5,6 +5,13 @@ description: Container and Kubernetes security methodology. Covers Docker contai
 
 # Container Security Methodology
 
+> **Scope / division of labor (avoid overlap with `hunt-k8s`):** this skill owns the
+> **container-runtime** layer — Docker/containerd/runc escape, capabilities, mounts, and
+> runtime CVEs. For **Kubernetes cluster** depth — API-server auth, RBAC design review,
+> admission controllers (PSA/OPA/Kyverno), network policy, etcd, supply-chain — use
+> **`hunt-k8s`**. The K8s phases below are kept only as the *post-escape bridge* (what a
+> stolen pod token reaches); do the full cluster methodology in `hunt-k8s`, not here.
+
 ## Phase 0: Container Reconnaissance (from inside)
 
 ```bash
@@ -59,7 +66,38 @@ chroot /mnt/host /bin/sh   # full host shell if the binary is compatible
 
 If `mount` reports an unknown filesystem type, run `lsblk -f` (or `blkid`) to read the fstype and add `-t <type>`.
 
-## Phase 2: Kubernetes Post-Exploitation
+## Container-Runtime CVE Deep-Dives (detect → confirm → remediate)
+
+Two runc escapes worth calling out — both let a container reach the host. Lead with the
+version check (detection), keep the exploitation summary high-level, and finish with the fix.
+
+### CVE-2019-5736 — runc host-binary overwrite
+- **Affected:** runc < 1.0-rc7 (Docker < 18.09.2, older containerd).
+- **Detect:** `runc --version` on the host, or the container image's base runtime version.
+- **Root cause:** when the runtime `exec`s into a container, a malicious image can point
+  `/proc/self/exe` at the host `runc` binary and overwrite it, so the next runtime
+  invocation runs attacker code as host root. Requires the operator to `exec`/attach into
+  an attacker-controlled image (or the image itself controls entrypoint).
+- **Confirm (lab/authorized only):** on a patched host the overwrite of `/proc/self/exe`
+  fails with `ETXTBSY`; that failure is the reliable "not vulnerable" signal.
+- **Remediate:** upgrade runc ≥ 1.0-rc7; run containers non-root + read-only rootfs; enable
+  user namespaces so container-root ≠ host-root.
+
+### CVE-2024-21626 — runc "Leaky Vessels" leaked-fd traversal
+- **Affected:** runc ≤ 1.1.11.
+- **Detect:** `runc --version` ≤ 1.1.11; or inspect image `WORKDIR`/`--cwd` for a
+  `/proc/self/fd/N` value.
+- **Root cause:** an internal runc file descriptor pointing at the **host** filesystem is
+  leaked into the container; a `WORKDIR /proc/self/fd/<N>` (or `runc run --cwd`) resolves
+  the container's working directory onto the host root, giving host-fs read/write from
+  inside the container at startup.
+- **Confirm:** on a patched runtime the working dir resolves inside the container namespace,
+  not the host; comparing `ls -la /proc/self/fd/<N>/` contents against the container root
+  distinguishes vulnerable vs fixed.
+- **Remediate:** upgrade runc ≥ 1.1.12 (containerd ≥ 1.6.28 / 1.7.13, Docker ≥ 25.0.2);
+  reject images that set `WORKDIR` to a `/proc/self/fd/*` path in admission review.
+
+## Phase 2: Kubernetes Post-Exploitation (post-escape bridge — full depth in `hunt-k8s`)
 
 ```bash
 # Service account enumeration
@@ -133,6 +171,7 @@ YAML
 
 ## Related Skills
 
+- `hunt-k8s` — **the** Kubernetes cluster skill: API-server auth, RBAC review, admission controllers, network policy, etcd, supply-chain. This skill defers all cluster-layer depth there; use it for anything beyond the post-escape bridge above.
 - `cloud-iam-deep` — once you pull a cloud key / instance-role token from a mounted host fs or a K8s secret, pivot here for IAM enumeration and privilege escalation across AWS / Azure / GCP.
 - `cicd-security` — clusters frequently run CI runners; a compromised pod often yields pipeline tokens and registry credentials.
 - `active-directory` — AD-joined Windows containers and nodes bridge a container escape into the Windows domain attack surface.

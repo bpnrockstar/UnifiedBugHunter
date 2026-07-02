@@ -156,6 +156,20 @@ cat recon/$TARGET/urls.txt | gf redirect | qsreplace "https://evil.com" | \
 
 ---
 
+## Validation & False-Positives (Gate 0)
+
+Authorized-engagement kill gate — run BEFORE submitting. Open redirect alone is Low; the value is in the chain, so the gate must confirm both the redirect AND the escalation.
+
+- **Real redirect:** the server returns a 3xx with `Location:` (or a client-side `window.location`/meta-refresh) pointing at a **registerable domain you control** (`evil.com`), reached from an unauthenticated request. Prove the browser actually navigates there.
+- **FP — same-site only:** payload resolves back to the target's own origin (`https://target.com/evil.com`, path-relative). No external navigation = not a redirect bug.
+- **FP — allowlist held:** the app strips/normalizes to a safe host, 200s the page, or returns the redirect to a hardcoded default. Reflecting your string in the body without navigating is not a redirect.
+- **FP — needs auth/CSRF token you can't forge:** if the redirect only triggers behind a valid anti-CSRF token or an already-authenticated victim action you cannot induce, downgrade.
+- **Chain proof for High:** for the OAuth→ATO chain, show the authorization server actually forwarding the `code`/token to your origin via the `redirect_uri` open-redirect hop — not just that the redirect exists. For SSRF escalation, show the fetch is **server-side** (internal response or OOB hit), not a browser-side 302.
+
+Disclosed grounding: HackerOne #1861974 — an open redirect on a trusted domain was chained through the OAuth `redirect_uri` to leak the authorization `code` and achieve full account takeover.
+
+---
+
 ## Validation
 
 ✅ Location header in response points to evil.com (your controlled domain)

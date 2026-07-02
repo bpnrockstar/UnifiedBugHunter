@@ -78,8 +78,11 @@
             <table class="table table-hover table-sm mb-0" id="findings-table">
                 <thead>
                     <tr>
+                        {# Non-sortable toggle column — the caret expands the inline detail row. #}
+                        <th style="width:2rem" aria-label="Expand"></th>
                         <th class="sortable" data-type="number">Severity</th>
                         <th class="sortable" data-type="text">Title</th>
+                        <th class="sortable" data-type="text">Vulnerability</th>
                         <th class="sortable" data-type="text">Class</th>
                         <th class="sortable" data-type="text">Domain</th>
                         <th class="sortable" data-type="text">Status</th>
@@ -89,12 +92,25 @@
                 </thead>
                 <tbody>
                     {% for f in findings %}
+                    {# Short, safe vulnerability-description preview (~120 chars). #}
+                    {% set desc_full = f.description or '' %}
+                    {% set desc_preview = desc_full[:120] ~ ('…' if desc_full|length > 120 else '') %}
                     <tr>
+                        <td>
+                            {# Bootstrap collapse toggle — reveals the detail row below. #}
+                            <button class="btn btn-link btn-sm p-0 text-secondary finding-toggle" type="button"
+                                    data-bs-toggle="collapse" data-bs-target="#finding-detail-{{ f.id }}"
+                                    aria-expanded="false" aria-controls="finding-detail-{{ f.id }}"
+                                    aria-label="Toggle details for {{ f.title }}">
+                                <i class="bi-chevron-right"></i>
+                            </button>
+                        </td>
                         {# data-sort holds the rank so sorting is by severity order, not alpha. #}
                         <td data-sort="{{ sev_rank.get(f.severity, 5) }}">
                             <span class="badge severity-badge {{ sev_class.get(f.severity, 'sev-info') }}">{{ f.severity or 'info' }}</span>
                         </td>
                         <td><a href="/findings/{{ f.id }}">{{ f.title }}</a></td>
+                        <td class="text-secondary"><small>{{ desc_preview or '—' }}</small></td>
                         <td><code>{{ f.bug_class or '-' }}</code></td>
                         <td><a href="/targets/{{ f.target_id }}">{{ f.domain }}</a></td>
                         <td>
@@ -105,8 +121,40 @@
                         </td>
                         <td data-sort="{{ f.created_at or '' }}"><small class="text-secondary">{{ (f.created_at or '')[:10] }}</small></td>
                     </tr>
+                    {# Inline expandable detail row: short details + PoC snippet. Bootstrap
+                       collapse targets the wrapper div; the row itself is skipped by the
+                       sorter (single spanning cell). #}
+                    <tr class="finding-detail-row">
+                        <td colspan="9" class="p-0 border-0">
+                            <div class="collapse" id="finding-detail-{{ f.id }}">
+                                <div class="p-3 finding-detail-body">
+                                    <div class="mb-2">
+                                        <span class="text-secondary small text-uppercase">Vulnerability details</span>
+                                        <div class="text-light">{{ desc_full or 'No description.' }}</div>
+                                    </div>
+                                    {% if f.impact %}
+                                    <div class="mb-2">
+                                        <span class="text-secondary small text-uppercase">Impact</span>
+                                        <div class="text-light">{{ f.impact }}</div>
+                                    </div>
+                                    {% endif %}
+                                    <div class="mb-2">
+                                        <span class="text-secondary small text-uppercase">PoC snippet</span>
+                                        {% if f.poc %}
+                                        <pre class="mb-0 mt-1 text-light finding-poc-snippet">{{ f.poc[:600] }}{{ '…' if f.poc|length > 600 else '' }}</pre>
+                                        {% else %}
+                                        <div class="text-secondary"><em>No proof-of-concept recorded.</em></div>
+                                        {% endif %}
+                                    </div>
+                                    <a href="/findings/{{ f.id }}" class="btn btn-outline-primary btn-sm">
+                                        <i class="bi-box-arrow-up-right me-1"></i>Full detail
+                                    </a>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
                     {% else %}
-                    <tr><td colspan="7" class="text-secondary text-center py-3">No findings match your criteria.</td></tr>
+                    <tr><td colspan="9" class="text-secondary text-center py-3">No findings match your criteria.</td></tr>
                     {% endfor %}
                 </tbody>
             </table>
@@ -146,9 +194,13 @@
       Array.prototype.forEach.call(table.tHead.rows[0].cells, function (o) { o.removeAttribute('aria-sort'); });
       th.setAttribute('aria-sort', asc ? 'ascending' : 'descending');
 
+      // Only the multi-cell data rows are sortable. Each data row is trailed by
+      // its inline detail row (class "finding-detail-row"); we carry that partner
+      // along so sorting never splits a finding from its expandable details.
       var rows = Array.prototype.slice.call(tbody.rows).filter(function (r) {
-        // Skip the "no findings" placeholder row (single spanning cell).
-        return r.cells.length > 1;
+        // Skip the "no findings" placeholder and the inline detail rows (single
+        // spanning cell in both cases).
+        return r.cells.length > 1 && !r.classList.contains('finding-detail-row');
       });
       rows.sort(function (a, b) {
         var av = cellValue(a, idx, type), bv = cellValue(b, idx, type);
@@ -156,7 +208,33 @@
         if (av > bv) return asc ? 1 : -1;
         return 0;
       });
-      rows.forEach(function (r) { tbody.appendChild(r); });
+      rows.forEach(function (r) {
+        tbody.appendChild(r);
+        // Re-append the immediately-following detail row so the pair stays together.
+        var next = r.nextElementSibling;
+        if (next && next.classList.contains('finding-detail-row')) {
+          tbody.appendChild(next);
+        }
+      });
+    });
+  });
+})();
+
+// Rotate each row's caret icon in step with its Bootstrap collapse state.
+(function () {
+  var table = document.getElementById('findings-table');
+  if (!table) return;
+  Array.prototype.forEach.call(table.querySelectorAll('.collapse'), function (panel) {
+    var toggle = table.querySelector('[data-bs-target="#' + panel.id + '"]');
+    if (!toggle) return;
+    var icon = toggle.querySelector('i');
+    panel.addEventListener('show.bs.collapse', function () {
+      toggle.setAttribute('aria-expanded', 'true');
+      if (icon) { icon.classList.remove('bi-chevron-right'); icon.classList.add('bi-chevron-down'); }
+    });
+    panel.addEventListener('hide.bs.collapse', function () {
+      toggle.setAttribute('aria-expanded', 'false');
+      if (icon) { icon.classList.remove('bi-chevron-down'); icon.classList.add('bi-chevron-right'); }
     });
   });
 })();

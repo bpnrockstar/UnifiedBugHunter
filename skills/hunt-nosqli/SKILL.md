@@ -199,6 +199,20 @@ Unlocks: **NoSQL DoS** ("Let the server sleep for some time" — cause the serve
 
 ---
 
+## Validation & False-Positives (Gate 0)
+
+Authorized-engagement kill gate — run BEFORE claiming NoSQLi. A different HTTP status or an error string is a lead; a state change or a document you should not see is the finding.
+
+- **Real auth bypass:** the operator payload (`{"username":{"$gt":""},"password":{"$gt":""}}`) returns a **valid session/JWT** and authenticated content, and the *baseline* (a wrong scalar password) does **not**. Diff the two — a 200 on both proves nothing.
+- **Real exfil:** the regex/`$where`/`$ne` payload returns **more documents than your account owns** (e.g. other users' orders) — records you provably lack authorization for.
+- **Real blind `$where`:** a **consistent** time delay (>4s, repeatable, and absent for a benign id) — one slow response can be network jitter. Rule out server-side rate-limiting/backoff before calling it a delay.
+- **Real write-path (integrity):** an operator in the *filter* (`{"id":{"$ne":-1}}`) mutates documents you never authored — verify by re-reading a victim record and seeing your value.
+- **FP — client/server just rejects the object:** 400/500 "cast error" or "expected string" means the operator was rejected, not evaluated. No injection.
+- **FP — reflected error only:** a Mongo error banner without a corresponding auth bypass, over-broad result set, or mutation is Info, not the vuln.
+- Confirm the sink is truly NoSQL (Mongo/Mongoose/CouchDB), not a SQL layer echoing a `$` — otherwise route to `hunt-sqli`.
+
+Disclosed grounding: CVE-2021-22911 (Rocket.Chat) — an unauthenticated MongoDB `$regex`/operator injection in the password-reset/login flow enabled blind data extraction of user records, the canonical operator-injection exfil pattern.
+
 ## Bypass Table
 
 | Defense | Bypass |
